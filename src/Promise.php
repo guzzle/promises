@@ -207,15 +207,15 @@ class Promise implements PromiseInterface
             ]
         ];
         $this->handlers = [];
-        $this->resolveQueue($pending);
+        $this->resolveStack($pending);
     }
 
     /**
-     * Resolve a queue of pending groups of handlers.
+     * Resolve a stack of pending groups of handlers.
      *
      * @param array $pending Array of groups of handlers.
      */
-    private function resolveQueue(array $pending)
+    private function resolveStack(array $pending)
     {
         while ($group = array_pop($pending)) {
             // If the resolution value is a promise, then merge the handlers
@@ -300,7 +300,6 @@ class Promise implements PromiseInterface
      */
     private function handleRejection($reason, array $handler)
     {
-        // Reject the listeners of this promise.
         $nextHandlers = $handler[0]->handlers;
         $handler[0]->handlers = [];
         $handler[0]->reject($reason);
@@ -329,7 +328,6 @@ class Promise implements PromiseInterface
 
         switch ($promise->getState()) {
             case 'pending':
-                // Take the promise handlers or recursively resolve them.
                 $this->resolvePendingPromise($promise, $handlers);
                 return null;
             case 'fulfilled':
@@ -391,18 +389,18 @@ class Promise implements PromiseInterface
         $promise->then(
             function ($value) use ($handlers) {
                 // resolve the handlers with the given value.
-                $queue = [];
+                $stack = [];
                 foreach ($handlers as $handler) {
-                    $queue[] = $this->callHandler(1, $value, $handler);
+                    $stack[] = $this->callHandler(1, $value, $handler);
                 }
-                $this->resolveQueue($queue);
+                $this->resolveStack($stack);
             }, function ($reason) use ($handlers) {
                 // reject the handlers with the given reason.
-                $queue = [];
+                $stack = [];
                 foreach ($handlers as $handler) {
-                    $queue[] = $this->callHandler(2, $reason, $handler);
+                    $stack[] = $this->callHandler(2, $reason, $handler);
                 }
-                $this->resolveQueue($queue);
+                $this->resolveStack($stack);
             }
         );
     }
