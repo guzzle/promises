@@ -1,6 +1,6 @@
 # Guzzle Promises
 
-A+ promise implementation that handles promise chaining and resolution
+[A+ promise](https://promisesaplus.com/) implementation that handles promise chaining and resolution
 iteratively.
 
 ## Iterative Resolution
