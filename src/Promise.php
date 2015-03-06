@@ -129,7 +129,7 @@ class Promise implements PromiseInterface
         // It's rejected or cancelled, so "unwrap" and throw an exception.
         throw $this->result instanceof \Exception
             ? $this->result
-            : new \RuntimeException($this->result);
+            : new RejectionException($this->result);
     }
 
     public function getState()

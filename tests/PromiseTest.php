@@ -65,8 +65,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage foo
+     * @expectedException \GuzzleHttp\Promise\RejectionException
+     * @expectedExceptionMessage The promise was rejected with value: foo
      */
     public function testThrowsWhenUnwrapIsRejectedWithNonException()
     {
