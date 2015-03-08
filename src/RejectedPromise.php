@@ -50,17 +50,17 @@ class RejectedPromise implements PromiseInterface
 
     public function getState()
     {
-        return 'rejected';
+        return self::REJECTED;
     }
 
     public function resolve($value)
     {
-        // pass
+        throw new \RuntimeException("Cannot resolve a rejected promise");
     }
 
     public function reject($reason)
     {
-        // pass
+        throw new \RuntimeException("Cannot reject a rejected promise");
     }
 
     public function cancel()

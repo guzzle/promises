@@ -2,10 +2,20 @@
 namespace GuzzleHttp\Promise;
 
 /**
- * Represents the eventual outcome of a deferred.
+ * A promise represents the eventual result of an asynchronous operation.
+ *
+ * The primary way of interacting with a promise is through its then method,
+ * which registers callbacks to receive either a promise’s eventual value or
+ * the reason why the promise cannot be fulfilled.
+ *
+ * @link https://promisesaplus.com/
  */
 interface PromiseInterface
 {
+    const PENDING = 'pending';
+    const FULFILLED = 'fulfilled';
+    const REJECTED = 'rejected';
+
     /**
      * Create a new promise that chains off of the current promise.
      *
@@ -20,9 +30,10 @@ interface PromiseInterface
     );
 
     /**
-     * Get the state of the promise.
+     * Get the state of the promise ("pending", "rejected", or "fulfilled").
      *
-     * State can be one of: pending, fulfilled, rejected, or cancelled.
+     * The three states can be checked against the constants defined on
+     * PromiseInterface: PENDING, FULFILLED, and REJECTED.
      *
      * @return string
      */
@@ -32,6 +43,7 @@ interface PromiseInterface
      * Resolve the promise with the given value.
      *
      * @param mixed $value
+     * @throws \RuntimeException if the promise is already resolved.
      */
     public function resolve($value);
 
@@ -39,11 +51,14 @@ interface PromiseInterface
      * Reject the promise with the given reason.
      *
      * @param mixed $reason
+     * @throws \RuntimeException if the promise is already resolved.
      */
     public function reject($reason);
 
     /**
      * Cancels the promise if possible.
+     *
+     * @link https://github.com/promises-aplus/cancellation-spec/issues/7
      */
     public function cancel();
 

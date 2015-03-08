@@ -46,17 +46,17 @@ class FulfilledPromise implements PromiseInterface
 
     public function getState()
     {
-        return 'fulfilled';
+        return self::FULFILLED;
     }
 
     public function resolve($value)
     {
-        // pass
+        throw new \RuntimeException("Cannot resolve a fulfilled promise");
     }
 
     public function reject($reason)
     {
-        // pass
+        throw new \RuntimeException("Cannot reject a fulfilled promise");
     }
 
     public function cancel()

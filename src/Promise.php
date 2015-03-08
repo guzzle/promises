@@ -12,19 +12,10 @@ namespace GuzzleHttp\Promise;
  */
 class Promise implements PromiseInterface
 {
-    /** @var string Promise state: pending, fulfilled, rejected, cancelled */
-    private $state = 'pending';
-
-    /** @var array[] Array of [promise, fulfilled, rejected] */
+    private $state = self::PENDING;
     private $handlers = [];
-
-    /** @var callable Wait function */
     private $waitFn;
-
-    /** @var callable */
     private $cancelFn;
-
-    /** @var mixed Delivered result */
     private $result;
 
     /**
@@ -60,7 +51,7 @@ class Promise implements PromiseInterface
         callable $onFulfilled = null,
         callable $onRejected = null
     ) {
-        if ($this->state === 'pending') {
+        if ($this->state === self::PENDING) {
             $p = new Promise([$this, 'wait'], [$this, 'cancel']);
             // Keep track of this dependent promise so that we resolve it
             // later when a value has been delivered.
@@ -69,7 +60,7 @@ class Promise implements PromiseInterface
         }
 
         // Return a fulfilled promise and immediately invoke any callbacks.
-        if ($this->state === 'fulfilled') {
+        if ($this->state === self::FULFILLED) {
             return $onFulfilled
                 ? self::promiseFor($this->result)->then($onFulfilled)
                 : self::promiseFor($this->result);
@@ -86,7 +77,7 @@ class Promise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
-        if ($this->state === 'pending') {
+        if ($this->state === self::PENDING) {
             if (!$this->waitFn) {
                 // If there's not wait function, then resolve the promise with
                 // the provided $defaultDelivery value.
@@ -97,7 +88,7 @@ class Promise implements PromiseInterface
                     $wfn = $this->waitFn;
                     $this->waitFn = null;
                     $wfn();
-                    if ($this->state === 'pending') {
+                    if ($this->state === self::PENDING) {
                         throw new \LogicException('Invoking the wait callback did not resolve the promise');
                     }
                 } catch (\Exception $e) {
@@ -118,7 +109,7 @@ class Promise implements PromiseInterface
             $result = $result->wait();
         }
 
-        if ($this->state === 'fulfilled') {
+        if ($this->state === self::FULFILLED) {
             return $result;
         }
 
@@ -135,12 +126,11 @@ class Promise implements PromiseInterface
 
     public function cancel()
     {
-        if ($this->state !== 'pending') {
+        if ($this->state !== self::PENDING) {
             return;
         }
 
         $this->waitFn = null;
-
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
             $this->cancelFn = null;
@@ -152,17 +142,19 @@ class Promise implements PromiseInterface
             }
         }
 
-        $this->state = 'cancelled';
-        $this->result = new \LogicException('Promise has been cancelled');
+        // Reject the promise only if it wasn't rejected in a then callback.
+        if ($this->state === self::PENDING) {
+            $this->reject(new CancellationException('Promise has been cancelled'));
+        }
     }
 
     public function resolve($value)
     {
-        if ($this->state !== 'pending') {
+        if ($this->state !== self::PENDING) {
             throw new \RuntimeException("Cannot resolve a {$this->state} promise");
         }
 
-        $this->state = 'fulfilled';
+        $this->state = self::FULFILLED;
         $this->result = $value;
         $this->cancelFn = $this->waitFn = null;
 
@@ -173,11 +165,11 @@ class Promise implements PromiseInterface
 
     public function reject($reason)
     {
-        if ($this->state !== 'pending') {
+        if ($this->state !== self::PENDING) {
             throw new \RuntimeException("Cannot reject a {$this->state} promise");
         }
 
-        $this->state = 'rejected';
+        $this->state = self::REJECTED;
         $this->result = $reason;
         $this->cancelFn = $this->waitFn = null;
 
@@ -196,7 +188,7 @@ class Promise implements PromiseInterface
         $pending = [
             [
                 'value'    => $value,
-                'index'    => $this->state === 'fulfilled' ? 1 : 2,
+                'index'    => $this->state === self::FULFILLED ? 1 : 2,
                 'handlers' => $this->handlers
             ]
         ];
@@ -319,28 +311,25 @@ class Promise implements PromiseInterface
         /** @var Promise $promise */
         $promise = $group['value'];
         $handlers = $group['handlers'];
-
-        switch ($promise->getState()) {
-            case 'pending':
-                // The promise is an instance of Promise, so merge in the
-                // dependent handlers into the promise.
-                $promise->handlers = array_merge($promise->handlers, $handlers);
-                return null;
-            case 'fulfilled':
-                return [
-                    'value'    => $promise->result,
-                    'handlers' => $handlers,
-                    'index'    => 1
-                ];
-            case 'rejected':
-                return [
-                    'value'    => $promise->result,
-                    'handlers' => $handlers,
-                    'index'    => 2
-                ];
+        $state = $promise->getState();
+        if ($state === self::PENDING) {
+            // The promise is an instance of Promise, so merge in the
+            // dependent handlers into the promise.
+            $promise->handlers = array_merge($promise->handlers, $handlers);
+            return null;
+        } elseif ($state === self::FULFILLED) {
+            return [
+                'value'    => $promise->result,
+                'handlers' => $handlers,
+                'index'    => 1
+            ];
+        } else { // rejected
+            return [
+                'value'    => $promise->result,
+                'handlers' => $handlers,
+                'index'    => 2
+            ];
         }
-
-        return null;
     }
 
     /**

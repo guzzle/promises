@@ -9,13 +9,10 @@ use GuzzleHttp\Promise\RejectedPromise;
  */
 class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
 {
-    public function testCannotModifyState()
+    public function testThrowsReasonWhenWaitedUpon()
     {
         $p = new RejectedPromise('foo');
         $this->assertEquals('rejected', $p->getState());
-        $p->resolve('bar');
-        $p->cancel();
-        $p->reject('baz');
         try {
             $p->wait(true);
             $this->fail();
@@ -23,6 +20,33 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
             $this->assertEquals('rejected', $p->getState());
             $this->assertContains('foo', $e->getMessage());
         }
+    }
+
+    public function testCannotCancel()
+    {
+        $p = new RejectedPromise('foo');
+        $p->cancel();
+        $this->assertEquals('rejected', $p->getState());
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @exepctedExceptionMessage Cannot resolve a rejected promise
+     */
+    public function testCannotResolve()
+    {
+        $p = new RejectedPromise('foo');
+        $p->resolve('bar');
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @exepctedExceptionMessage Cannot reject a rejected promise
+     */
+    public function testCannotReject()
+    {
+        $p = new RejectedPromise('foo');
+        $p->reject('bar');
     }
 
     public function testThrowsSpecificException()

@@ -9,14 +9,39 @@ use GuzzleHttp\Promise\FulfilledPromise;
  */
 class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
 {
-    public function testCannotModifyState()
+    public function testReturnsValueWhenWaitedUpon()
     {
         $p = new FulfilledPromise('foo');
         $this->assertEquals('fulfilled', $p->getState());
-        $p->resolve('bar');
-        $p->cancel();
-        $p->reject('baz');
         $this->assertEquals('foo', $p->wait(true));
+    }
+
+    public function testCannotCancel()
+    {
+        $p = new FulfilledPromise('foo');
+        $this->assertEquals('fulfilled', $p->getState());
+        $p->cancel();
+        $this->assertEquals('foo', $p->wait());
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @exepctedExceptionMessage Cannot resolve a fulfilled promise
+     */
+    public function testCannotResolve()
+    {
+        $p = new FulfilledPromise('foo');
+        $p->resolve('bar');
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @exepctedExceptionMessage Cannot reject a fulfilled promise
+     */
+    public function testCannotReject()
+    {
+        $p = new FulfilledPromise('foo');
+        $p->reject('bar');
     }
 
     /**

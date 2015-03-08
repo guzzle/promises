@@ -1,6 +1,7 @@
 <?php
 namespace GuzzleHttp\Tests;
 
+use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 
@@ -129,22 +130,69 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('fulfilled', $p->getState());
     }
 
+    /**
+     * @expectedException \GuzzleHttp\Promise\CancellationException
+     */
     public function testCancelsPromiseWhenNoCancelFunction()
     {
         $p = new Promise();
         $p->cancel();
-        $this->assertEquals('cancelled', $p->getState());
+        $this->assertEquals('rejected', $p->getState());
+        $p->wait();
     }
 
     public function testCancelsPromiseWithCancelFunction()
     {
         $called = false;
-        $p = new Promise(null, function () use (&$called) {
-            $called = true;
-        });
+        $p = new Promise(null, function () use (&$called) { $called = true; });
         $p->cancel();
-        $this->assertEquals('cancelled', $p->getState());
+        $this->assertEquals('rejected', $p->getState());
         $this->assertTrue($called);
+    }
+
+    public function testCancelsUppermostPendingPromise()
+    {
+        $called = false;
+        $p1 = new Promise(null, function () use (&$called) { $called = true; });
+        $p2 = $p1->then(function () {});
+        $p3 = $p2->then(function () {});
+        $p4 = $p3->then(function () {});
+        $p3->cancel();
+        $this->assertEquals('rejected', $p1->getState());
+        $this->assertEquals('rejected', $p2->getState());
+        $this->assertEquals('rejected', $p2->getState());
+        $this->assertEquals('rejected', $p4->getState());
+        $this->assertTrue($called);
+        try {
+            $p3->wait();
+            $this->fail();
+        } catch (CancellationException $e) {
+            $this->assertContains('cancelled', $e->getMessage());
+        }
+        try {
+            $p4->wait();
+            $this->fail();
+        } catch (CancellationException $e) {
+            $this->assertContains('cancelled', $e->getMessage());
+        }
+    }
+
+    public function testCancelsChildPromises()
+    {
+        $called1 = $called2 = $called3 = false;
+        $p1 = new Promise(null, function () use (&$called1) { $called1 = true; });
+        $p2 = new Promise(null, function () use (&$called2) { $called2 = true; });
+        $p3 = new Promise(null, function () use (&$called3) { $called3 = true; });
+        $p4 = $p2->then(function () use ($p3) { return $p3; });
+        $p5 = $p4->then(function () { $this->fail(); });
+        $p4->cancel();
+        $this->assertEquals('pending', $p1->getState());
+        $this->assertEquals('rejected', $p2->getState());
+        $this->assertEquals('rejected', $p4->getState());
+        $this->assertEquals('rejected', $p5->getState());
+        $this->assertFalse($called1);
+        $this->assertTrue($called2);
+        $this->assertFalse($called3);
     }
 
     public function testRejectsPromiseWhenCancelFails()
