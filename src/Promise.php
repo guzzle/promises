@@ -154,12 +154,18 @@ class Promise implements PromiseInterface
             throw new \RuntimeException("Cannot resolve a {$this->state} promise");
         }
 
+        if ($value === $this) {
+            throw new \RuntimeException('Cannot resolve a promise with itself');
+        }
+
         $this->state = self::FULFILLED;
         $this->result = $value;
         $this->cancelFn = $this->waitFn = null;
 
         if ($this->handlers) {
-            $this->deliver($value);
+            $pending = [['value' => $value, 'index' => 1, 'handlers' => $this->handlers]];
+            $this->handlers = [];
+            $this->resolveStack($pending);
         }
     }
 
@@ -169,31 +175,19 @@ class Promise implements PromiseInterface
             throw new \RuntimeException("Cannot reject a {$this->state} promise");
         }
 
+        if ($reason === $this) {
+            throw new \RuntimeException('Cannot reject a promise with itself');
+        }
+
         $this->state = self::REJECTED;
         $this->result = $reason;
         $this->cancelFn = $this->waitFn = null;
 
         if ($this->handlers) {
-            $this->deliver($reason);
+            $pending = [['value' => $reason, 'index' => 2, 'handlers' => $this->handlers]];
+            $this->handlers = [];
+            $this->resolveStack($pending);
         }
-    }
-
-    /**
-     * Deliver a resolution or rejection to the promise and dependent handlers.
-     *
-     * @param mixed $value Value to deliver.
-     */
-    private function deliver($value)
-    {
-        $pending = [
-            [
-                'value'    => $value,
-                'index'    => $this->state === self::FULFILLED ? 1 : 2,
-                'handlers' => $this->handlers
-            ]
-        ];
-        $this->handlers = [];
-        $this->resolveStack($pending);
     }
 
     /**

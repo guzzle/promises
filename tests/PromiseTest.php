@@ -454,4 +454,24 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2->resolve('foo');
         $this->assertEquals(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Cannot resolve a promise with itself
+     */
+    public function testCannotResolveWithSelf()
+    {
+        $p = new Promise();
+        $p->resolve($p);
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Cannot reject a promise with itself
+     */
+    public function testCannotRejectWithSelf()
+    {
+        $p = new Promise();
+        $p->reject($p);
+    }
 }
