@@ -80,7 +80,10 @@ class Promise implements PromiseInterface
         if ($this->state === self::PENDING) {
             if (!$this->waitFn) {
                 // If there's not wait function, then resolve the promise with
-                // the provided $defaultDelivery value.
+                // the provided $defaultDelivery value if one is set.
+                if (func_num_args() < 2) {
+                    throw new \LogicException('Cannot wait on a promise that has no internal wait function');
+                }
                 $this->resolve($defaultDelivery);
             } else {
                 try {

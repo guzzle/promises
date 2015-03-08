@@ -122,6 +122,27 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('foo', $p3->wait());
     }
 
+    /**
+     * @expectedException \LogicException
+     */
+    public function testThrowsWhenWaitingOnPromiseWithNoWaitFunction()
+    {
+        $p = new Promise();
+        $p->wait();
+    }
+
+    public function testCanProvideDefaultWaitValue()
+    {
+        $p = new Promise();
+        $this->assertEquals('foo', $p->wait(true, 'foo'));
+    }
+
+    public function testCanProvideDefaultWaitValueAsNull()
+    {
+        $p = new Promise();
+        $this->assertNull($p->wait(true, null));
+    }
+
     public function testCannotCancelNonPending()
     {
         $p = new Promise();
