@@ -18,8 +18,8 @@ class Promise implements PromiseInterface
     /** @var array[] Array of [promise, fulfilled, rejected] */
     private $handlers = [];
 
-    /** @var callable[] Dependent wait functions */
-    private $waitFns;
+    /** @var callable Wait function */
+    private $waitFn;
 
     /** @var callable */
     private $cancelFn;
@@ -52,7 +52,7 @@ class Promise implements PromiseInterface
         callable $waitFn = null,
         callable $cancelFn = null
     ) {
-        $this->waitFns = $waitFn ? [$waitFn] : [];
+        $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
     }
 
@@ -61,19 +61,7 @@ class Promise implements PromiseInterface
         callable $onRejected = null
     ) {
         if ($this->state === 'pending') {
-            $p = new Promise(
-                function () {
-                    // Provide a wait function to the dependent promise that
-                    // allows the promise to wait on parent promises. Note
-                    // that this connection is severed once the promise has
-                    // been delivered.
-                    /** @var callable $wfn */
-                    while ($wfn = array_shift($this->waitFns)) {
-                        $wfn();
-                    }
-                },
-                $this->cancelFn
-            );
+            $p = new Promise([$this, 'wait'], [$this, 'cancel']);
             // Keep track of this dependent promise so that we resolve it
             // later when a value has been delivered.
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
@@ -99,14 +87,16 @@ class Promise implements PromiseInterface
     public function wait($unwrap = true, $defaultDelivery = null)
     {
         if ($this->state === 'pending') {
-            if (!$this->waitFns) {
+            if (!$this->waitFn) {
                 // If there's not wait function, then resolve the promise with
                 // the provided $defaultDelivery value.
                 $this->resolve($defaultDelivery);
             } else {
                 try {
                     // Invoke the wait fn and ensure it resolves the promise.
-                    call_user_func(array_shift($this->waitFns));
+                    $wfn = $this->waitFn;
+                    $this->waitFn = null;
+                    $wfn();
                     if ($this->state === 'pending') {
                         throw new \LogicException('Invoking the wait callback did not resolve the promise');
                     }
@@ -122,14 +112,20 @@ class Promise implements PromiseInterface
             return null;
         }
 
+        // Wait on nested promises until a normal value is unwrapped/thrown.
+        $result = $this->result;
+        while ($result instanceof PromiseInterface) {
+            $result = $result->wait();
+        }
+
         if ($this->state === 'fulfilled') {
-            return $this->result;
+            return $result;
         }
 
         // It's rejected or cancelled, so "unwrap" and throw an exception.
-        throw $this->result instanceof \Exception
-            ? $this->result
-            : new RejectionException($this->result);
+        throw $result instanceof \Exception
+            ? $result
+            : new RejectionException($result);
     }
 
     public function getState()
@@ -143,7 +139,7 @@ class Promise implements PromiseInterface
             return;
         }
 
-        $this->waitFns = [];
+        $this->waitFn = null;
 
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
@@ -163,13 +159,12 @@ class Promise implements PromiseInterface
     public function resolve($value)
     {
         if ($this->state !== 'pending') {
-            return;
+            throw new \RuntimeException("Cannot resolve a {$this->state} promise");
         }
 
         $this->state = 'fulfilled';
         $this->result = $value;
-        $this->cancelFn = null;
-        $this->waitFns = [];
+        $this->cancelFn = $this->waitFn = null;
 
         if ($this->handlers) {
             $this->deliver($value);
@@ -179,13 +174,12 @@ class Promise implements PromiseInterface
     public function reject($reason)
     {
         if ($this->state !== 'pending') {
-            return;
+            throw new \RuntimeException("Cannot reject a {$this->state} promise");
         }
 
         $this->state = 'rejected';
         $this->result = $reason;
-        $this->cancelFn = null;
-        $this->waitFns = [];
+        $this->cancelFn = $this->waitFn = null;
 
         if ($this->handlers) {
             $this->deliver($reason);
@@ -328,7 +322,9 @@ class Promise implements PromiseInterface
 
         switch ($promise->getState()) {
             case 'pending':
-                $this->resolvePendingPromise($promise, $handlers);
+                // The promise is an instance of Promise, so merge in the
+                // dependent handlers into the promise.
+                $promise->handlers = array_merge($promise->handlers, $handlers);
                 return null;
             case 'fulfilled':
                 return [
@@ -345,34 +341,6 @@ class Promise implements PromiseInterface
         }
 
         return null;
-    }
-
-    /**
-     * The promise is pending, resolve the remaining handlers after it.
-     *
-     * @param Promise $promise Forwarded promise.
-     * @param array  $handlers Dependent handlers.
-     */
-    private function resolvePendingPromise(Promise $promise, array $handlers)
-    {
-        // The promise is an instance of Promise, so merge in the dependent
-        // handlers into the promise.
-        $promise->handlers = array_merge($promise->handlers, $handlers);
-        $waiter = [$promise, 'wait'];
-        $this->waitFns[] = $waiter;
-
-        // When the promise resolves, remove the associated pending waitFn
-        // from this promise to allow variables to be garbage collected.
-        $removeCb = function () use ($waiter) {
-            foreach ($this->waitFns as $i => $w) {
-                if ($w === $waiter) {
-                    unset($this->waitFns[$i]);
-                    break;
-                }
-            }
-        };
-
-        $promise->then($removeCb, $removeCb);
     }
 
     /**

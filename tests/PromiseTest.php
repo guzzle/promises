@@ -27,6 +27,10 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($p, Promise::promiseFor($p));
     }
 
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Cannot resolve a fulfilled promise
+     */
     public function testCannotResolveNonPendingPromise()
     {
         $p = new Promise();
@@ -35,6 +39,10 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('foo', $p->wait());
     }
 
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Cannot reject a fulfilled promise
+     */
     public function testCannotRejectNonPendingPromise()
     {
         $p = new Promise();
@@ -103,6 +111,14 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         } catch (\UnexpectedValueException $e) {
             $this->assertEquals('rejected', $p->getState());
         }
+    }
+
+    public function testWaitsOnNestedPromises()
+    {
+        $p = new Promise(function () use (&$p) { $p->resolve('_'); });
+        $p2 = new Promise(function () use (&$p2) { $p2->resolve('foo'); });
+        $p3 = $p->then(function () use ($p2) { return $p2; });
+        $this->assertSame('foo', $p3->wait());
     }
 
     public function testCannotCancelNonPending()
@@ -209,12 +225,24 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('GuzzleHttp\Promise\RejectedPromise', $p2);
     }
 
-    public function testStacksThenWaitFunctions()
+    public function testInvokesWaitFnsForThens()
     {
         $p = new Promise(function () use (&$p) { $p->resolve('a'); });
-        $p2 = $p->then(function ($v) { return $v . '-1-'; })
+        $p2 = $p
+            ->then(function ($v) { return $v . '-1-'; })
             ->then(function ($v) { return $v . '2'; });
         $this->assertEquals('a-1-2', $p2->wait());
+    }
+
+    public function testStacksThenWaitFunctions()
+    {
+        $p1 = new Promise(function () use (&$p1) { $p1->resolve('a'); });
+        $p2 = new Promise(function () use (&$p2) { $p2->resolve('b'); });
+        $p3 = new Promise(function () use (&$p3) { $p3->resolve('c'); });
+        $p4 = $p1
+            ->then(function () use ($p2) { return $p2; })
+            ->then(function () use ($p3) { return $p3; });
+        $this->assertEquals('c', $p4->wait());
     }
 
     public function testForwardsFulfilledDownChainBetweenGaps()
@@ -283,9 +311,12 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     {
         $p = new Promise();
         $p2 = new Promise();
-        $p->then(function ($v) use ($p2) { return $p2; });
+        $resolved = null;
+        $p->then(function ($v) use ($p2) { return $p2; })
+            ->then(function ($value) use (&$resolved) { $resolved = $value; });
         $p->resolve('a');
-        $p->resolve('b');
+        $p2->resolve('b');
+        $this->assertEquals('b', $resolved);
     }
 
     public function testRemovesReferenceFromChildWhenParentWaitedUpon()
