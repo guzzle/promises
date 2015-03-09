@@ -1,6 +1,11 @@
 <?php
 namespace GuzzleHttp\Promise;
 
+// Don't redefine the functions if included multiple times.
+if (function_exists('GuzzleHttp\Promise\promise_for')) {
+    return;
+}
+
 /**
  * Creates a promise for a value if the value is not a promise.
  *
