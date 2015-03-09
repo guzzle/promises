@@ -21,7 +21,11 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     public function testReturnsPromiseForThennable()
     {
         $p = new Thennable();
-        $this->assertSame($p, \GuzzleHttp\Promise\promise_for($p));
+        $wrapped = \GuzzleHttp\Promise\promise_for($p);
+        $this->assertNotSame($p, $wrapped);
+        $this->assertInstanceOf('GuzzleHttp\Promise\PromiseInterface', $wrapped);
+        $p->resolve('foo');
+        $this->assertEquals('foo', $wrapped->wait());
     }
 
     public function testWaitsOnAllPromisesIntoArray()

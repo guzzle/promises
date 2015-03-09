@@ -15,11 +15,15 @@ if (function_exists('GuzzleHttp\Promise\promise_for')) {
  */
 function promise_for($value)
 {
-    if ($value instanceof PromiseInterface
-        // Is this a thennable object?
-        || method_exists($value, 'then')
-    ) {
+    if ($value instanceof PromiseInterface) {
         return $value;
+    }
+
+    // Return a Guzzle promise that shadows the given promise.
+    if (method_exists($value, 'then')) {
+        $promise = new Promise();
+        $value->then([$promise, 'resolve'], [$promise, 'reject']);
+        return $promise;
     }
 
     return new FulfilledPromise($value);
