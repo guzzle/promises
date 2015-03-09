@@ -33,7 +33,7 @@ function promise_for($value)
  * contains either a 'value' key mapping to a fulfilled promise value or a
  * 'reason' key mapping to a rejected promise reason.
  *
- * @param PromiseInterface[] $promises
+ * @param PromiseInterface[] $promises Promises or values.
  *
  * @return array
  */
@@ -42,7 +42,7 @@ function wait(array $promises)
     $results = [];
     foreach ($promises as $promise) {
         try {
-            $results[] = ['value' => $promise->wait()];
+            $results[] = ['value' => promise_for($promise)->wait()];
         } catch (RejectionException $e) {
             $results[] = ['reason' => $e->getReason()];
         } catch (\Exception $e) {
@@ -60,7 +60,8 @@ function wait(array $promises)
  * the promises were provided). An exception is thrown if any of the promises
  * are rejected.
  *
- * @param PromiseInterface[] $promises          Array of promises to wait on.
+ * @param PromiseInterface[] $promises          Array of promises or values to
+ *                                              wait on.
  * @param mixed              $defaultResolution Default value to fulfill a
  *                                              promise with if the promise has
  *                                              no internal wait function.
@@ -73,11 +74,11 @@ function join(array $promises, $defaultResolution = null)
     if (func_num_args() < 2) {
         // Don't provide a default if none was provided to this function.
         foreach ($promises as $promise) {
-            $results[] = $promise->wait(true);
+            $results[] = promise_for($promise)->wait(true);
         }
     } else {
         foreach ($promises as $promise) {
-            $results[] = $promise->wait(true, $defaultResolution);
+            $results[] = promise_for($promise)->wait(true, $defaultResolution);
         }
     }
 
@@ -92,7 +93,7 @@ function join(array $promises, $defaultResolution = null)
  * respective positions to the original array. If any promise in the array
  * rejects, the returned promise is rejected with the rejection reason.
  *
- * @param PromiseInterface[]|object $promises
+ * @param PromiseInterface[]|object|mixed $promises Promises or values.
  *
  * @return Promise
  */
@@ -113,8 +114,8 @@ function all(array $promises)
  * fulfilled with an array that contains the fulfillment values of the winners
  * in order of resolution.
  *
- * @param int                       $count    Total number of promises.
- * @param PromiseInterface[]|object $promises Promises.
+ * @param int                             $count    Total number of promises.
+ * @param PromiseInterface[]|object|mixed $promises Promises or values.
  *
  * @return Promise
  */
@@ -140,7 +141,7 @@ function some($count, array $promises)
  * Like some(), with 1 as count. However, if the promise fulfills, the
  * fulfillment value is not an array of 1 but the value directly.
  *
- * @param array $promises
+ * @param array $promises Promises or values.
  *
  * @return PromiseInterface
  */
@@ -161,7 +162,7 @@ function any(array $promises)
  * fulfilled promise, or a 'reason' key mapping to the reason of a rejected
  * promise.
  *
- * @param PromiseInterface[]|object $promises Promises.
+ * @param PromiseInterface[]|object $promises Promises or values.
  *
  * @return Promise
  */
@@ -179,7 +180,7 @@ function settle(array $promises)
     };
 
     foreach ($promises as $idx => $promise) {
-        $promise->then(
+        promise_for($promise)->then(
             function ($value) use ($addVal, $idx) {
                 $addVal($idx, ['value' => $value]);
             },
@@ -197,7 +198,7 @@ function _then_countdown(array $promises, PromiseInterface $aggregate, $remainin
 {
     /** @var PromiseInterface $promise */
     foreach ($promises as $idx => $promise) {
-        $promise->then(
+        promise_for($promise)->then(
             function ($value) use ($idx, &$remaining, &$results, $aggregate) {
                 $results[$idx] = $value;
                 if (--$remaining === 0) {
@@ -206,9 +207,7 @@ function _then_countdown(array $promises, PromiseInterface $aggregate, $remainin
                     $aggregate->resolve(array_values($results));
                 }
             },
-            function ($reason) use ($aggregate) {
-                $aggregate->reject($reason);
-            }
+            [$aggregate, 'reject']
         );
     }
 }
