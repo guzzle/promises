@@ -48,8 +48,9 @@ function exception_for($reason)
  * as thrown exception.
  *
  * Returns an array of results where each result is an associative array that
- * contains either a 'value' key mapping to a fulfilled promise value or a
- * 'reason' key mapping to a rejected promise reason.
+ * contains a 'state' key mapping to either "fulfilled" or "rejected", and
+ * either a 'value' key mapping to a fulfilled promise value or a 'reason' key
+ * mapping to a rejected promise reason.
  *
  * @param PromiseInterface[] $promises Promises or values.
  *
@@ -60,11 +61,14 @@ function wait(array $promises)
     $results = [];
     foreach ($promises as $promise) {
         try {
-            $results[] = ['value' => promise_for($promise)->wait()];
+            $results[] = [
+                'state' => 'fulfilled',
+                'value' => promise_for($promise)->wait()
+            ];
         } catch (RejectionException $e) {
-            $results[] = ['reason' => $e->getReason()];
+            $results[] = ['state' => 'rejected', 'reason' => $e->getReason()];
         } catch (\Exception $e) {
-            $results[] = ['reason' => $e];
+            $results[] = ['state' => 'rejected','reason' => $e];
         }
     }
 
@@ -176,9 +180,10 @@ function any(array $promises)
  *
  * The returned promise is fulfilled with an array that contains associative
  * arrays for each promise in the order in which they were provided. Each
- * associative array contains either a 'value' key mapping to the value of a
- * fulfilled promise, or a 'reason' key mapping to the reason of a rejected
- * promise.
+ * result in the array is an associative array that contains a 'state' key
+ * mapping to either "fulfilled" or "rejected", and either a 'value' key
+ * mapping to a fulfilled promise value or a 'reason' key mapping to a rejected
+ * promise reason.
  *
  * @param PromiseInterface[]|object $promises Promises or values.
  *
@@ -200,10 +205,10 @@ function settle(array $promises)
     foreach ($promises as $idx => $promise) {
         promise_for($promise)->then(
             function ($value) use ($addVal, $idx) {
-                $addVal($idx, ['value' => $value]);
+                $addVal($idx, ['state' => 'fulfilled', 'value' => $value]);
             },
             function ($reason) use ($addVal, $idx) {
-                $addVal($idx, ['reason' => $reason]);
+                $addVal($idx, ['state' => 'rejected', 'reason' => $reason]);
             }
         );
     }

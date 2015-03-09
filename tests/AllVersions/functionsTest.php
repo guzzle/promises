@@ -36,9 +36,9 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $c = new Promise(function () use (&$c, $e) { $c->reject($e); });
         $results = \GuzzleHttp\Promise\wait([$a, $b, $c]);
         $this->assertEquals([
-            ['value' => 'a'],
-            ['reason' => 'b'],
-            ['reason' => $e]
+            ['state' => 'fulfilled', 'value' => 'a'],
+            ['state' => 'rejected', 'reason' => 'b'],
+            ['state' => 'rejected', 'reason' => $e]
         ], $results);
     }
 
@@ -153,9 +153,9 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('fulfilled', $d->getState());
         $d->then(function ($value) use (&$result) { $result = $value; });
         $this->assertEquals([
-            ['reason' => 'a'],
-            ['value' => 'b'],
-            ['value' => 'c']
+            ['state' => 'rejected', 'reason' => 'a'],
+            ['state' => 'fulfilled', 'value' => 'b'],
+            ['state' => 'fulfilled', 'value' => 'c']
         ], $result);
     }
 
