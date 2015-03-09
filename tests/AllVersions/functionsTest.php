@@ -158,4 +158,12 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ['value' => 'c']
         ], $result);
     }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testEnsuresIteratorIsReturnedForCoroutine()
+    {
+        \GuzzleHttp\Promise\coroutine(function () { return ':('; });
+    }
 }

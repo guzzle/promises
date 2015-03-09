@@ -42,9 +42,7 @@ class RejectedPromise implements PromiseInterface
     public function wait($unwrap = true, $defaultDelivery = null)
     {
         if ($unwrap) {
-            throw $this->reason instanceof \Exception
-                ? $this->reason
-                : new \RuntimeException($this->reason);
+            throw exception_for($this->reason);
         }
     }
 

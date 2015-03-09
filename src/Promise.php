@@ -100,9 +100,7 @@ class Promise implements PromiseInterface
         }
 
         // It's rejected or cancelled, so "unwrap" and throw an exception.
-        throw $result instanceof \Exception
-            ? $result
-            : new RejectionException($result);
+        throw exception_for($result);
     }
 
     public function getState()

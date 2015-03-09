@@ -30,6 +30,20 @@ function promise_for($value)
 }
 
 /**
+ * Create an exception for a rejected promise value.
+ *
+ * @param mixed $reason
+ *
+ * @return \Exception
+ */
+function exception_for($reason)
+{
+    return $reason instanceof \Exception
+        ? $reason
+        : new RejectionException($reason);
+}
+
+/**
  * Waits on all of the provided promises, but does not unwrap rejected promises
  * as thrown exception.
  *
@@ -195,6 +209,83 @@ function settle(array $promises)
     }
 
     return $aggregate;
+}
+
+/**
+ * Creates a promise that is resolved using a generator that yields values or
+ * promises (somewhat similar to C#'s async keyword).
+ *
+ * When called, the coroutine function will start an instance of the generator
+ * and returns a promise that is fulfilled with its final yielded value.
+ *
+ * Control is returned back to the generator when the yielded promise settles.
+ * This can lead to less verbose code when doing lots of sequential async calls
+ * with minimal processing in between.
+ *
+ * NOTE: Requires PHP 5.5 or greater.
+ *
+ *     use GuzzleHttp\Promise;
+ *
+ *     function createPromise($value) {
+ *         return new Promise\FulfilledPromise($value);
+ *     }
+ *
+ *     $promise = Promise\coroutine(function () {
+ *         $value = (yield createPromise('a'));
+ *         try {
+ *             $value = (yield createPromise($value . 'b'));
+ *         } catch (\Exception $e) {
+ *             // The promise was rejected.
+ *         }
+ *         yield $value . 'c';
+ *     });
+ *
+ *     // Outputs "abc"
+ *     $promise->then(function ($v) { echo $v; });
+ *
+ * @param callable $generatorFn Generator function to wrap into a promise.
+ *
+ * @return Promise
+ * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
+ */
+function coroutine(callable $generatorFn)
+{
+    $promise = new Promise();
+    $generator = $generatorFn();
+    if (!($generator instanceof \Iterator)) {
+        throw new \InvalidArgumentException('Function must return an iterator');
+    }
+    $yielded = $generator->current();
+    _next_coroutine($yielded, $generator, $promise);
+
+    return $promise;
+}
+
+/** @internal */
+function _next_coroutine($yielded, \Generator $generator, PromiseInterface $promise)
+{
+    promise_for($yielded)->then(
+        function ($value) use ($generator, $promise) {
+            try {
+                $nextYield = $generator->send($value);
+                if (!$generator->valid()) {
+                    $promise->resolve($value);
+                } else {
+                    _next_coroutine($nextYield, $generator, $promise);
+                }
+            } catch (\Exception $e) {
+                $promise->reject($e);
+            }
+        },
+        function ($reason) use ($generator, $promise) {
+            try{
+                $nextYield = $generator->throw(exception_for($reason));
+                _next_coroutine($nextYield, $generator, $promise);
+            } catch(\Exception $e){
+                $promise->reject($e);
+            }
+        }
+    );
 }
 
 /** @internal */
