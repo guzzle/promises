@@ -19,23 +19,6 @@ class Promise implements PromiseInterface
     private $result;
 
     /**
-     * Creates a promise for a value if the value is not a promise.
-     *
-     * @return PromiseInterface
-     */
-    public static function promiseFor($value)
-    {
-        if ($value instanceof PromiseInterface
-            // Is this a thennable object?
-            || method_exists($value, 'then')
-        ) {
-            return $value;
-        }
-
-        return new FulfilledPromise($value);
-    }
-
-    /**
      * @param callable $waitFn   Fn that when invoked resolves the promise.
      * @param callable $cancelFn Fn that when invoked cancels the promise.
      */
@@ -62,8 +45,8 @@ class Promise implements PromiseInterface
         // Return a fulfilled promise and immediately invoke any callbacks.
         if ($this->state === self::FULFILLED) {
             return $onFulfilled
-                ? self::promiseFor($this->result)->then($onFulfilled)
-                : self::promiseFor($this->result);
+                ? promise_for($this->result)->then($onFulfilled)
+                : promise_for($this->result);
         }
 
         // It's either cancelled or rejected, so return a rejected promise

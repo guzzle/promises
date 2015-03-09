@@ -20,6 +20,7 @@
     "autoload": {
         "psr-4": {
             "GuzzleHttp\\Promise\\": "src/"
-        }
+        },
+        "files": ["src/functions.php"]
     }
 }

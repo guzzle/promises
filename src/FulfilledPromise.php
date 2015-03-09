@@ -32,7 +32,7 @@ class FulfilledPromise implements PromiseInterface
 
         try {
             // Return a new fulfilled if onFulfilled does not throw.
-            return Promise::promiseFor($onFulfilled($this->value));
+            return promise_for($onFulfilled($this->value));
         } catch (\Exception $e) {
             // Return a rejected promise be onFulfilled failed.
             return new RejectedPromise($e);

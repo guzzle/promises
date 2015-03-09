@@ -8,26 +8,8 @@ use GuzzleHttp\Promise\RejectedPromise;
 /**
  * @covers GuzzleHttp\Promise\Promise
  */
-class PromiseTest extends \PHPUnit_Framework_TestCase
+class FunctionsTest extends \PHPUnit_Framework_TestCase
 {
-    public function testCreatesPromiseForValue()
-    {
-        $p = Promise::promiseFor('foo');
-        $this->assertInstanceOf('GuzzleHttp\Promise\FulfilledPromise', $p);
-    }
-
-    public function testReturnsPromiseForPromise()
-    {
-        $p = new Promise();
-        $this->assertSame($p, Promise::promiseFor($p));
-    }
-
-    public function testReturnsPromiseForThennable()
-    {
-        $p = new Thennable();
-        $this->assertSame($p, Promise::promiseFor($p));
-    }
-
     /**
      * @expectedException \RuntimeException
      * @expectedExceptionMessage Cannot resolve a fulfilled promise

@@ -32,7 +32,7 @@ class RejectedPromise implements PromiseInterface
 
         try {
             // Return a resolved promise if onRejected does not throw.
-            return Promise::promiseFor($onRejected($this->reason));
+            return promise_for($onRejected($this->reason));
         } catch (\Exception $e) {
             // onRejected threw, so return a rejected promise.
             return new static($e);
