@@ -22,7 +22,10 @@ class RejectionException extends \RuntimeException
         if (is_string($reason)
             || (is_object($reason) && method_exists($reason, '__toString'))
         ) {
-            $message .= ' with value: ' . $this->reason;
+            $message .= ' with reason: ' . $this->reason;
+        } elseif (is_array($reason) || $reason instanceof \JsonSerializable) {
+            $message .= ' with reason: '
+                . json_encode($this->reason, JSON_PRETTY_PRINT, 20);
         }
 
         parent::__construct($message);

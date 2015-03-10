@@ -27,6 +27,13 @@ class RejectionExceptionTest extends \PHPUnit_Framework_TestCase
         $e = new RejectionException($thing);
 
         $this->assertSame($thing, $e->getReason());
-        $this->assertEquals('The promise was rejected with value: foo', $e->getMessage());
+        $this->assertEquals('The promise was rejected with reason: foo', $e->getMessage());
+    }
+
+    public function testCanGetReasonMessageFromArrayOrJson()
+    {
+        $reason = ['foo' => 'bar'];
+        $e = new RejectionException($reason);
+        $this->assertContains("{\n    \"foo\": \"bar\"\n}", $e->getMessage());
     }
 }

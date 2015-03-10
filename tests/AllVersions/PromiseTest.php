@@ -4,6 +4,7 @@ namespace GuzzleHttp\Tests;
 use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\RejectionException;
 
 /**
  * @covers GuzzleHttp\Promise\Promise
@@ -57,7 +58,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \GuzzleHttp\Promise\RejectionException
-     * @expectedExceptionMessage The promise was rejected with value: foo
+     * @expectedExceptionMessage The promise was rejected with reason: foo
      */
     public function testThrowsWhenUnwrapIsRejectedWithNonException()
     {
@@ -356,6 +357,11 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $p->reject('foo');
         $this->assertEquals('foo', $r);
         $this->assertEquals('bar', $r2);
+        try {
+            $p->wait();
+        } catch (RejectionException $e) {
+            $this->assertEquals('foo', $e->getReason());
+        }
     }
 
     public function testForwardsHandlersToNextPromise()
