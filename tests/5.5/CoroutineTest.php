@@ -57,4 +57,62 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
         $this->assertEquals('no!', $result->getReason());
     }
+
+    public function testCanAsyncReject()
+    {
+        $rej = new Promise\Promise();
+        $promise = Promise\coroutine(function () use ($rej) {
+            yield new Promise\FulfilledPromise(0);
+            yield $rej;
+        });
+        $promise->then(
+            function () { $this->fail(); },
+            function ($reason) use (&$result) { $result = $reason; }
+        );
+        $rej->reject('no!');
+        $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
+        $this->assertEquals('no!', $result->getReason());
+    }
+
+    public function testLotsOfSynchronousDoesNotBlowStack()
+    {
+        $promise = Promise\coroutine(function () {
+            $value = 0;
+            for ($i = 0; $i < 1000; $i++) {
+                $value = (yield new Promise\FulfilledPromise($i));
+            }
+            yield $value;
+        });
+        $promise->then(function ($v) use (&$r) { $r = $v; });
+        $this->assertEquals(999, $r);
+    }
+
+    public function testAsyncPromisesWithCorrectlyYieldedValues()
+    {
+        $promises = [
+            new Promise\Promise(),
+            new Promise\Promise(),
+            new Promise\Promise()
+        ];
+
+        $promise = Promise\coroutine(function () use ($promises) {
+            $value = null;
+            $this->assertEquals('skip', (yield new Promise\FulfilledPromise('skip')));
+            foreach ($promises as $idx => $p) {
+                $value = (yield $p);
+                $this->assertEquals($value, $idx);
+                $this->assertEquals('skip', (yield new Promise\FulfilledPromise('skip')));
+            }
+            $this->assertEquals('skip', (yield new Promise\FulfilledPromise('skip')));
+            yield $value;
+        });
+
+        // Resolve out of order.
+        $promises[1]->resolve(1);
+        $promises[0]->resolve(0);
+        $promises[2]->resolve(2);
+
+        $promise->then(function ($v) use (&$r) { $r = $v; });
+        $this->assertEquals(2, $r);
+    }
 }

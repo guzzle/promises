@@ -274,18 +274,25 @@ function _next_coroutine($yielded, \Generator $generator, PromiseInterface $prom
     promise_for($yielded)->then(
         function ($value) use ($generator, $promise) {
             try {
+                retry:
                 $nextYield = $generator->send($value);
                 if (!$generator->valid()) {
                     $promise->resolve($value);
-                } else {
+                } elseif (!($nextYield instanceof PromiseInterface)
+                    || $nextYield->getState() === PromiseInterface::PENDING) {
                     _next_coroutine($nextYield, $generator, $promise);
+                } elseif ($nextYield->getState() === PromiseInterface::REJECTED) {
+                    $nextYield->wait();
+                } else {
+                    $value = $nextYield->wait();
+                    goto retry;
                 }
             } catch (\Exception $e) {
                 $promise->reject($e);
             }
         },
         function ($reason) use ($generator, $promise) {
-            try{
+            try {
                 $nextYield = $generator->throw(exception_for($reason));
                 _next_coroutine($nextYield, $generator, $promise);
             } catch(\Exception $e){
