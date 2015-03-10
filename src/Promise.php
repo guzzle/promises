@@ -61,28 +61,20 @@ class Promise implements PromiseInterface
     public function wait($unwrap = true, $defaultDelivery = null)
     {
         if ($this->state === self::PENDING) {
-            if (!$this->waitFn) {
+            $this->cancelFn = null;
+            if ($this->waitFn) {
+                $this->invokeWait();
+            } elseif (func_num_args() < 2) {
                 // If there's not wait function, then resolve the promise with
                 // the provided $defaultDelivery value if one is set.
-                if (func_num_args() < 2) {
-                    throw new \LogicException('Cannot wait on a promise that has no internal wait function');
-                }
-                $this->resolve($defaultDelivery);
+                throw new \LogicException('Cannot wait on a promise that has '
+                    . 'no internal wait function. Either provide a wait '
+                    . 'function when constructing the promise, or provide a '
+                    . '$defaultDelivery argument to the wait function to '
+                    . 'resolve the promise with a default value.');
             } else {
-                try {
-                    // Invoke the wait fn and ensure it resolves the promise.
-                    $wfn = $this->waitFn;
-                    $this->waitFn = null;
-                    $wfn();
-                    if ($this->state === self::PENDING) {
-                        throw new \LogicException('Invoking the wait callback did not resolve the promise');
-                    }
-                } catch (\Exception $e) {
-                    // Bubble up wait exceptions to reject this promise.
-                    $this->reject($e);
-                }
+                $this->resolve($defaultDelivery);
             }
-            $this->cancelFn = null;
         }
 
         if (!$unwrap) {
@@ -338,5 +330,30 @@ class Promise implements PromiseInterface
                 $this->resolveStack($stack);
             }
         );
+    }
+
+    private function invokeWait()
+    {
+        $wfn = $this->waitFn;
+        $this->waitFn = null;
+
+        try {
+            // Invoke the wait fn and ensure it resolves the promise.
+            $wfn();
+        } catch (\Exception $reason) {
+            // Encountering an exception in a wait method has two possibilities:
+            // 1) The promise is already fulfilled/rejected, so ignore the
+            //    exception. This can happen when waiting triggers callbacks
+            //    that resolve the promise before an exception is thrown.
+            // 2) The promise is still pending, so reject the promise with the
+            //    encountered exception.
+            if ($this->state === self::PENDING) {
+                $this->reject($reason);
+            }
+        }
+
+        if ($this->state === self::PENDING) {
+            throw new \LogicException('Invoking the wait callback did not resolve the promise');
+        }
     }
 }

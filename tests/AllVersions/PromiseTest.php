@@ -126,6 +126,36 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($p->wait(true, null));
     }
 
+    public function testIgnoresWaitExceptionWhenPromiseIsResolved()
+    {
+        $p = new Promise(function () use (&$p) {
+            $p->reject('Foo!');
+            throw new \Exception('Bar?');
+        });
+
+        try {
+            $p->wait();
+            $this->fail();
+        } catch (RejectionException $e) {
+            $this->assertEquals('Foo!', $e->getReason());
+        }
+    }
+
+    public function testGetsActualWaitValueFromThen()
+    {
+        $p = new Promise(function () use (&$p) { $p->reject('Foo!'); });
+        $p2 = $p->then(null, function ($reason) {
+            return new RejectedPromise([$reason]);
+        });
+
+        try {
+            $p2->wait();
+            $this->fail('Should have thrown');
+        } catch (RejectionException $e) {
+            $this->assertEquals(['Foo!'], $e->getReason());
+        }
+    }
+
     public function testCannotCancelNonPending()
     {
         $p = new Promise();
