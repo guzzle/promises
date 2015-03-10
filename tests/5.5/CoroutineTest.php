@@ -107,12 +107,26 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             yield $value;
         });
 
-        // Resolve out of order.
-        $promises[1]->resolve(1);
         $promises[0]->resolve(0);
+        $promises[1]->resolve(1);
         $promises[2]->resolve(2);
 
         $promise->then(function ($v) use (&$r) { $r = $v; });
         $this->assertEquals(2, $r);
+    }
+
+    public function testCanWaitOnCoroutine()
+    {
+        $p1 = new Promise\Promise(function () use (&$p1) {
+            $p1->resolve('skip me');
+        });
+        $p2 = new Promise\Promise(function () use (&$p2) {
+            $p2->resolve('hello!');
+        });
+        $co = Promise\coroutine(function() use ($p1, $p2) {
+            yield $p1;
+            yield $p2;
+        });
+        $this->assertEquals('hello!', $co->wait());
     }
 }
