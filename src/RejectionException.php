@@ -25,7 +25,7 @@ class RejectionException extends \RuntimeException
             $message .= ' with reason: ' . $this->reason;
         } elseif (is_array($reason) || $reason instanceof \JsonSerializable) {
             $message .= ' with reason: '
-                . json_encode($this->reason, JSON_PRETTY_PRINT, 20);
+                . json_encode($this->reason, JSON_PRETTY_PRINT);
         }
 
         parent::__construct($message);

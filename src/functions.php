@@ -259,8 +259,8 @@ function coroutine(callable $generatorFn)
 {
     $promise = new Promise();
     $generator = $generatorFn();
-    if (!($generator instanceof \Iterator)) {
-        throw new \InvalidArgumentException('Function must return an iterator');
+    if (!($generator instanceof \Generator)) {
+        throw new \InvalidArgumentException('Function must return a generator');
     }
     $yielded = $generator->current();
     _next_coroutine($yielded, $generator, $promise);
