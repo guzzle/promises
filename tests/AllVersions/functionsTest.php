@@ -3,6 +3,7 @@ namespace GuzzleHttp\Tests;
 
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\RejectedPromise;
 
 class PromiseTest extends \PHPUnit_Framework_TestCase
 {
@@ -45,22 +46,22 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     /**
      * @expectedException \LogicException
      */
-    public function testJoinsPromisesWithNoDefaultAndFailure()
+    public function testUnwrapsPromisesWithNoDefaultAndFailure()
     {
         $promises = [new FulfilledPromise('a'), new Promise()];
-        \GuzzleHttp\Promise\join($promises);
+        \GuzzleHttp\Promise\unwrap($promises);
     }
 
-    public function testJoinsPromisesWithNoDefault()
+    public function testUnwrapsPromisesWithNoDefault()
     {
         $promises = [new FulfilledPromise('a')];
-        $this->assertEquals(['a'], \GuzzleHttp\Promise\join($promises));
+        $this->assertEquals(['a'], \GuzzleHttp\Promise\unwrap($promises));
     }
 
-    public function testJoinsPromisesWithDefault()
+    public function testUnwrapsPromisesWithDefault()
     {
         $promises = [new FulfilledPromise('a'), new Promise()];
-        $results = \GuzzleHttp\Promise\join($promises, 'b');
+        $results = \GuzzleHttp\Promise\unwrap($promises, 'b');
         $this->assertEquals(['a', 'b'], $results);
     }
 
@@ -165,5 +166,33 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     public function testEnsuresIteratorIsReturnedForCoroutine()
     {
         \GuzzleHttp\Promise\coroutine(function () { return ':('; });
+    }
+
+    public function testCanInspectFulfilledPromise()
+    {
+        $p = new FulfilledPromise('foo');
+        $this->assertEquals([
+            'state' => 'fulfilled',
+            'value' => 'foo'
+        ], \GuzzleHttp\Promise\inspect($p));
+    }
+
+    public function testCanInspectRejectedPromise()
+    {
+        $p = new RejectedPromise('foo');
+        $this->assertEquals([
+            'state'  => 'rejected',
+            'reason' => 'foo'
+        ], \GuzzleHttp\Promise\inspect($p));
+    }
+
+    public function testCanInspectRejectedPromiseWithNormalException()
+    {
+        $e = new \Exception('foo');
+        $p = new RejectedPromise($e);
+        $this->assertEquals([
+            'state'  => 'rejected',
+            'reason' => $e
+        ], \GuzzleHttp\Promise\inspect($p));
     }
 }

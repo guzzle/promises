@@ -46,32 +46,49 @@ function exception_for($reason)
 }
 
 /**
- * Waits on all of the provided promises, but does not unwrap rejected promises
- * as thrown exception.
+ * Synchronously waits on a promise to resolve and returns an inspection state
+ * array.
  *
- * Returns an array of results where each result is an associative array that
- * contains a 'state' key mapping to either "fulfilled" or "rejected", and
- * either a 'value' key mapping to a fulfilled promise value or a 'reason' key
- * mapping to a rejected promise reason.
+ * Returns a state associative array containing a "state" key mapping to a
+ * valid promise state. If the state of the promise is "fulfilled", the array
+ * will contain a "value" key mapping to the fulfilled value of the promise. If
+ * the promise is rejected, the array will contain a "reason" key mapping to
+ * the rejection reason of the promise.
  *
- * @param PromiseInterface[] $promises Promises or values.
+ * @param PromiseInterface $promise Promise or value.
  *
  * @return array
  */
-function wait(array $promises)
+function inspect(PromiseInterface $promise)
+{
+    try {
+        return [
+            'state' => PromiseInterface::FULFILLED,
+            'value' => $promise->wait()
+        ];
+    } catch (RejectionException $e) {
+        return ['state' => 'rejected', 'reason' => $e->getReason()];
+    } catch (\Exception $e) {
+        return ['state' => 'rejected', 'reason' => $e];
+    }
+}
+
+/**
+ * Waits on all of the provided promises, but does not unwrap rejected promises
+ * as thrown exception.
+ *
+ * Returns an array of inspection state arrays.
+ *
+ * @param PromiseInterface[] $promises Traversable of promises to wait upon.
+ *
+ * @return array
+ * @see GuzzleHttp\Promise\inspect for the inspection state array format.
+ */
+function wait($promises)
 {
     $results = [];
     foreach ($promises as $promise) {
-        try {
-            $results[] = [
-                'state' => 'fulfilled',
-                'value' => promise_for($promise)->wait()
-            ];
-        } catch (RejectionException $e) {
-            $results[] = ['state' => 'rejected', 'reason' => $e->getReason()];
-        } catch (\Exception $e) {
-            $results[] = ['state' => 'rejected','reason' => $e];
-        }
+        $results[] = inspect($promise);
     }
 
     return $results;
@@ -84,25 +101,24 @@ function wait(array $promises)
  * the promises were provided). An exception is thrown if any of the promises
  * are rejected.
  *
- * @param PromiseInterface[] $promises          Array of promises or values to
- *                                              wait on.
+ * @param PromiseInterface[] $promises          Promises to wait on.
  * @param mixed              $defaultResolution Default value to fulfill a
  *                                              promise with if the promise has
  *                                              no internal wait function.
  * @return array
- * @throws \Exception on error.
+ * @throws \Exception on error
  */
-function join(array $promises, $defaultResolution = null)
+function unwrap($promises, $defaultResolution = null)
 {
     $results = [];
     if (func_num_args() < 2) {
         // Don't provide a default if none was provided to this function.
         foreach ($promises as $promise) {
-            $results[] = promise_for($promise)->wait(true);
+            $results[] = $promise->wait();
         }
     } else {
         foreach ($promises as $promise) {
-            $results[] = promise_for($promise)->wait(true, $defaultResolution);
+            $results[] = $promise->wait(true, $defaultResolution);
         }
     }
 
@@ -123,7 +139,7 @@ function join(array $promises, $defaultResolution = null)
  */
 function all(array $promises)
 {
-    $waitFn = function () use ($promises) { join($promises); };
+    $waitFn = function () use ($promises) { unwrap($promises); };
     $aggregate = new Promise($waitFn);
     _then_countdown($promises, $aggregate, count($promises));
 
@@ -180,20 +196,16 @@ function any(array $promises)
  * Returns a promise that is fulfilled when all of the provided promises have
  * been fulfilled or rejected.
  *
- * The returned promise is fulfilled with an array that contains associative
- * arrays for each promise in the order in which they were provided. Each
- * result in the array is an associative array that contains a 'state' key
- * mapping to either "fulfilled" or "rejected", and either a 'value' key
- * mapping to a fulfilled promise value or a 'reason' key mapping to a rejected
- * promise reason.
+ * The returned promise is fulfilled with an array of inspection state arrays.
  *
  * @param PromiseInterface[]|object $promises Promises or values.
  *
  * @return Promise
+ * @see GuzzleHttp\Promise\inspect for the inspection state array format.
  */
 function settle(array $promises)
 {
-    $waitFn = function () use ($promises) { join($promises); };
+    $waitFn = function () use ($promises) { unwrap($promises); };
     $aggregate = new Promise($waitFn);
     $remaining = count($promises);
     $addVal = function ($idx, $value) use ($aggregate, &$remaining, &$results) {
