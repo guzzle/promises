@@ -85,7 +85,7 @@ class Promise implements PromiseInterface
         }
 
         // Wait on nested promises until a normal value is unwrapped/thrown.
-        return $this->then()->wait($unwrap);
+        return $this->result->wait($unwrap);
     }
 
     public function getState()
