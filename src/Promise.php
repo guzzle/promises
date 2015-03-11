@@ -230,7 +230,9 @@ class Promise implements PromiseInterface
         }
 
         // You can return a rejected promise to forward a rejection.
-        if ($nextValue instanceof RejectedPromise) {
+        if ($nextValue instanceof PromiseInterface
+            && $nextValue->getState() === self::REJECTED
+        ) {
             return $this->handleRejection($nextValue, $handler);
         }
 
