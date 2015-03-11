@@ -108,7 +108,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p->wait();
     }
 
-    public function testIgnoresWaitExceptionWhenPromiseIsResolved()
+    public function testThrowsWaitExceptionAfterPromiseIsResolved()
     {
         $p = new Promise(function () use (&$p) {
             $p->reject('Foo!');
@@ -118,8 +118,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         try {
             $p->wait();
             $this->fail();
-        } catch (RejectionException $e) {
-            $this->assertEquals('Foo!', $e->getReason());
+        } catch (\Exception $e) {
+            $this->assertEquals('Bar?', $e->getMessage());
         }
     }
 
@@ -136,6 +136,14 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         } catch (RejectionException $e) {
             $this->assertEquals(['Foo!'], $e->getReason());
         }
+    }
+
+    public function testWaitBehaviorIsBasedOnLastPromiseInChain()
+    {
+        $p3 = new Promise(function () use (&$p3) { $p3->resolve('Whoop'); });
+        $p2 = new Promise(function () use (&$p2, $p3) { $p2->reject($p3); });
+        $p = new Promise(function () use (&$p, $p2) { $p->reject($p2); });
+        $this->assertEquals('Whoop', $p->wait());
     }
 
     public function testCannotCancelNonPending()

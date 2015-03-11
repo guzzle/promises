@@ -35,7 +35,10 @@ class Promise implements PromiseInterface
         callable $onRejected = null
     ) {
         if ($this->state === self::PENDING) {
-            $p = new Promise([$this, 'wait'], [$this, 'cancel']);
+            $p = new Promise(function () {
+                // Wait on the parent but don't unwrap exceptions.
+                $this->wait(false);
+            }, [$this, 'cancel']);
             // Keep track of this dependent promise so that we resolve it
             // later when a value has been delivered.
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
@@ -73,22 +76,30 @@ class Promise implements PromiseInterface
             }
         }
 
-        if (!$unwrap) {
-            return null;
+        // If there's no promise forwarding, then return/throw what we have.
+        if (!($this->result instanceof PromiseInterface)) {
+            if (!$unwrap) {
+                return null;
+            } elseif ($this->state === self::FULFILLED) {
+                return $this->result;
+            }
+            // It's rejected so "unwrap" and throw an exception.
+            throw exception_for($this->result);
         }
 
         // Wait on nested promises until a normal value is unwrapped/thrown.
-        $result = $this->result;
-        while ($result instanceof PromiseInterface) {
-            $result = $result->wait();
+        try {
+            $result = $this->result;
+            while ($result instanceof PromiseInterface) {
+                $result = $result->wait();
+            }
+            return $unwrap ? $result : null;
+        } catch (\Exception $result) {
+            if ($unwrap) {
+                throw $result;
+            }
+            return null;
         }
-
-        if ($this->state === self::FULFILLED) {
-            return $result;
-        }
-
-        // It's rejected or cancelled, so "unwrap" and throw an exception.
-        throw exception_for($result);
     }
 
     public function getState()
@@ -339,14 +350,14 @@ class Promise implements PromiseInterface
             // Invoke the wait fn and ensure it resolves the promise.
             $wfn();
         } catch (\Exception $reason) {
-            // Encountering an exception in a wait method has two possibilities:
-            // 1) The promise is already fulfilled/rejected, so ignore the
-            //    exception. This can happen when waiting triggers callbacks
-            //    that resolve the promise before an exception is thrown.
-            // 2) The promise is still pending, so reject the promise with the
-            //    encountered exception.
             if ($this->state === self::PENDING) {
+                // The promise has not been resolved yet, so reject the promise
+                // with the exception.
                 $this->reject($reason);
+            } else {
+                // The promise was already resolved, so there's a problem in
+                // the application.
+                throw $reason;
             }
         }
 
