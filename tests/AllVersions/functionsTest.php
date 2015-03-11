@@ -5,7 +5,7 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 
-class PromiseTest extends \PHPUnit_Framework_TestCase
+class FunctionsTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreatesPromiseForValue()
     {
@@ -44,7 +44,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \LogicException
+     * @expectedException \GuzzleHttp\Promise\RejectionException
      */
     public function testUnwrapsPromisesWithNoDefaultAndFailure()
     {
@@ -56,13 +56,6 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     {
         $promises = [new FulfilledPromise('a')];
         $this->assertEquals(['a'], \GuzzleHttp\Promise\unwrap($promises));
-    }
-
-    public function testUnwrapsPromisesWithDefault()
-    {
-        $promises = [new FulfilledPromise('a'), new Promise()];
-        $results = \GuzzleHttp\Promise\unwrap($promises, 'b');
-        $this->assertEquals(['a', 'b'], $results);
     }
 
     public function testAllAggregatesSortedArray()

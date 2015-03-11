@@ -9,7 +9,7 @@ use GuzzleHttp\Promise\RejectionException;
 /**
  * @covers GuzzleHttp\Promise\Promise
  */
-class FunctionsTest extends \PHPUnit_Framework_TestCase
+class PromiseTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @expectedException \RuntimeException
@@ -41,16 +41,10 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('10', $p->wait());
     }
 
-    public function testResolvesWithDefaultWhenNoWaitFunction()
-    {
-        $p = new Promise();
-        $this->assertEquals('10', $p->wait(true, '10'));
-    }
-
     /**
-     * @expectedException \LogicException
+     * @expectedException \GuzzleHttp\Promise\RejectionException
      */
-    public function testThrowsWhenWaitFailsToResolve()
+    public function testRejectsAndThrowsWhenWaitFailsToResolve()
     {
         $p = new Promise(function () {});
         $p->wait();
@@ -106,24 +100,12 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \LogicException
+     * @expectedException \GuzzleHttp\Promise\RejectionException
      */
     public function testThrowsWhenWaitingOnPromiseWithNoWaitFunction()
     {
         $p = new Promise();
         $p->wait();
-    }
-
-    public function testCanProvideDefaultWaitValue()
-    {
-        $p = new Promise();
-        $this->assertEquals('foo', $p->wait(true, 'foo'));
-    }
-
-    public function testCanProvideDefaultWaitValueAsNull()
-    {
-        $p = new Promise();
-        $this->assertNull($p->wait(true, null));
     }
 
     public function testIgnoresWaitExceptionWhenPromiseIsResolved()

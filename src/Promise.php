@@ -58,22 +58,18 @@ class Promise implements PromiseInterface
         return new RejectedPromise($this->result);
     }
 
-    public function wait($unwrap = true, $defaultDelivery = null)
+    public function wait($unwrap = true)
     {
         if ($this->state === self::PENDING) {
             $this->cancelFn = null;
             if ($this->waitFn) {
                 $this->invokeWait();
-            } elseif (func_num_args() < 2) {
-                // If there's not wait function, then resolve the promise with
-                // the provided $defaultDelivery value if one is set.
-                throw new \LogicException('Cannot wait on a promise that has '
-                    . 'no internal wait function. Either provide a wait '
-                    . 'function when constructing the promise, or provide a '
-                    . '$defaultDelivery argument to the wait function to '
-                    . 'resolve the promise with a default value.');
             } else {
-                $this->resolve($defaultDelivery);
+                // If there's not wait function, then reject the promise.
+                $this->reject('Cannot wait on a promise that has '
+                    . 'no internal wait function. You must provide a wait '
+                    . 'function when constructing the promise to be able to '
+                    . 'wait on a promise.');
             }
         }
 
@@ -355,7 +351,7 @@ class Promise implements PromiseInterface
         }
 
         if ($this->state === self::PENDING) {
-            throw new \LogicException('Invoking the wait callback did not resolve the promise');
+            $this->reject('Invoking the wait callback did not resolve the promise');
         }
     }
 }

@@ -101,25 +101,16 @@ function wait($promises)
  * the promises were provided). An exception is thrown if any of the promises
  * are rejected.
  *
- * @param PromiseInterface[] $promises          Promises to wait on.
- * @param mixed              $defaultResolution Default value to fulfill a
- *                                              promise with if the promise has
- *                                              no internal wait function.
+ * @param PromiseInterface[] $promises Promises to wait on.
+ *
  * @return array
  * @throws \Exception on error
  */
-function unwrap($promises, $defaultResolution = null)
+function unwrap($promises)
 {
     $results = [];
-    if (func_num_args() < 2) {
-        // Don't provide a default if none was provided to this function.
-        foreach ($promises as $promise) {
-            $results[] = $promise->wait();
-        }
-    } else {
-        foreach ($promises as $promise) {
-            $results[] = $promise->wait(true, $defaultResolution);
-        }
+    foreach ($promises as $promise) {
+        $results[] = $promise->wait();
     }
 
     return $results;

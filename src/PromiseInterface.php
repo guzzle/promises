@@ -68,18 +68,13 @@ interface PromiseInterface
      * Pass $unwrap as true to unwrap the result of the promise, either
      * returning the resolved value or throwing the rejected exception.
      *
-     * If the promise cannot be waited on, then the promise will be resolve
-     * with the $defaultResolutionValue if a value is provided. Implementations
-     * will need to be able to differentiate between providing `null` and
-     * providing no value at all (e.g., use func_num_args() < 2). If not
-     * default resolution is provided, then a \LogicException is thrown.
+     * If the promise cannot be waited on, then the promise will be rejected.
      *
-     * @param bool  $unwrap
-     * @param mixed $defaultResolution
+     * @param bool $unwrap
      *
      * @return mixed
      * @throws \LogicException
      * @throws \Exception
      */
-    public function wait($unwrap = true, $defaultResolution = null);
+    public function wait($unwrap = true);
 }
