@@ -2,13 +2,8 @@
 
 [Promises/A+](https://promisesaplus.com/) implementation that handles promise
 chaining and resolution iteratively, allowing for "infinite" promise chaining
-while keeping the stack size constant.
-
-Read [this blog post](https://blog.domenic.me/youre-missing-the-point-of-promises/)
+while keeping the stack size constant. Read [this blog post](https://blog.domenic.me/youre-missing-the-point-of-promises/)
 for a general introduction to promises.
-
-
-# Topics
 
 - [Features](#features)
 - [Quick start](#quick-start)
