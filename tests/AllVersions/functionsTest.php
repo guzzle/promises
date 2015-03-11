@@ -29,6 +29,20 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('foo', $wrapped->wait());
     }
 
+    public function testReturnsRejection()
+    {
+        $p = \GuzzleHttp\Promise\rejection_for('fail');
+        $this->assertInstanceOf('GuzzleHttp\Promise\RejectedPromise', $p);
+        $this->assertEquals('fail', $this->readAttribute($p, 'reason'));
+    }
+
+    public function testReturnsPromisesAsIsInRejectionFor()
+    {
+        $a = new Promise();
+        $b = \GuzzleHttp\Promise\rejection_for($a);
+        $this->assertSame($a, $b);
+    }
+
     public function testWaitsOnAllPromisesIntoArray()
     {
         $e = new \Exception();

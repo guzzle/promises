@@ -54,11 +54,8 @@ class Promise implements PromiseInterface
 
         // It's either cancelled or rejected, so return a rejected promise
         // and immediately invoke any callbacks.
-        if ($onRejected) {
-            return (new RejectedPromise($this->result))->then(null, $onRejected);
-        }
-
-        return new RejectedPromise($this->result);
+        $rejection = rejection_for($this->result);
+        return $onRejected ? $rejection->then(null, $onRejected) : $rejection;
     }
 
     public function wait($unwrap = true)
@@ -88,18 +85,7 @@ class Promise implements PromiseInterface
         }
 
         // Wait on nested promises until a normal value is unwrapped/thrown.
-        try {
-            $result = $this->result;
-            while ($result instanceof PromiseInterface) {
-                $result = $result->wait();
-            }
-            return $unwrap ? $result : null;
-        } catch (\Exception $result) {
-            if ($unwrap) {
-                throw $result;
-            }
-            return null;
-        }
+        return $this->then()->wait($unwrap);
     }
 
     public function getState()

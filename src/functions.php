@@ -32,6 +32,23 @@ function promise_for($value)
 }
 
 /**
+ * Creates a rejected promise for a reason if the reason is not a promise. If
+ * the provided reason is a promise, then it is returned as-is.
+ *
+ * @param mixed $reason Promise or reason.
+ *
+ * @return PromiseInterface
+ */
+function rejection_for($reason)
+{
+    if ($reason instanceof PromiseInterface) {
+        return $reason;
+    }
+
+    return new RejectedPromise($reason);
+}
+
+/**
  * Create an exception for a rejected promise value.
  *
  * @param mixed $reason
