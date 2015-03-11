@@ -84,7 +84,7 @@ function inspect(PromiseInterface $promise)
  * @return array
  * @see GuzzleHttp\Promise\inspect for the inspection state array format.
  */
-function wait($promises)
+function inspect_all($promises)
 {
     $results = [];
     foreach ($promises as $promise) {

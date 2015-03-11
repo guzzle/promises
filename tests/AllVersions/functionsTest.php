@@ -35,7 +35,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $b = new Promise(function () use (&$b) { $b->reject('b'); });
         $c = new Promise(function () use (&$c, $e) { $c->reject($e); });
-        $results = \GuzzleHttp\Promise\wait([$a, $b, $c]);
+        $results = \GuzzleHttp\Promise\inspect_all([$a, $b, $c]);
         $this->assertEquals([
             ['state' => 'fulfilled', 'value' => 'a'],
             ['state' => 'rejected', 'reason' => 'b'],
