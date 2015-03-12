@@ -93,8 +93,7 @@ class Promise implements PromiseInterface
             return;
         }
 
-        $this->waitFn = null;
-        $this->waitList = [];
+        $this->waitFn = $this->waitList = null;
 
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
@@ -141,8 +140,7 @@ class Promise implements PromiseInterface
 
         $this->state = $state;
         $this->result = $value;
-        $this->cancelFn = $this->waitFn = null;
-        $this->waitList = [];
+        $this->cancelFn = $this->waitFn = $this->waitList = null;
 
         if (!$this->handlers) {
             return null;
@@ -357,12 +355,15 @@ class Promise implements PromiseInterface
     ) {
         // Instead of waiting with recursion, create a wait function that waits
         // on each waiter in a list one after the other.
-        $waitList = $this->waitList;
+        $waitList = $this->waitList ? clone $this->waitList : new \SplQueue();
         $waitList[] = [$this, 'wait'];
-        $p = new Promise(function () use (&$p) {
-            /** @var callable $wfn */
-            while ($wfn = array_shift($p->waitList)) {
-                $wfn(false);
+
+        $p = new Promise(static function () use (&$p) {
+            if (count($p->waitList)) {
+                /** @var callable $wfn */
+                foreach ($p->waitList as $wfn) {
+                    $wfn(false);
+                }
             }
         }, [$this, 'cancel']);
         $p->waitList = $waitList;
