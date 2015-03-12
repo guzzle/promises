@@ -55,7 +55,6 @@ class Promise implements PromiseInterface
     public function wait($unwrap = true)
     {
         if ($this->state === self::PENDING) {
-            $this->cancelFn = null;
             if ($this->waitFn) {
                 $this->invokeWait();
             } else {
@@ -140,20 +139,23 @@ class Promise implements PromiseInterface
 
         $this->state = $state;
         $this->result = $value;
-        $this->cancelFn = $this->waitFn = $this->waitList = null;
+        $handlers = $this->handlers;
+        $this->handlers = null;
+        $this->waitList = null;
+        $this->waitFn = null;
+        $this->cancelFn = null;
 
-        if (!$this->handlers) {
+        if (!$handlers) {
             return null;
         }
 
-        $pending = [
-            'value'    => $value,
-            'index'    => $this->state === self::FULFILLED ? 1 : 2,
-            'handlers' => $this->handlers
+        return [
+            [
+                'value'    => $value,
+                'index'    => $this->state === self::FULFILLED ? 1 : 2,
+                'handlers' => $handlers
+            ]
         ];
-        $this->handlers = [];
-
-        return [$pending];
     }
 
     /**
@@ -169,7 +171,7 @@ class Promise implements PromiseInterface
             if ($group['value'] instanceof Promise) {
                 if ($nextGroup = $this->resolveForwardPromise($group)) {
                     $pending[] = $nextGroup;
-                    $nextGroup = null;
+                    unset($nextGroup);
                 }
                 continue;
             }
@@ -227,7 +229,10 @@ class Promise implements PromiseInterface
         }
 
         $nextHandlers = $handler[0]->handlers;
-        $handler[0]->handlers = [];
+        $handler[0]->handlers = null;
+        // While waitList is removed in reject(), it needs to be set to null
+        // here in order for resources to be garbage collected.
+        $handler[0]->waitList = null;
         $handler[0]->resolve($nextValue);
 
         // Resolve the listeners of this promise
@@ -249,7 +254,10 @@ class Promise implements PromiseInterface
     private function handleRejection($reason, array $handler)
     {
         $nextHandlers = $handler[0]->handlers;
-        $handler[0]->handlers = [];
+        $handler[0]->handlers = null;
+        // While waitList is removed in reject(), it needs to be set to null
+        // here in order for resources to be garbage collected.
+        $handler[0]->waitList = null;
         $handler[0]->reject($reason);
 
         return [
