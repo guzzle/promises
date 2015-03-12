@@ -14,6 +14,7 @@ class Promise implements PromiseInterface
 {
     private $state = self::PENDING;
     private $handlers = [];
+    private $waitList;
     private $waitFn;
     private $cancelFn;
     private $result;
@@ -35,14 +36,7 @@ class Promise implements PromiseInterface
         callable $onRejected = null
     ) {
         if ($this->state === self::PENDING) {
-            $p = new Promise(function () {
-                // Wait on the parent but don't unwrap exceptions.
-                $this->wait(false);
-            }, [$this, 'cancel']);
-            // Keep track of this dependent promise so that we resolve it
-            // later when a value has been delivered.
-            $this->handlers[] = [$p, $onFulfilled, $onRejected];
-            return $p;
+            return $this->createPendingThen($onFulfilled, $onRejected);
         }
 
         // Return a fulfilled promise and immediately invoke any callbacks.
@@ -100,6 +94,8 @@ class Promise implements PromiseInterface
         }
 
         $this->waitFn = null;
+        $this->waitList = [];
+
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
             $this->cancelFn = null;
@@ -119,44 +115,47 @@ class Promise implements PromiseInterface
 
     public function resolve($value)
     {
-        if ($this->state !== self::PENDING) {
-            throw new \RuntimeException("Cannot resolve a {$this->state} promise");
-        }
-
-        if ($value === $this) {
-            throw new \RuntimeException('Cannot resolve a promise with itself');
-        }
-
-        $this->state = self::FULFILLED;
-        $this->result = $value;
-        $this->cancelFn = $this->waitFn = null;
-
-        if ($this->handlers) {
-            $pending = [['value' => $value, 'index' => 1, 'handlers' => $this->handlers]];
-            $this->handlers = [];
+        if ($pending = $this->settle(self::FULFILLED, $value)) {
             $this->resolveStack($pending);
         }
     }
 
     public function reject($reason)
     {
-        if ($this->state !== self::PENDING) {
-            throw new \RuntimeException("Cannot reject a {$this->state} promise");
-        }
-
-        if ($reason === $this) {
-            throw new \RuntimeException('Cannot reject a promise with itself');
-        }
-
-        $this->state = self::REJECTED;
-        $this->result = $reason;
-        $this->cancelFn = $this->waitFn = null;
-
-        if ($this->handlers) {
-            $pending = [['value' => $reason, 'index' => 2, 'handlers' => $this->handlers]];
-            $this->handlers = [];
+        if ($pending = $this->settle(self::REJECTED, $reason)) {
             $this->resolveStack($pending);
         }
+    }
+
+    private function settle($state, $value)
+    {
+        if ($this->state !== self::PENDING) {
+            throw $this->state === $state
+                ? new \RuntimeException("The promise is already {$state}.")
+                : new \RuntimeException("Cannot change a {$this->state} promise to {$state}");
+        }
+
+        if ($value === $this) {
+            throw new \LogicException('Cannot fulfill or reject a promise with itself');
+        }
+
+        $this->state = $state;
+        $this->result = $value;
+        $this->cancelFn = $this->waitFn = null;
+        $this->waitList = [];
+
+        if (!$this->handlers) {
+            return null;
+        }
+
+        $pending = [
+            'value'    => $value,
+            'index'    => $this->state === self::FULFILLED ? 1 : 2,
+            'handlers' => $this->handlers
+        ];
+        $this->handlers = [];
+
+        return [$pending];
     }
 
     /**
@@ -350,5 +349,28 @@ class Promise implements PromiseInterface
         if ($this->state === self::PENDING) {
             $this->reject('Invoking the wait callback did not resolve the promise');
         }
+    }
+
+    private function createPendingThen(
+        callable $onFulfilled = null,
+        callable $onRejected = null
+    ) {
+        // Instead of waiting with recursion, create a wait function that waits
+        // on each waiter in a list one after the other.
+        $waitList = $this->waitList;
+        $waitList[] = [$this, 'wait'];
+        $p = new Promise(function () use (&$p) {
+            /** @var callable $wfn */
+            while ($wfn = array_shift($p->waitList)) {
+                $wfn(false);
+            }
+        }, [$this, 'cancel']);
+        $p->waitList = $waitList;
+
+        // Keep track of this dependent promise so that we resolve it
+        // later when a value has been delivered.
+        $this->handlers[] = [$p, $onFulfilled, $onRejected];
+
+        return $p;
     }
 }

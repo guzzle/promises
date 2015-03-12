@@ -13,7 +13,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessage Cannot resolve a fulfilled promise
+     * @expectedExceptionMessage The promise is already fulfilled
      */
     public function testCannotResolveNonPendingPromise()
     {
@@ -25,7 +25,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \RuntimeException
-     * @expectedExceptionMessage Cannot reject a fulfilled promise
+     * @expectedExceptionMessage Cannot change a fulfilled promise to rejected
      */
     public function testCannotRejectNonPendingPromise()
     {
@@ -485,8 +485,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Cannot resolve a promise with itself
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Cannot fulfill or reject a promise with itself
      */
     public function testCannotResolveWithSelf()
     {
@@ -495,12 +495,27 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Cannot reject a promise with itself
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Cannot fulfill or reject a promise with itself
      */
     public function testCannotRejectWithSelf()
     {
         $p = new Promise();
         $p->reject($p);
+    }
+
+    public function testDoesNotBlowStackWhenWaitingOnNestedThens()
+    {
+        $inner = new Promise(function () use (&$inner) { $inner->resolve(0); });
+        $prev = $inner;
+        for ($i = 1; $i < 100; $i++) {
+            $prev = $prev->then(function ($i) { return $i + 1; });
+        }
+
+        $parent = new Promise(function () use (&$parent, $prev) {
+            $parent->resolve($prev);
+        });
+
+        $this->assertEquals(99, $parent->wait());
     }
 }
