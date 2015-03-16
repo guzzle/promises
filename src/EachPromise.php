@@ -51,10 +51,22 @@ class EachPromise implements PromisorInterface
     public function __construct($iterable, array $config)
     {
         $this->iterable = iter_for($iterable);
-        $this->limit = isset($config['limit']) ? $config['limit'] : null;
-        $this->onFulfilled = isset($config['onFulfilled']) ? $config['onFulfilled'] : null;
-        $this->onRejected = isset($config['onRejected']) ? $config['onRejected'] : null;
-        $this->mapfn = isset($config['mapfn']) ? $config['mapfn'] : null;
+
+        if (isset($config['limit'])) {
+            $this->limit = $config['limit'];
+        }
+
+        if (isset($config['onFulfilled'])) {
+            $this->onFulfilled = $config['onFulfilled'];
+        }
+
+        if (isset($config['onRejected'])) {
+            $this->onRejected = $config['onRejected'];
+        }
+
+        if (isset($config['mapfn'])) {
+            $this->mapfn = $config['mapfn'];
+        }
     }
 
     public function promise()
