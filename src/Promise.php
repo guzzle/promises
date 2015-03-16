@@ -13,11 +13,14 @@ namespace GuzzleHttp\Promise;
 class Promise implements PromiseInterface
 {
     private $state = self::PENDING;
-    private $handlers = [];
-    private $waitList;
+    private $result;
     private $waitFn;
     private $cancelFn;
-    private $result;
+
+    /** @internal Do not rely on this variable in subclasses */
+    protected $handlers = [];
+    /** @internal Do not rely on this variable in subclasses */
+    protected $waitList;
 
     /**
      * @param callable $waitFn   Fn that when invoked resolves the promise.
