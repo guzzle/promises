@@ -7,12 +7,19 @@ namespace GuzzleHttp\Promise;
  */
 class EachPromise implements PromisorInterface
 {
-    private $iterable;
-    private $limit;
-    private $onFulfilled;
-    private $onRejected;
     private $pending = [];
+    /** @var \Iterator */
+    private $iterable;
+    /** @var callable|int */
+    private $limit;
+    /** @var callable */
+    private $onFulfilled;
+    /** @var callable */
+    private $onRejected;
+    /** @var Promise */
     private $aggregate;
+    /** @var callable */
+    private $mapfn;
 
     /**
      * Configuration hash can include the following key value pairs:
@@ -31,6 +38,12 @@ class EachPromise implements PromisorInterface
      * - limit: (integer) Pass this configuration option to limit the allowed
      *   number of outstanding promises, creating a capped pool of promises.
      *   There is no limit by default.
+     * - mapfn: (callable) If provided, this function is provided the next
+     *   value from the iterator and returns a mapped value. This function may
+     *   be used to create promises from an iterator, validate each element
+     *   yielded by the iterator, etc. If an exception is thrown while
+     *   invoking the map function, the promise will be rejected with the
+     *   exception.
      *
      * @param mixed    $iterable Promises or values to iterate.
      * @param array    $config   Configuration options
@@ -41,6 +54,7 @@ class EachPromise implements PromisorInterface
         $this->limit = isset($config['limit']) ? $config['limit'] : null;
         $this->onFulfilled = isset($config['onFulfilled']) ? $config['onFulfilled'] : null;
         $this->onRejected = isset($config['onRejected']) ? $config['onRejected'] : null;
+        $this->mapfn = isset($config['mapfn']) ? $config['mapfn'] : null;
     }
 
     public function promise()
@@ -103,7 +117,18 @@ class EachPromise implements PromisorInterface
             return false;
         }
 
-        $promise = promise_for($this->iterable->current());
+        if (!$this->mapfn) {
+            $promise = promise_for($this->iterable->current());
+        } else {
+            try {
+                $fn = $this->mapfn;
+                $promise = promise_for($fn($this->iterable->current()));
+            } catch (\Exception $e) {
+                $this->aggregate->reject($e);
+                return false;
+            }
+        }
+
         $idx = $this->iterable->key();
         $this->iterable->next();
 

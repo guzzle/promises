@@ -188,4 +188,32 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($called);
         $this->assertEquals(range(0, 99), $values);
     }
+
+    public function testCanMapIterable()
+    {
+        $called = [];
+        $arr = ['a', 'b'];
+        $mapfn = function ($value) use (&$called) {
+            $called[] = $value;
+            return new FulfilledPromise($value);
+        };
+        $each = new EachPromise($arr, ['mapfn' => $mapfn]);
+        $p = $each->promise();
+        $this->assertNull($p->wait());
+        $this->assertEquals(['a', 'b'], $called);
+    }
+
+    public function testRejectsAggregateWhenMapThrows()
+    {
+        $each = new EachPromise(['a'], [
+            'mapfn' => function ($value) {
+                throw new \Exception('Failure: ' . $value);
+            }
+        ]);
+        $p = $each->promise();
+        $e = null;
+        $p->then(null, function ($reason) use (&$e) { $e = $reason; });
+        $this->assertInstanceOf('Exception', $e);
+        $this->assertEquals('Failure: a', $e->getMessage());
+    }
 }
