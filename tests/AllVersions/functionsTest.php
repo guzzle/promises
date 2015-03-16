@@ -117,6 +117,19 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['b', 'c'], $result);
     }
 
+    public function testSomeRejectsOnFirstReject()
+    {
+        $a = new Promise();
+        $b = new Promise();
+        $d = \GuzzleHttp\Promise\some(2, [$a, $b]);
+        $a->reject('bad');
+        $this->assertEquals($a::REJECTED, $d->getState());
+        $d->then(null, function ($reason) use (&$called) {
+            $called = $reason;
+        });
+        $this->assertEquals('bad', $called);
+    }
+
     public function testCanWaitUntilSomeCountIsSatisfied()
     {
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
@@ -127,13 +140,28 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage Not enough promises to fulfill count
+     * @expectedException \GuzzleHttp\Promise\RejectionException
+     * @expectedExceptionMessage The promise was rejected with reason: Not enough promises to fulfill count
      */
     public function testThrowsIfImpossibleToWaitForSomeCount()
     {
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $d = \GuzzleHttp\Promise\some(2, [$a]);
+        $d->wait();
+    }
+
+    /**
+     * @expectedException \GuzzleHttp\Promise\RejectionException
+     * @expectedExceptionMessage The promise was rejected with reason: Not enough promises to fulfill count
+     */
+    public function testThrowsIfResolvedWithoutCountTotalResults()
+    {
+        $a = new Promise();
+        $b = new Promise();
+        $d = \GuzzleHttp\Promise\some(3, [$a, $b]);
+        $a->resolve('a');
+        $b->resolve('b');
+        $this->assertEquals('rejected', $d->getState());
         $d->wait();
     }
 
@@ -201,5 +229,19 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
             'state'  => 'rejected',
             'reason' => $e
         ], \GuzzleHttp\Promise\inspect($p));
+    }
+
+    public function testCallsEachLimit()
+    {
+        $p = new Promise();
+        $aggregate = \GuzzleHttp\Promise\each_limit($p, 2);
+        $p->resolve('a');
+        $this->assertEquals($p::FULFILLED, $aggregate->getState());
+    }
+
+    public function testIterForReturnsIterator()
+    {
+        $iter = new \ArrayIterator();
+        $this->assertSame($iter, \GuzzleHttp\Promise\iter_for($iter));
     }
 }

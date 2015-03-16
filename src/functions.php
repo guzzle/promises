@@ -63,6 +63,24 @@ function exception_for($reason)
 }
 
 /**
+ * Returns an iterator for the given value.
+ *
+ * @param mixed $value
+ *
+ * @return \Iterator
+ */
+function iter_for($value)
+{
+    if ($value instanceof \Iterator) {
+        return $value;
+    } elseif (is_array($value)) {
+        return new \ArrayIterator($value);
+    } else {
+        return new \ArrayIterator([$value]);
+    }
+}
+
+/**
  * Synchronously waits on a promise to resolve and returns an inspection state
  * array.
  *
@@ -78,16 +96,25 @@ function exception_for($reason)
  */
 function inspect(PromiseInterface $promise)
 {
-    try {
+    if ($promise->getState() === PromiseInterface::FULFILLED) {
         return [
             'state' => PromiseInterface::FULFILLED,
             'value' => $promise->wait()
         ];
-    } catch (RejectionException $e) {
-        return ['state' => 'rejected', 'reason' => $e->getReason()];
-    } catch (\Exception $e) {
-        return ['state' => 'rejected', 'reason' => $e];
     }
+
+    $promise->then(
+        function ($value) use (&$result) {
+            $result = ['state' => 'fulfilled', 'value' => $value];
+        },
+        function ($reason) use (&$result) {
+            $result = ['state' => 'rejected', 'reason' => $reason];
+        }
+    );
+
+    $promise->wait(false);
+
+    return $result;
 }
 
 /**
@@ -118,7 +145,7 @@ function inspect_all($promises)
  * the promises were provided). An exception is thrown if any of the promises
  * are rejected.
  *
- * @param PromiseInterface[] $promises Promises to wait on.
+ * @param mixed $promises Iterable of PromiseInterface objects to wait on.
  *
  * @return array
  * @throws \Exception on error
@@ -141,17 +168,25 @@ function unwrap($promises)
  * respective positions to the original array. If any promise in the array
  * rejects, the returned promise is rejected with the rejection reason.
  *
- * @param PromiseInterface[]|object|mixed $promises Promises or values.
+ * @param mixed $promises Promises or values.
  *
  * @return Promise
  */
-function all(array $promises)
+function all($promises)
 {
-    $waitFn = function () use ($promises) { unwrap($promises); };
-    $aggregate = new Promise($waitFn);
-    _then_countdown($promises, $aggregate, count($promises));
-
-    return $aggregate;
+    $results = [];
+    return each(
+        $promises,
+        function ($value, $idx) use (&$results) {
+            $results[$idx] = $value;
+        },
+        function ($reason, $idx, Promise $aggregate) {
+            $aggregate->reject($reason);
+        }
+    )->then(function () use (&$results) {
+        ksort($results);
+        return $results;
+    });
 }
 
 /**
@@ -162,42 +197,48 @@ function all(array $promises)
  * fulfilled with an array that contains the fulfillment values of the winners
  * in order of resolution.
  *
- * @param int                             $count    Total number of promises.
- * @param PromiseInterface[]|object|mixed $promises Promises or values.
+ * @param int   $count    Total number of promises.
+ * @param mixed $promises Promises or values.
  *
  * @return Promise
  */
-function some($count, array $promises)
+function some($count, $promises)
 {
-    $aggregate = new Promise(function () use (&$aggregate, $promises) {
-        $iter = new \ArrayIterator($promises);
-        // Keep waiting until the promise has been fulfilled with N values.
-        while ($iter->valid() && $aggregate->getState() === PromiseInterface::PENDING) {
-            $iter->current()->wait();
-            $iter->next();
-        }
-        if ($aggregate->getState() === PromiseInterface::PENDING) {
-            throw new \RuntimeException('Not enough promises to fulfill count');
-        }
-    });
-    _then_countdown($promises, $aggregate, $count);
+    $results = [];
 
-    return $aggregate;
+    return each(
+        $promises,
+        function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
+            $results[$idx] = $value;
+            if (count($results) === $count) {
+                $p->resolve(null);
+            }
+        },
+        function ($reason, $idx, Promise $aggregate) {
+            $aggregate->reject($reason);
+        }
+    )->then(
+        function () use (&$results, $count) {
+            if (count($results) !== $count) {
+                return new RejectedPromise('Not enough promises to fulfill count');
+            }
+            ksort($results);
+            return array_values($results);
+        }
+    );
 }
 
 /**
  * Like some(), with 1 as count. However, if the promise fulfills, the
  * fulfillment value is not an array of 1 but the value directly.
  *
- * @param array $promises Promises or values.
+ * @param mixed $promises Promises or values.
  *
  * @return PromiseInterface
  */
-function any(array $promises)
+function any($promises)
 {
-    return some(1, $promises)->then(function ($values) {
-        return $values[0];
-    });
+    return some(1, $promises)->then(function ($values) { return $values[0]; });
 }
 
 /**
@@ -206,36 +247,85 @@ function any(array $promises)
  *
  * The returned promise is fulfilled with an array of inspection state arrays.
  *
- * @param PromiseInterface[]|object $promises Promises or values.
+ * @param mixed $promises Promises or values.
  *
  * @return Promise
  * @see GuzzleHttp\Promise\inspect for the inspection state array format.
  */
-function settle(array $promises)
+function settle($promises)
 {
-    $waitFn = function () use ($promises) { unwrap($promises); };
-    $aggregate = new Promise($waitFn);
-    $remaining = count($promises);
-    $addVal = function ($idx, $value) use ($aggregate, &$remaining, &$results) {
-        $results[$idx] = $value;
-        if (--$remaining === 0) {
-            ksort($results);
-            $aggregate->resolve($results);
+    $results = [];
+
+    return each(
+        $promises,
+        function ($value, $idx) use (&$results) {
+            $results[$idx] = ['state' => 'fulfilled', 'value' => $value];
+        },
+        function ($reason, $idx) use (&$results) {
+            $results[$idx] = ['state' => 'rejected', 'reason' => $reason];
         }
-    };
+    )->then(function () use (&$results) {
+        ksort($results);
+        return $results;
+    });
+}
 
-    foreach ($promises as $idx => $promise) {
-        promise_for($promise)->then(
-            function ($value) use ($addVal, $idx) {
-                $addVal($idx, ['state' => 'fulfilled', 'value' => $value]);
-            },
-            function ($reason) use ($addVal, $idx) {
-                $addVal($idx, ['state' => 'rejected', 'reason' => $reason]);
-            }
-        );
-    }
+/**
+ * Given an iterator that yields promises or values, returns a promise that is
+ * fulfilled with a null value when the iterator has been consumed or the
+ * aggregate promise has been fulfilled or rejected.
+ *
+ * $onFulfilled is a function that accepts the fulfilled value, iterator
+ * index, and the aggregate promise. The callback can invoke any necessary side
+ * effects and choose to resolve or reject the aggregate promise if needed.
+ *
+ * $onRejected is a function that accepts the rejection reason, iterator
+ * index, and the aggregate promise. The callback can invoke any necessary side
+ * effects and choose to resolve or reject the aggregate promise if needed.
+ *
+ * @param mixed    $iterable    Iterator or array to iterate over.
+ * @param callable $onFulfilled
+ * @param callable $onRejected
+ *
+ * @return Promise
+ */
+function each(
+    $iterable,
+    callable $onFulfilled = null,
+    callable $onRejected = null
+) {
+    return (new EachPromise($iterable, [
+        'onFulfilled' => $onFulfilled,
+        'onRejected'  => $onRejected
+    ]))->promise();
+}
 
-    return $aggregate;
+/**
+ * Like each, but only allows a certain number of outstanding promises at any
+ * given time.
+ *
+ * $limit may be an integer or a function that accepts the number of pending
+ * promises and returns a numeric limit value to allow for dynamic a limit
+ * size.
+ *
+ * @param mixed        $iterable
+ * @param int|callable $limit
+ * @param callable     $onFulfilled
+ * @param callable     $onRejected
+ *
+ * @return mixed
+ */
+function each_limit(
+    $iterable,
+    $limit,
+    callable $onFulfilled = null,
+    callable $onRejected = null
+) {
+    return (new EachPromise($iterable, [
+        'onFulfilled' => $onFulfilled,
+        'onRejected'  => $onRejected,
+        'limit'       => $limit
+    ]))->promise();
 }
 
 /**
@@ -340,23 +430,4 @@ function _next_coroutine($yielded, \Generator $generator, PromiseInterface $prom
             }
         }
     );
-}
-
-/** @internal */
-function _then_countdown(array $promises, PromiseInterface $aggregate, $remaining)
-{
-    /** @var PromiseInterface $promise */
-    foreach ($promises as $idx => $promise) {
-        promise_for($promise)->then(
-            function ($value) use ($idx, &$remaining, &$results, $aggregate) {
-                $results[$idx] = $value;
-                if (--$remaining === 0) {
-                    // Ensure the results are sorted by promise order.
-                    ksort($results);
-                    $aggregate->resolve(array_values($results));
-                }
-            },
-            [$aggregate, 'reject']
-        );
-    }
 }
