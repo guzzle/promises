@@ -56,12 +56,12 @@ class EachPromise implements PromisorInterface
             $this->limit = $config['limit'];
         }
 
-        if (isset($config['onFulfilled'])) {
-            $this->onFulfilled = $config['onFulfilled'];
+        if (isset($config['fulfilled'])) {
+            $this->onFulfilled = $config['fulfilled'];
         }
 
-        if (isset($config['onRejected'])) {
-            $this->onRejected = $config['onRejected'];
+        if (isset($config['rejected'])) {
+            $this->onRejected = $config['rejected'];
         }
 
         if (isset($config['mapfn'])) {

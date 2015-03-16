@@ -17,7 +17,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $promises = [new Promise(), new Promise(), new Promise()];
         $called = [];
         $each = new EachPromise($promises, [
-            'onFulfilled' => function ($value) use (&$called) {
+            'fulfilled' => function ($value) use (&$called) {
                 $called[] = $value;
             }
         ]);
@@ -35,7 +35,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $b = new Promise(function () use (&$b) { $b->resolve('b'); });
         $called = [];
         $each = new EachPromise([$a, $b], [
-            'onFulfilled' => function ($value) use (&$called) { $called[] = $value; }
+            'fulfilled' => function ($value) use (&$called) { $called[] = $value; }
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
@@ -49,13 +49,13 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $b = new Promise(function () { $this->fail(); });
         $each = new EachPromise([$a, $b], [
-            'onFulfilled' => function ($value, $idx, Promise $aggregate) use (&$called) {
+            'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called) {
                 $this->assertSame($idx, 0);
                 $this->assertEquals('a', $value);
                 $aggregate->resolve(null);
                 $called++;
             },
-            'onRejected' => function (\Exception $reason) {
+            'rejected' => function (\Exception $reason) {
                 $this->fail($reason->getMessage());
             }
         ]);
@@ -127,8 +127,8 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         });
         $each = new EachPromise([$a], [
             'limit'       => function () { return 1; },
-            'onFulfilled' => function () {},
-            'onRejected'  => function () {}
+            'fulfilled' => function () {},
+            'rejected'  => function () {}
         ]);
         $each->promise()->wait();
         $this->assertNull($this->readAttribute($each, 'onFulfilled'));
@@ -152,7 +152,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         }
         $values = [];
         $each = new EachPromise($pending, [
-            'onFulfilled' => function ($value) use (&$values) {
+            'fulfilled' => function ($value) use (&$values) {
                 $values[] = $value;
             }
         ]);
@@ -172,7 +172,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         }
         $values = [];
         $each = new EachPromise($pending, [
-            'onRejected' => function ($value) use (&$values) {
+            'rejected' => function ($value) use (&$values) {
                 $values[] = $value;
             }
         ]);
