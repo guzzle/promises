@@ -304,12 +304,12 @@ function each(
  * Like each, but only allows a certain number of outstanding promises at any
  * given time.
  *
- * $limit may be an integer or a function that accepts the number of pending
- * promises and returns a numeric limit value to allow for dynamic a limit
- * size.
+ * $concurrency may be an integer or a function that accepts the number of
+ * pending promises and returns a numeric concurrency limit value to allow for
+ * dynamic a concurrency size.
  *
  * @param mixed        $iterable
- * @param int|callable $limit
+ * @param int|callable $concurrency
  * @param callable     $onFulfilled
  * @param callable     $onRejected
  *
@@ -317,14 +317,14 @@ function each(
  */
 function each_limit(
     $iterable,
-    $limit,
+    $concurrency,
     callable $onFulfilled = null,
     callable $onRejected = null
 ) {
     return (new EachPromise($iterable, [
-        'fulfilled' => $onFulfilled,
-        'rejected'  => $onRejected,
-        'limit'     => $limit
+        'fulfilled'   => $onFulfilled,
+        'rejected'    => $onRejected,
+        'concurrency' => $concurrency
     ]))->promise();
 }
 

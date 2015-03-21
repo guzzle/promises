@@ -11,7 +11,7 @@ class EachPromise implements PromisorInterface
     /** @var \Iterator */
     private $iterable;
     /** @var callable|int */
-    private $limit;
+    private $concurrency;
     /** @var callable */
     private $onFulfilled;
     /** @var callable */
@@ -35,9 +35,9 @@ class EachPromise implements PromisorInterface
      *   aggregate promise that manages all of the promises. The aggregate
      *   promise may be resolved from within the callback to short-circuit
      *   the promise.
-     * - limit: (integer) Pass this configuration option to limit the allowed
-     *   number of outstanding promises, creating a capped pool of promises.
-     *   There is no limit by default.
+     * - concurrency: (integer) Pass this configuration option to limit the
+     *   allowed number of outstanding concurrently executing promises,
+     *   creating a capped pool of promises. There is no limit by default.
      * - mapfn: (callable) If provided, this function is provided the next
      *   value from the iterator and returns a mapped value. This function may
      *   be used to create promises from an iterator, validate each element
@@ -52,8 +52,8 @@ class EachPromise implements PromisorInterface
     {
         $this->iterable = iter_for($iterable);
 
-        if (isset($config['limit'])) {
-            $this->limit = $config['limit'];
+        if (isset($config['concurrency'])) {
+            $this->concurrency = $config['concurrency'];
         }
 
         if (isset($config['fulfilled'])) {
@@ -100,7 +100,7 @@ class EachPromise implements PromisorInterface
 
         // Clear the references when the promise is resolved.
         $clearFn = function () {
-            $this->iterable = $this->limit = $this->pending = null;
+            $this->iterable = $this->concurrency = $this->pending = null;
             $this->onFulfilled = $this->onRejected = null;
         };
 
@@ -109,16 +109,16 @@ class EachPromise implements PromisorInterface
 
     private function refillPending()
     {
-        if (!$this->limit) {
+        if (!$this->concurrency) {
             // Add all pending promises.
             while ($this->addPending());
         } else {
             // Add only up to N pending promises.
-            $limit = is_callable($this->limit)
-                ? call_user_func($this->limit, count($this->pending))
-                : $this->limit;
-            $limit = max($limit - count($this->pending), 0);
-            while ($limit-- && $this->addPending());
+            $concurrency = is_callable($this->concurrency)
+                ? call_user_func($this->concurrency, count($this->pending))
+                : $this->concurrency;
+            $concurrency = max($concurrency - count($this->pending), 0);
+            while ($concurrency-- && $this->addPending());
         }
     }
 

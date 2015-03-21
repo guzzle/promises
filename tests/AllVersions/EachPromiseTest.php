@@ -8,7 +8,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
 {
     public function testReturnsSameInstance()
     {
-        $each = new EachPromise([], ['limit' => 100]);
+        $each = new EachPromise([], ['concurrency' => 100]);
         $this->assertSame($each->promise(), $each->promise());
     }
 
@@ -74,7 +74,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
     {
         $pending = [new Promise(), new Promise(), new Promise(), new Promise()];
         $promises = new \ArrayIterator($pending);
-        $each = new EachPromise($promises, ['limit' => 2]);
+        $each = new EachPromise($promises, ['concurrency' => 2]);
         $p = $each->promise();
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
         $pending[0]->resolve('a');
@@ -100,7 +100,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         };
         $pending = [new Promise(), new Promise(), new Promise(), new Promise()];
         $promises = new \ArrayIterator($pending);
-        $each = new EachPromise($promises, ['limit' => $pendingFn]);
+        $each = new EachPromise($promises, ['concurrency' => $pendingFn]);
         $p = $each->promise();
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
         $pending[0]->resolve('a');
@@ -126,7 +126,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
             $called = true;
         });
         $each = new EachPromise([$a], [
-            'limit'       => function () { return 1; },
+            'concurrency'       => function () { return 1; },
             'fulfilled' => function () {},
             'rejected'  => function () {}
         ]);
@@ -135,7 +135,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($this->readAttribute($each, 'onRejected'));
         $this->assertNull($this->readAttribute($each, 'iterable'));
         $this->assertNull($this->readAttribute($each, 'pending'));
-        $this->assertNull($this->readAttribute($each, 'limit'));
+        $this->assertNull($this->readAttribute($each, 'concurrency'));
         $this->assertTrue($called);
     }
 
