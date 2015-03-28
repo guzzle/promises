@@ -396,33 +396,51 @@ function _next_coroutine(
 ) {
     $queue[] = promise_for($yielded)->then(
         function ($value) use ($generator, $promise, &$queue) {
-            // Shift off the last pending promise if it is present.
             array_pop($queue);
+
+            send_value:
             try {
-                retry:
                 $nextYield = $generator->send($value);
+
+                // When no more coroutines, resolve the promise.
                 if (!$generator->valid()) {
-                    // No more coroutines, so this is the last yielded value.
                     $promise->resolve($value);
-                } elseif (!($nextYield instanceof PromiseInterface)
-                    || $nextYield->getState() !== PromiseInterface::FULFILLED) {
+                    return;
+                }
+
+                // Need to use a promise to resolve a nested promise.
+                if (!($nextYield instanceof PromiseInterface)
+                    || $nextYield->getState() === PromiseInterface::PENDING
+                ) {
                     // Non fulfilled promise, so create a new coroutine promise
                     _next_coroutine($nextYield, $generator, $promise, $queue);
-                } else {
-                    // Instead of recursing for resolved promises, goto retry.
-                    $value = $nextYield->wait();
-                    goto retry;
+                    return;
                 }
+
+                // Process the rejection
+                if ($nextYield->getState() === PromiseInterface::REJECTED) {
+                    $nextYield->wait(); // throws an exception
+                }
+
+                // Fulfilled promise, so get the value and send it to the gen.
+                $value = $nextYield->wait();
+                goto send_value;
+
             } catch (\Exception $e) {
-                $promise->reject($e);
+                try {
+                    $value = $generator->throw(exception_for($e));
+                    // The throw was caught, so keep iterating on the coroutine
+                    $e = null;
+                    goto send_value;
+                } catch (\Exception $e) {
+                    $promise->reject($e);
+                }
             }
         },
         function ($reason) use ($generator, $promise, &$queue) {
-            // Shift off the last pending promise if it is present.
             array_pop($queue);
             try {
                 $nextYield = $generator->throw(exception_for($reason));
-                // The throw was caught, so keep iterating on the coroutine.
                 _next_coroutine($nextYield, $generator, $promise, $queue);
             } catch(\Exception $e) {
                 $promise->reject($e);
