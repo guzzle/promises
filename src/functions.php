@@ -374,7 +374,7 @@ function coroutine(callable $generatorFn)
                 $promise->wait(false);
             }
         },
-        function () use ($queue) {
+        function () use (&$queue) {
             while ($promise = array_pop($queue)) {
                 $promise->cancel();
             }
@@ -382,13 +382,13 @@ function coroutine(callable $generatorFn)
     );
 
     $generator = $generatorFn();
-    _next_coroutine($generator->current(), $generator, $promise, $queue);
+    __next_coroutine($generator->current(), $generator, $promise, $queue);
 
     return $promise;
 }
 
 /** @internal */
-function _next_coroutine(
+function __next_coroutine(
     $yielded,
     \Generator $generator,
     PromiseInterface $promise,
@@ -396,55 +396,70 @@ function _next_coroutine(
 ) {
     $queue[] = promise_for($yielded)->then(
         function ($value) use ($generator, $promise, &$queue) {
+            // No longer need to track the last added promise.
             array_pop($queue);
-
-            send_value:
-            try {
-                $nextYield = $generator->send($value);
-
-                // When no more coroutines, resolve the promise.
-                if (!$generator->valid()) {
-                    $promise->resolve($value);
-                    return;
-                }
-
-                // Need to use a promise to resolve a nested promise.
-                if (!($nextYield instanceof PromiseInterface)
-                    || $nextYield->getState() === PromiseInterface::PENDING
-                ) {
-                    // Non fulfilled promise, so create a new coroutine promise
-                    _next_coroutine($nextYield, $generator, $promise, $queue);
-                    return;
-                }
-
-                // Process the rejection
-                if ($nextYield->getState() === PromiseInterface::REJECTED) {
-                    $nextYield->wait(); // throws an exception
-                }
-
-                // Fulfilled promise, so get the value and send it to the gen.
-                $value = $nextYield->wait();
-                goto send_value;
-
-            } catch (\Exception $e) {
-                try {
-                    $value = $generator->throw(exception_for($e));
-                    // The throw was caught, so keep iterating on the coroutine
-                    $e = null;
-                    goto send_value;
-                } catch (\Exception $e) {
-                    $promise->reject($e);
-                }
-            }
+            __process_coroutine($value, $generator, $promise, $queue);
         },
         function ($reason) use ($generator, $promise, &$queue) {
+            // No longer need to track the last added promise.
             array_pop($queue);
-            try {
-                $nextYield = $generator->throw(exception_for($reason));
-                _next_coroutine($nextYield, $generator, $promise, $queue);
-            } catch(\Exception $e) {
-                $promise->reject($e);
-            }
+            __process_coroutine($reason, $generator, $promise, $queue, true);
         }
     );
+}
+
+function __process_coroutine(
+    $value,
+    \Generator $generator,
+    PromiseInterface $promise,
+    array &$queue,
+    $isRejection = false
+) {
+    if ($isRejection) {
+        goto reject;
+    }
+
+    send_value: {
+        try {
+            $nextYield = $generator->send($value);
+            if ($generator->valid()) {
+                goto process_yield;
+            }
+            $promise->resolve($value);
+            return;
+        } catch (\Exception $value) {
+            goto reject;
+        }
+    }
+
+    process_yield: {
+        // Need to use a promise to resolve a nested promise.
+        if (!($nextYield instanceof PromiseInterface)
+            || $nextYield->getState() === PromiseInterface::PENDING
+        ) {
+            // Non fulfilled promise, so create a new coroutine promise
+            __next_coroutine($nextYield, $generator, $promise, $queue);
+            return;
+        }
+
+        // Process the rejection
+        if ($nextYield->getState() === PromiseInterface::REJECTED) {
+            $value = inspect($nextYield)['reason'];
+            goto reject;
+        }
+
+        // Fulfilled promise, so get the value and send it to the gen.
+        $value = $nextYield->wait();
+        goto send_value;
+    }
+
+    reject: {
+        try {
+            $nextYield = $generator->throw(exception_for($value));
+            // The throw was caught, so keep iterating on the coroutine
+            goto process_yield;
+        } catch (\Exception $e) {
+            $promise->reject($e);
+        }
+    }
 }

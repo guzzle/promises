@@ -27,6 +27,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             }
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
+        $this->assertEquals(Promise\PromiseInterface::FULFILLED, $promise->getState());
         $this->assertEquals('ab', $result);
     }
 
@@ -115,7 +116,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(2, $r);
     }
 
-    public function testCanWaitOnCoroutine()
+    public function testYieldFinalWaitablePromise()
     {
         $p1 = new Promise\Promise(function () use (&$p1) {
             $p1->resolve('skip me');
@@ -128,6 +129,79 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             yield $p2;
         });
         $this->assertEquals('hello!', $co->wait());
+    }
+
+    public function testCanYieldFinalPendingPromise()
+    {
+        $p1 = new Promise\Promise();
+        $p2 = new Promise\Promise();
+        $co = Promise\coroutine(function() use ($p1, $p2) {
+            yield $p1;
+            yield $p2;
+        });
+        $p1->resolve('a');
+        $p2->resolve('b');
+        $co->then(function ($value) use (&$result) { $result = $value; });
+        $this->assertEquals('b', $result);
+    }
+
+    public function testCanNestYieldsAndFailures()
+    {
+        $p1 = new Promise\Promise();
+        $p2 = new Promise\Promise();
+        $p3 = new Promise\Promise();
+        $p4 = new Promise\Promise();
+        $p5 = new Promise\Promise();
+        $co = Promise\coroutine(function() use ($p1, $p2, $p3, $p4, $p5) {
+            try {
+                yield $p1;
+            } catch (\Exception $e) {
+                yield $p2;
+                try {
+                    yield $p3;
+                    yield $p4;
+                } catch (\Exception $e) {
+                    yield $p5;
+                }
+            }
+        });
+        $p1->reject('a');
+        $p2->resolve('b');
+        $p3->resolve('c');
+        $p4->reject('d');
+        $p5->resolve('e');
+        $co->then(function ($value) use (&$result) { $result = $value; });
+        $this->assertEquals('e', $result);
+    }
+
+    public function testCanYieldErrorsAndSuccessesWithoutRecursion()
+    {
+        $promises = [];
+        for ($i = 0; $i < 20; $i++) {
+            $promises[] = new Promise\Promise();
+        }
+
+        $co = Promise\coroutine(function() use ($promises) {
+            for ($i = 0; $i < 20; $i += 4) {
+                try {
+                    yield $promises[$i];
+                    yield $promises[$i + 1];
+                } catch (\Exception $e) {
+                    yield $promises[$i + 2];
+                    yield $promises[$i + 3];
+                }
+            }
+        });
+
+        for ($i = 0; $i < 20; $i += 4) {
+            $promises[$i]->resolve($i);
+            $promises[$i + 1]->reject($i + 1);
+            $promises[$i + 2]->resolve($i + 2);
+            $promises[$i + 3]->resolve($i + 3);
+        }
+
+        $co->then(function ($value) use (&$result) { $result = $value; });
+        $this->assertEquals('19', $result);
     }
 
     public function testCanWaitOnPromiseAfterFulfilled()
@@ -153,5 +227,33 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         });
 
         $this->assertEquals('20-bar', $p->wait());
+    }
+
+    public function testCanWaitOnErroredPromises()
+    {
+        $p1 = new Promise\Promise(function () use (&$p1) { $p1->reject('a'); });
+        $p2 = new Promise\Promise(function () use (&$p2) { $p2->resolve('b'); });
+        $p3 = new Promise\Promise(function () use (&$p3) { $p3->resolve('c'); });
+        $p4 = new Promise\Promise(function () use (&$p4) { $p4->reject('d'); });
+        $p5 = new Promise\Promise(function () use (&$p5) { $p5->resolve('e'); });
+        $p6 = new Promise\Promise(function () use (&$p6) { $p6->reject('f'); });
+
+        $co = Promise\coroutine(function() use ($p1, $p2, $p3, $p4, $p5, $p6) {
+            try {
+                yield $p1;
+            } catch (\Exception $e) {
+                yield $p2;
+                try {
+                    yield $p3;
+                    yield $p4;
+                } catch (\Exception $e) {
+                    yield $p5;
+                    yield $p6;
+                }
+            }
+        });
+
+        $res = Promise\inspect($co);
+        $this->assertEquals('f', $res['reason']->getReason());
     }
 }
