@@ -19,12 +19,12 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
     {
         $promise = Promise\coroutine(function () {
             try {
-                $value = (yield new Promise\RejectedPromise('a'));
+                yield new Promise\RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
             } catch (Promise\RejectionException $e) {
                 $value = (yield new Promise\FulfilledPromise($e->getReason()));
+                yield  $value . 'b';
             }
-            yield  $value . 'b';
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
         $this->assertEquals('ab', $result);
@@ -128,5 +128,30 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             yield $p2;
         });
         $this->assertEquals('hello!', $co->wait());
+    }
+
+    public function testCanWaitOnPromiseAfterFulfilled()
+    {
+        $f = function () {
+            static $i = 0;
+            $i++;
+            return $p = new Promise\Promise(function () use (&$p, $i) {
+                $p->resolve($i . '-bar');
+            });
+        };
+
+        $promises = [];
+        for ($i = 0; $i < 20; $i++) {
+            $promises[] = $f();
+        }
+
+        $p = Promise\coroutine(function () use ($promises) {
+            yield new Promise\FulfilledPromise('foo!');
+            foreach ($promises as $promise) {
+                yield $promise;
+            }
+        });
+
+        $this->assertEquals('20-bar', $p->wait());
     }
 }

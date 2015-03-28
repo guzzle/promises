@@ -195,14 +195,6 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         ], $result);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
-    public function testEnsuresIteratorIsReturnedForCoroutine()
-    {
-        \GuzzleHttp\Promise\coroutine(function () { return ':('; });
-    }
-
     public function testCanInspectFulfilledPromise()
     {
         $p = new FulfilledPromise('foo');

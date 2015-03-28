@@ -367,37 +367,37 @@ function each_limit(
  */
 function coroutine(callable $generatorFn)
 {
-    // Waiting on a coroutine promise will use a reference to the current
-    // pending promise. This value is overwritten each time the next coroutine
-    // promise is yielded, meaning we need to keep calling wait on this
-    // reference until the reference is not changed.
-    $promise = new Promise(function () use (&$pending) {
-        if ($pending) {
-            next_pending:
-            $prev = $pending;
-            $prev->wait();
-            if ($prev !== $pending) {
-                $prev = $pending;
-                goto next_pending;
+    $queue = [];
+    $promise = new Promise(
+        function () use (&$queue) {
+            while ($promise = array_pop($queue)) {
+                $promise->wait(false);
+            }
+        },
+        function () use ($queue) {
+            while ($promise = array_pop($queue)) {
+                $promise->cancel();
             }
         }
-    });
+    );
 
     $generator = $generatorFn();
-    if (!($generator instanceof \Generator)) {
-        throw new \InvalidArgumentException('Function must return a generator');
-    }
-    $yielded = $generator->current();
-    _next_coroutine($yielded, $generator, $promise, $pending);
+    _next_coroutine($generator->current(), $generator, $promise, $queue);
 
     return $promise;
 }
 
 /** @internal */
-function _next_coroutine($yielded, \Generator $generator, PromiseInterface $promise, &$pending)
-{
-    $pending = promise_for($yielded)->then(
-        function ($value) use ($generator, $promise, &$pending) {
+function _next_coroutine(
+    $yielded,
+    \Generator $generator,
+    PromiseInterface $promise,
+    array &$queue
+) {
+    $queue[] = promise_for($yielded)->then(
+        function ($value) use ($generator, $promise, &$queue) {
+            // Shift off the last pending promise if it is present.
+            array_pop($queue);
             try {
                 retry:
                 $nextYield = $generator->send($value);
@@ -405,12 +405,9 @@ function _next_coroutine($yielded, \Generator $generator, PromiseInterface $prom
                     // No more coroutines, so this is the last yielded value.
                     $promise->resolve($value);
                 } elseif (!($nextYield instanceof PromiseInterface)
-                    || $nextYield->getState() === PromiseInterface::PENDING) {
+                    || $nextYield->getState() !== PromiseInterface::FULFILLED) {
                     // Non fulfilled promise, so create a new coroutine promise
-                    _next_coroutine($nextYield, $generator, $promise, $pending);
-                } elseif ($nextYield->getState() === PromiseInterface::REJECTED) {
-                    // Cause nextYield to throw and reject that promise.
-                    $nextYield->wait();
+                    _next_coroutine($nextYield, $generator, $promise, $queue);
                 } else {
                     // Instead of recursing for resolved promises, goto retry.
                     $value = $nextYield->wait();
@@ -420,11 +417,13 @@ function _next_coroutine($yielded, \Generator $generator, PromiseInterface $prom
                 $promise->reject($e);
             }
         },
-        function ($reason) use ($generator, $promise, &$pending) {
+        function ($reason) use ($generator, $promise, &$queue) {
+            // Shift off the last pending promise if it is present.
+            array_pop($queue);
             try {
                 $nextYield = $generator->throw(exception_for($reason));
                 // The throw was caught, so keep iterating on the coroutine.
-                _next_coroutine($nextYield, $generator, $promise, $pending);
+                _next_coroutine($nextYield, $generator, $promise, $queue);
             } catch(\Exception $e) {
                 $promise->reject($e);
             }
