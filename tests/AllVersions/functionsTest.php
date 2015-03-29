@@ -72,6 +72,18 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['a'], \GuzzleHttp\Promise\unwrap($promises));
     }
 
+    public function testUnwrapsPromisesWithKeys()
+    {
+        $promises = [
+            'foo' => new FulfilledPromise('a'),
+            'bar' => new FulfilledPromise('b'),
+        ];
+        $this->assertEquals([
+            'foo' => 'a',
+            'bar' => 'b'
+        ], \GuzzleHttp\Promise\unwrap($promises));
+    }
+
     public function testAllAggregatesSortedArray()
     {
         $a = new Promise();

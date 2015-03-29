@@ -131,8 +131,8 @@ function inspect(PromiseInterface $promise)
 function inspect_all($promises)
 {
     $results = [];
-    foreach ($promises as $promise) {
-        $results[] = inspect($promise);
+    foreach ($promises as $key => $promise) {
+        $results[$key] = inspect($promise);
     }
 
     return $results;
@@ -153,8 +153,8 @@ function inspect_all($promises)
 function unwrap($promises)
 {
     $results = [];
-    foreach ($promises as $promise) {
-        $results[] = $promise->wait();
+    foreach ($promises as $key => $promise) {
+        $results[$key] = $promise->wait();
     }
 
     return $results;
