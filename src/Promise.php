@@ -4,23 +4,16 @@ namespace GuzzleHttp\Promise;
 /**
  * Promises/A+ implementation that avoids recursion when possible.
  *
- * In order to benefit from iterative promises, you MUST extend from this
- * promise so that promises can reach into each others' private properties to
- * shift handler ownership.
- *
  * @link https://promisesaplus.com/
  */
 class Promise implements PromiseInterface
 {
     private $state = self::PENDING;
     private $result;
-    private $waitFn;
     private $cancelFn;
-
-    /** @internal Do not rely on this variable in subclasses */
-    protected $handlers = [];
-    /** @internal Do not rely on this variable in subclasses */
-    protected $waitList;
+    private $waitFn;
+    private $waitList;
+    private $handlers = [];
 
     /**
      * @param callable $waitFn   Fn that when invoked resolves the promise.
@@ -63,7 +56,7 @@ class Promise implements PromiseInterface
     public function wait($unwrap = true)
     {
         if ($this->state === self::PENDING) {
-            if ($this->waitFn) {
+            if ($this->waitFn || $this->waitList) {
                 $this->invokeWait();
             } else {
                 // If there's not wait function, then reject the promise.
@@ -100,7 +93,8 @@ class Promise implements PromiseInterface
             return;
         }
 
-        $this->waitFn = $this->waitList = null;
+        $this->waitFn = null;
+        $this->waitList = null;
 
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
@@ -109,7 +103,6 @@ class Promise implements PromiseInterface
                 $fn();
             } catch (\Exception $e) {
                 $this->reject($e);
-                return;
             }
         }
 
@@ -121,16 +114,12 @@ class Promise implements PromiseInterface
 
     public function resolve($value)
     {
-        if ($pending = $this->settle(self::FULFILLED, $value)) {
-            $this->resolveStack($pending);
-        }
+        $this->settle(self::FULFILLED, $value);
     }
 
     public function reject($reason)
     {
-        if ($pending = $this->settle(self::REJECTED, $reason)) {
-            $this->resolveStack($pending);
-        }
+        $this->settle(self::REJECTED, $reason);
     }
 
     private function settle($state, $value)
@@ -145,6 +134,7 @@ class Promise implements PromiseInterface
             throw new \LogicException('Cannot fulfill or reject a promise with itself');
         }
 
+        // Clear out the state of the promise but stash the handlers.
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
@@ -154,52 +144,57 @@ class Promise implements PromiseInterface
         $this->cancelFn = null;
 
         if (!$handlers) {
-            return null;
+            return;
         }
 
-        return [
-            [
-                'value'    => $value,
-                'index'    => $this->state === self::FULFILLED ? 1 : 2,
-                'handlers' => $handlers
-            ]
-        ];
+        if ($value instanceof Promise) {
+            $nextState = $value->getState();
+            if ($nextState === self::PENDING) {
+                // We can just merge our handlers onto the next promise.
+                $value->handlers = array_merge($value->handlers, $handlers);
+                return;
+            }
+        } elseif (!method_exists($value, 'then')) {
+            // The value was not a settled promise or a thenable, so resolve it
+            // in the next trampoline using the correct ID.
+            $id = $state === self::FULFILLED ? 1 : 2;
+            // It's a success, so resolve the handlers in the trampoline.
+            trampoline()->enqueue(static function () use ($id, $value, $handlers) {
+                foreach ($handlers as $handler) {
+                    self::callHandler($id, $value, $handler);
+                }
+            });
+            return;
+        }
+
+        // Resolve the handlers when the forwarded promise is resolved.
+        $value->then(
+            static function ($value) use ($handlers) {
+                trampoline()->enqueue(function () use ($handlers, $value) {
+                    foreach ($handlers as $handler) {
+                        self::callHandler(1, $value, $handler);
+                    }
+                });
+            },
+            static function ($reason) use ($handlers) {
+            trampoline()->enqueue(function () use ($handlers, $reason) {
+                foreach ($handlers as $handler) {
+                    self::callHandler(2, $reason, $handler);
+                }
+            });
+        });
     }
 
-    /**
-     * Resolve a stack of pending groups of handlers.
-     *
-     * @param array $pending Array of groups of handlers.
-     */
-    private function resolveStack(array $pending)
-    {
-        while ($group = array_pop($pending)) {
-            // If the resolution value is a promise, then merge the handlers
-            // into the promise to be notified when it is fulfilled.
-            if ($group['value'] instanceof Promise) {
-                if ($nextGroup = $this->resolveForwardPromise($group)) {
-                    $pending[] = $nextGroup;
-                    unset($nextGroup);
-                }
-                continue;
-            }
+    private function createPendingThen(
+        callable $onFulfilled = null,
+        callable $onRejected = null
+    ) {
+        $p = new Promise(null, [$this, 'cancel']);
+        $this->handlers[] = [$p, $onFulfilled, $onRejected];
+        $p->waitList = $this->waitList ?: [];
+        $p->waitList[] = [$this, 'wait'];
 
-            // Thennables that are not of our internal type must be recursively
-            // resolved using a then() call.
-            if (method_exists($group['value'], 'then')) {
-                $this->passToNextPromise($group['value'], $group['handlers']);
-                continue;
-            }
-
-            // Resolve or reject dependent handlers immediately.
-            foreach ($group['handlers'] as $handler) {
-                $pending[] = $this->callHandler(
-                    $group['index'],
-                    $group['value'],
-                    $handler
-                );
-            }
-        }
+        return $p;
     }
 
     /**
@@ -211,133 +206,30 @@ class Promise implements PromiseInterface
      *
      * @return array Returns the next group to resolve.
      */
-    private function callHandler($index, $value, array $handler)
+    private static function callHandler($index, $value, array $handler)
     {
+        /** @var PromiseInterface $promise */
+        $promise = $handler[0];
+
+        // The promise may have been cancelled or resolved before placing
+        // this thunk in the trampoline.
+        if ($promise->getState() !== self::PENDING) {
+            return;
+        }
+
         try {
-            // Use the result of the callback if available, otherwise just
-            // forward the result down the chain as appropriate.
             if (isset($handler[$index])) {
-                $nextValue = $handler[$index]($value);
+                $promise->resolve($handler[$index]($value));
             } elseif ($index === 1) {
                 // Forward resolution values as-is.
-                $nextValue = $value;
+                $promise->resolve($value);
             } else {
                 // Forward rejections down the chain.
-                return $this->handleRejection($value, $handler);
+                $promise->reject($value);
             }
         } catch (\Exception $reason) {
-            return $this->handleRejection($reason, $handler);
+            $promise->reject($reason);
         }
-
-        // You can return a rejected promise to forward a rejection.
-        if ($nextValue instanceof PromiseInterface
-            && $nextValue->getState() === self::REJECTED
-        ) {
-            return $this->handleRejection($nextValue, $handler);
-        }
-
-        $nextHandlers = $handler[0]->handlers;
-        $handler[0]->handlers = null;
-        // While waitList is removed in reject(), it needs to be set to null
-        // here in order for resources to be garbage collected.
-        $handler[0]->waitList = null;
-        $handler[0]->resolve($nextValue);
-
-        // Resolve the listeners of this promise
-        return [
-            'value'    => $nextValue,
-            'index'    => 1,
-            'handlers' => $nextHandlers
-        ];
-    }
-
-    /**
-     * Reject the listeners of a promise.
-     *
-     * @param mixed $reason  Rejection resaon.
-     * @param array $handler Handler to reject.
-     *
-     * @return array
-     */
-    private function handleRejection($reason, array $handler)
-    {
-        $nextHandlers = $handler[0]->handlers;
-        $handler[0]->handlers = null;
-        // While waitList is removed in reject(), it needs to be set to null
-        // here in order for resources to be garbage collected.
-        $handler[0]->waitList = null;
-        $handler[0]->reject($reason);
-
-        return [
-            'value'    => $reason,
-            'index'    => 2,
-            'handlers' => $nextHandlers
-        ];
-    }
-
-    /**
-     * The resolve value was a promise, so forward remaining resolution to the
-     * resolution of the forwarding promise.
-     *
-     * @param array $group Group to forward.
-     *
-     * @return array|null Returns a new group if the promise is delivered or
-     *                    returns null if the promise is pending or cancelled.
-     */
-    private function resolveForwardPromise(array $group)
-    {
-        /** @var Promise $promise */
-        $promise = $group['value'];
-        $handlers = $group['handlers'];
-        $state = $promise->getState();
-        if ($state === self::PENDING) {
-            // The promise is an instance of Promise, so merge in the
-            // dependent handlers into the promise.
-            $promise->handlers = array_merge($promise->handlers, $handlers);
-            return null;
-        } elseif ($state === self::FULFILLED) {
-            return [
-                'value'    => $promise->result,
-                'handlers' => $handlers,
-                'index'    => 1
-            ];
-        } else { // rejected
-            return [
-                'value'    => $promise->result,
-                'handlers' => $handlers,
-                'index'    => 2
-            ];
-        }
-    }
-
-    /**
-     * Resolve the dependent handlers recursively when the promise resolves.
-     *
-     * This function is invoked for thennable objects that are not an instance
-     * of Promise (because we have no internal access to the handlers).
-     *
-     * @param mixed $promise  Promise that is being depended upon.
-     * @param array $handlers Dependent handlers.
-     */
-    private function passToNextPromise($promise, array $handlers)
-    {
-        $promise->then(
-            function ($value) use ($handlers) {
-                // resolve the handlers with the given value.
-                $stack = [];
-                foreach ($handlers as $handler) {
-                    $stack[] = $this->callHandler(1, $value, $handler);
-                }
-                $this->resolveStack($stack);
-            }, function ($reason) use ($handlers) {
-                // reject the handlers with the given reason.
-                $stack = [];
-                foreach ($handlers as $handler) {
-                    $stack[] = $this->callHandler(2, $reason, $handler);
-                }
-                $this->resolveStack($stack);
-            }
-        );
     }
 
     private function invokeWait()
@@ -346,8 +238,15 @@ class Promise implements PromiseInterface
         $this->waitFn = null;
 
         try {
-            // Invoke the wait fn and ensure it resolves the promise.
-            $wfn();
+            if ($wfn) {
+                $wfn();
+            } else {
+                foreach ($this->waitList as $wfn) {
+                    $wfn(false);
+                }
+            }
+            $this->waitList = null;
+            trampoline()->run();
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise
@@ -363,31 +262,5 @@ class Promise implements PromiseInterface
         if ($this->state === self::PENDING) {
             $this->reject('Invoking the wait callback did not resolve the promise');
         }
-    }
-
-    private function createPendingThen(
-        callable $onFulfilled = null,
-        callable $onRejected = null
-    ) {
-        // Instead of waiting with recursion, create a wait function that waits
-        // on each waiter in a list one after the other.
-        $waitList = $this->waitList ? clone $this->waitList : new \SplQueue();
-        $waitList[] = [$this, 'wait'];
-
-        $p = new Promise(static function () use (&$p) {
-            if (count($p->waitList)) {
-                /** @var callable $wfn */
-                foreach ($p->waitList as $wfn) {
-                    $wfn(false);
-                }
-            }
-        }, [$this, 'cancel']);
-        $p->waitList = $waitList;
-
-        // Keep track of this dependent promise so that we resolve it
-        // later when a value has been delivered.
-        $this->handlers[] = [$p, $onFulfilled, $onRejected];
-
-        return $p;
     }
 }

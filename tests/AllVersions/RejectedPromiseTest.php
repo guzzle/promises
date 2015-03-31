@@ -75,12 +75,14 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($p, $p->then());
     }
 
-    public function testImmediatekyInvokesOnRejected()
+    public function testInvokesOnRejectedAsynchronously()
     {
         $p = new RejectedPromise('a');
         $r = null;
         $f = function ($reason) use (&$r) { $r = $reason; };
         $p->then(null, $f);
+        $this->assertNull($r);
+        \GuzzleHttp\Promise\trampoline()->run();
         $this->assertEquals('a', $r);
     }
 
@@ -108,6 +110,7 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
     {
         $p = new RejectedPromise('foo');
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        \GuzzleHttp\Promise\trampoline()->run();
         $this->assertSame('foo', $c);
     }
 }

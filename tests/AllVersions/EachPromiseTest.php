@@ -1,6 +1,8 @@
 <?php
 namespace GuzzleHttp\Promise;
 
+use GuzzleHttp\Promise as P;
+
 /**
  * @covers GuzzleHttp\Promise\EachPromise
  */
@@ -25,6 +27,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $promises[0]->resolve('a');
         $promises[1]->resolve('c');
         $promises[2]->resolve('b');
+        P\trampoline()->run();
         $this->assertEquals(['a', 'c', 'b'], $called);
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
     }
@@ -81,12 +84,15 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
         $this->assertTrue($promises->valid());
         $pending[1]->resolve('b');
+        P\trampoline()->run();
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
         $this->assertFalse($promises->valid());
         $promises[2]->resolve('c');
+        P\trampoline()->run();
         $this->assertCount(1, $this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::PENDING, $p->getState());
         $promises[3]->resolve('d');
+        P\trampoline()->run();
         $this->assertNull($this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
     }
@@ -108,11 +114,14 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($promises->valid());
         $pending[1]->resolve('b');
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        P\trampoline()->run();
         $this->assertFalse($promises->valid());
         $promises[2]->resolve('c');
+        P\trampoline()->run();
         $this->assertCount(1, $this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::PENDING, $p->getState());
         $promises[3]->resolve('d');
+        P\trampoline()->run();
         $this->assertNull($this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
         $this->assertEquals([0, 1, 1, 1], $calls);
@@ -160,6 +169,8 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $each->promise()->then(function () use (&$called) {
             $called = true;
         });
+        $this->assertFalse($called);
+        P\trampoline()->run();
         $this->assertTrue($called);
         $this->assertEquals(range(0, 99), $values);
     }
@@ -178,13 +189,11 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         ]);
         $called = false;
         $each->promise()->then(
-            function () use (&$called) {
-                $called = true;
-            },
-            function () {
-                $this->fail('Should not have rejected.');
-            }
+            function () use (&$called) { $called = true; },
+            function () { $this->fail('Should not have rejected.'); }
         );
+        $this->assertFalse($called);
+        P\trampoline()->run();
         $this->assertTrue($called);
         $this->assertEquals(range(0, 99), $values);
     }
@@ -213,6 +222,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $p = $each->promise();
         $e = null;
         $p->then(null, function ($reason) use (&$e) { $e = $reason; });
+        P\trampoline()->run();
         $this->assertInstanceOf('Exception', $e);
         $this->assertEquals('Failure: a', $e->getMessage());
     }

@@ -30,13 +30,17 @@ class FulfilledPromise implements PromiseInterface
             return $this;
         }
 
-        try {
-            // Return a new fulfilled if onFulfilled does not throw.
-            return promise_for($onFulfilled($this->value));
-        } catch (\Exception $e) {
-            // Return a rejected promise be onFulfilled failed.
-            return new RejectedPromise($e);
-        }
+        // Waiting on the promise will add a task to the trampoline.
+        $value = $this->value;
+        $p = new Promise(static function () use (&$p, $value, $onFulfilled) {
+            self::settle($p, $value, $onFulfilled);
+        });
+
+        // Enqueue the trampoline resolver right away. It might beat the wait
+        // function.
+        self::settle($p, $value, $onFulfilled);
+
+        return $p;
     }
 
     public function otherwise(callable $onRejected)
@@ -67,5 +71,18 @@ class FulfilledPromise implements PromiseInterface
     public function cancel()
     {
         // pass
+    }
+
+    private static function settle(PromiseInterface $p, $value, callable $onFulfilled)
+    {
+        trampoline()->enqueue(function () use ($p, $value, $onFulfilled) {
+            if ($p->getState() === $p::PENDING) {
+                try {
+                    $p->resolve($onFulfilled($value));
+                } catch (\Exception $e) {
+                    $p->reject($e);
+                }
+            }
+        });
     }
 }

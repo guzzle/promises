@@ -2,6 +2,7 @@
 namespace GuzzleHttp\Tests;
 
 use GuzzleHttp\Promise\CancellationException;
+use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Promise\RejectionException;
@@ -184,21 +185,25 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p3->cancel();
         $this->assertEquals('rejected', $p1->getState());
         $this->assertEquals('rejected', $p2->getState());
-        $this->assertEquals('rejected', $p2->getState());
-        $this->assertEquals('rejected', $p4->getState());
+        $this->assertEquals('rejected', $p3->getState());
+        $this->assertEquals('pending', $p4->getState());
         $this->assertTrue($called);
+
         try {
             $p3->wait();
             $this->fail();
         } catch (CancellationException $e) {
             $this->assertContains('cancelled', $e->getMessage());
         }
+
         try {
             $p4->wait();
             $this->fail();
         } catch (CancellationException $e) {
             $this->assertContains('cancelled', $e->getMessage());
         }
+
+        $this->assertEquals('rejected', $p4->getState());
     }
 
     public function testCancelsChildPromises()
@@ -213,7 +218,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('pending', $p1->getState());
         $this->assertEquals('rejected', $p2->getState());
         $this->assertEquals('rejected', $p4->getState());
-        $this->assertEquals('rejected', $p5->getState());
+        $this->assertEquals('pending', $p5->getState());
         $this->assertFalse($called1);
         $this->assertTrue($called2);
         $this->assertFalse($called3);
@@ -244,6 +249,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->resolve('foo');
+        P\trampoline()->run();
+
         $this->assertEquals('foo', $carry);
     }
 
@@ -254,8 +261,9 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $carry = null;
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
+        $this->assertNull($carry);
+        \GuzzleHttp\Promise\trampoline()->step();
         $this->assertEquals('foo', $carry);
-        $this->assertInstanceOf('GuzzleHttp\Promise\FulfilledPromise', $p2);
     }
 
     public function testCreatesPromiseWhenFulfilledWithNoCallback()
@@ -274,6 +282,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->reject('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $carry);
     }
 
@@ -284,8 +293,9 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $carry = null;
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
+        $this->assertNull($carry);
+        P\trampoline()->step();
         $this->assertEquals('foo', $carry);
-        $this->assertInstanceOf('GuzzleHttp\Promise\FulfilledPromise', $p2);
     }
 
     public function testCreatesPromiseWhenRejectedWithNoCallback()
@@ -325,6 +335,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->resolve('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('foo2', $r2);
     }
@@ -337,6 +348,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(null, function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->reject('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('foo2', $r2);
     }
@@ -356,6 +368,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $r);
         $this->assertSame($e, $r2);
     }
@@ -375,6 +388,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('bar', $r2);
         try {
@@ -389,10 +403,12 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p = new Promise();
         $p2 = new Promise();
         $resolved = null;
-        $p->then(function ($v) use ($p2) { return $p2; })
+        $p
+            ->then(function ($v) use ($p2) { return $p2; })
             ->then(function ($value) use (&$resolved) { $resolved = $value; });
         $p->resolve('a');
         $p2->resolve('b');
+        P\trampoline()->run();
         $this->assertEquals('b', $resolved);
     }
 
@@ -420,11 +436,14 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = new Promise();
         $p2->resolve('foo');
         $p2->then(function ($v) use (&$res) { $res[] = 'A:' . $v; });
-        $p->then(function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
+        // $res is A:foo
+        $p
+            ->then(function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        $this->assertEquals(['A:foo', 'B', 'C:foo', 'D:a'], $res);
+        P\trampoline()->run();
+        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testForwardsHandlersWhenRejectedPromiseIsReturned()
@@ -438,7 +457,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(null, function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->reject('a');
         $p->then(null, function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        $this->assertEquals(['A:foo', 'B', 'C:foo', 'D:a'], $res);
+        P\trampoline()->run();
+        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testDoesNotForwardRejectedPromise()
@@ -452,6 +472,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        P\trampoline()->run();
         $this->assertEquals(['B:a', 'D:a'], $res);
     }
 
@@ -466,7 +487,8 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        $this->assertEquals(['A:foo', 'B', 'C:foo', 'D:a'], $res);
+        P\trampoline()->run();
+        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testRecursivelyForwardsWhenNotInstanceOfPromise()
@@ -479,8 +501,10 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        P\trampoline()->run();
         $this->assertEquals(['B', 'D:a'], $res);
         $p2->resolve('foo');
+        P\trampoline()->run();
         $this->assertEquals(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
 
@@ -524,6 +548,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p = new Promise();
         $p->reject('foo');
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        P\trampoline()->run();
         $this->assertEquals($c, 'foo');
     }
 }

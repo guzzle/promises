@@ -124,7 +124,6 @@ class EachPromise implements PromisorInterface
 
     private function addPending()
     {
-        add_next:
         if (!$this->iterable || !$this->iterable->valid()) {
             return false;
         }
@@ -143,51 +142,26 @@ class EachPromise implements PromisorInterface
 
         $idx = $this->iterable->key();
         $this->iterable->next();
-
-        switch ($promise->getState()) {
-            case PromiseInterface::PENDING:
-                $this->pending[$idx] = $promise->then(
-                    function ($value) use ($idx) {
-                        $this->doFulfilled($value, $idx);
-                        $this->step($idx);
-                    },
-                    function ($reason) use ($idx) {
-                        $this->doRejected($reason, $idx);
-                        $this->step($idx);
-                    }
-                );
-                break;
-            case PromiseInterface::FULFILLED:
-                // Prevent recursion
-                $this->doFulfilled($promise->wait(), $idx);
-                if (!$this->checkIfFinished()) {
-                    goto add_next;
+        $this->pending[$idx] = $promise->then(
+            function ($value) use ($idx) {
+                if ($this->onFulfilled) {
+                    call_user_func(
+                        $this->onFulfilled, $value, $idx, $this->aggregate
+                    );
                 }
-                return false;
-            case PromiseInterface::REJECTED:
-                // Prevent recursion
-                $this->doRejected(inspect($promise)['reason'], $idx);
-                if (!$this->checkIfFinished()) {
-                    goto add_next;
+                $this->step($idx);
+            },
+            function ($reason) use ($idx) {
+                if ($this->onRejected) {
+                    call_user_func(
+                        $this->onRejected, $reason, $idx, $this->aggregate
+                    );
                 }
-                return false;
-        }
+                $this->step($idx);
+            }
+        );
 
         return true;
-    }
-
-    private function doFulfilled($value, $idx)
-    {
-        if ($this->onFulfilled) {
-            call_user_func($this->onFulfilled, $value, $idx, $this->aggregate);
-        }
-    }
-
-    private function doRejected($reason, $idx)
-    {
-        if ($this->onRejected) {
-            call_user_func($this->onRejected, $reason, $idx, $this->aggregate);
-        }
     }
 
     private function checkIfFinished()

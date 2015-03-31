@@ -30,13 +30,17 @@ class RejectedPromise implements PromiseInterface
             return $this;
         }
 
-        try {
-            // Return a resolved promise if onRejected does not throw.
-            return promise_for($onRejected($this->reason));
-        } catch (\Exception $e) {
-            // onRejected threw, so return a rejected promise.
-            return new static($e);
-        }
+        // Waiting on the promise will add a task to the trampoline.
+        $reason = $this->reason;
+        $p = new Promise(static function () use (&$p, $reason, $onRejected) {
+            self::settle($p, $reason, $onRejected);
+        });
+
+        // Enqueue the trampoline resolver right away. It might beat the wait
+        // function.
+        self::settle($p, $reason, $onRejected);
+
+        return $p;
     }
 
     public function otherwise(callable $onRejected)
@@ -69,5 +73,20 @@ class RejectedPromise implements PromiseInterface
     public function cancel()
     {
         // pass
+    }
+
+    private static function settle(PromiseInterface $p, $reason, callable $onRejected)
+    {
+        trampoline()->enqueue(function () use ($p, $reason, $onRejected) {
+            if ($p->getState() === $p::PENDING) {
+                try {
+                    // Return a resolved promise if onRejected does not throw.
+                    $p->reject($onRejected($reason));
+                } catch (\Exception $e) {
+                    // onRejected threw, so return a rejected promise.
+                    $p->reject(new RejectedPromise($e));
+                }
+            }
+        });
     }
 }

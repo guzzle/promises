@@ -7,6 +7,32 @@ if (function_exists('GuzzleHttp\Promise\promise_for')) {
 }
 
 /**
+ * Get the global trampoline used for promise resolution.
+ *
+ * This trampoline MUST be "stepped" in an event loop in order for promises to
+ * be settle asynchronously. It will be automatically stepped when
+ * synchronously waiting on a promise.
+ *
+ * <code>
+ * while ($eventLoop->isRunning()) {
+ *     GuzzleHttp\Promise\trampoline()->step();
+ * }
+ * </code>
+ *
+ * @return Trampoline
+ */
+function trampoline()
+{
+    static $tramp;
+
+    if (!$tramp) {
+        $tramp = new Trampoline();
+    }
+
+    return $tramp;
+}
+
+/**
  * Creates a promise for a value if the value is not a promise.
  *
  * @param mixed $value Promise or value.
@@ -96,25 +122,16 @@ function iter_for($value)
  */
 function inspect(PromiseInterface $promise)
 {
-    if ($promise->getState() === PromiseInterface::FULFILLED) {
+    try {
         return [
             'state' => PromiseInterface::FULFILLED,
             'value' => $promise->wait()
         ];
+    } catch (RejectionException $e) {
+        return ['state' => 'rejected', 'reason' => $e->getReason()];
+    } catch (\Exception $e) {
+        return ['state' => 'rejected', 'reason' => $e];
     }
-
-    $promise->then(
-        function ($value) use (&$result) {
-            $result = ['state' => 'fulfilled', 'value' => $value];
-        },
-        function ($reason) use (&$result) {
-            $result = ['state' => 'rejected', 'reason' => $reason];
-        }
-    );
-
-    $promise->wait(false);
-
-    return $result;
 }
 
 /**
@@ -209,8 +226,11 @@ function some($count, $promises)
     return each(
         $promises,
         function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
+            if ($p->getState() !== PromiseInterface::PENDING) {
+                return;
+            }
             $results[$idx] = $value;
-            if (count($results) === $count) {
+            if (count($results) >= $count) {
                 $p->resolve(null);
             }
         },

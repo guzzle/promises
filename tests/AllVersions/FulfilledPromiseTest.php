@@ -58,14 +58,15 @@ class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($p, $p->then());
     }
 
-    public function testImmediatekyInvokesOnFulfilled()
+    public function testAsynchronouslyInvokesOnFulfilled()
     {
         $p = new FulfilledPromise('a');
         $r = null;
         $f = function ($d) use (&$r) { $r = $d; };
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
-        $this->assertInstanceOf('GuzzleHttp\Promise\FulfilledPromise', $p2);
+        $this->assertNull($r);
+        \GuzzleHttp\Promise\trampoline()->run();
         $this->assertEquals('a', $r);
     }
 
@@ -75,7 +76,6 @@ class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
         $f = function () { throw new \Exception('b'); };
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
-        $this->assertInstanceOf('GuzzleHttp\Promise\RejectedPromise', $p2);
         try {
             $p2->wait();
             $this->fail();

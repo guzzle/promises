@@ -27,6 +27,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertNotSame($p, $wrapped);
         $this->assertInstanceOf('GuzzleHttp\Promise\PromiseInterface', $wrapped);
         $p->resolve('foo');
+        P\trampoline()->run();
         $this->assertEquals('foo', $wrapped->wait());
     }
 
@@ -98,6 +99,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
             function ($value) use (&$result) { $result = $value; },
             function ($reason) use (&$result) { $result = $reason; }
         );
+        P\trampoline()->run();
         $this->assertEquals(['a', 'b', 'c'], $result);
     }
 
@@ -114,6 +116,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
             function ($value) use (&$result) { $result = $value; },
             function ($reason) use (&$result) { $result = $reason; }
         );
+        P\trampoline()->run();
         $this->assertEquals('fail', $result);
     }
 
@@ -127,6 +130,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $c->resolve('c');
         $a->resolve('a');
         $d->then(function ($value) use (&$result) { $result = $value; });
+        P\trampoline()->run();
         $this->assertEquals(['b', 'c'], $result);
     }
 
@@ -136,10 +140,12 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $b = new Promise();
         $d = \GuzzleHttp\Promise\some(2, [$a, $b]);
         $a->reject('bad');
+        P\trampoline()->run();
         $this->assertEquals($a::REJECTED, $d->getState());
         $d->then(null, function ($reason) use (&$called) {
             $called = $reason;
         });
+        P\trampoline()->run();
         $this->assertEquals('bad', $called);
     }
 
@@ -174,7 +180,6 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $d = \GuzzleHttp\Promise\some(3, [$a, $b]);
         $a->resolve('a');
         $b->resolve('b');
-        $this->assertEquals('rejected', $d->getState());
         $d->wait();
     }
 
@@ -185,8 +190,10 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $c = \GuzzleHttp\Promise\any([$a, $b]);
         $b->resolve('b');
         $a->resolve('a');
-        $this->assertEquals('fulfilled', $c->getState());
+        //P\trampoline()->run();
+        //$this->assertEquals('fulfilled', $c->getState());
         $c->then(function ($value) use (&$result) { $result = $value; });
+        P\trampoline()->run();
         $this->assertEquals('b', $result);
     }
 
@@ -199,8 +206,10 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $b->resolve('b');
         $c->resolve('c');
         $a->reject('a');
+        P\trampoline()->run();
         $this->assertEquals('fulfilled', $d->getState());
         $d->then(function ($value) use (&$result) { $result = $value; });
+        P\trampoline()->run();
         $this->assertEquals([
             ['state' => 'rejected', 'reason' => 'a'],
             ['state' => 'fulfilled', 'value' => 'b'],
@@ -241,6 +250,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $p = new Promise();
         $aggregate = \GuzzleHttp\Promise\each_limit($p, 2);
         $p->resolve('a');
+        P\trampoline()->run();
         $this->assertEquals($p::FULFILLED, $aggregate->getState());
     }
 
