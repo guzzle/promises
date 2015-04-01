@@ -1,6 +1,7 @@
 <?php
 namespace GuzzleHttp\Tests;
 
+use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -247,5 +248,27 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     {
         $iter = new \ArrayIterator();
         $this->assertSame($iter, \GuzzleHttp\Promise\iter_for($iter));
+    }
+
+    public function testKnowsIfFulfilled()
+    {
+        $p = new FulfilledPromise(null);
+        $this->assertTrue(P\is_fulfilled($p));
+        $this->assertFalse(P\is_rejected($p));
+    }
+
+    public function testKnowsIfRejected()
+    {
+        $p = new RejectedPromise(null);
+        $this->assertTrue(P\is_rejected($p));
+        $this->assertFalse(P\is_fulfilled($p));
+    }
+
+    public function testKnowsIfSettled()
+    {
+        $p = new RejectedPromise(null);
+        $this->assertTrue(P\is_settled($p));
+        $p = new Promise();
+        $this->assertFalse(P\is_settled($p));
     }
 }

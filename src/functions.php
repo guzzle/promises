@@ -329,6 +329,42 @@ function each_limit(
 }
 
 /**
+ * Returns true if a promise is fulfilled.
+ *
+ * @param PromiseInterface $promise
+ *
+ * @return bool
+ */
+function is_fulfilled(PromiseInterface $promise)
+{
+    return $promise->getState() === PromiseInterface::FULFILLED;
+}
+
+/**
+ * Returns true if a promise is rejected.
+ *
+ * @param PromiseInterface $promise
+ *
+ * @return bool
+ */
+function is_rejected(PromiseInterface $promise)
+{
+    return $promise->getState() === PromiseInterface::REJECTED;
+}
+
+/**
+ * Returns true if a promise is fulfilled or rejected.
+ *
+ * @param PromiseInterface $promise
+ *
+ * @return bool
+ */
+function is_settled(PromiseInterface $promise)
+{
+    return $promise->getState() !== PromiseInterface::PENDING;
+}
+
+/**
  * Creates a promise that is resolved using a generator that yields values or
  * promises (somewhat similar to C#'s async keyword).
  *
