@@ -39,6 +39,11 @@ class FulfilledPromise implements PromiseInterface
         }
     }
 
+    public function otherwise(callable $onRejected)
+    {
+        return $this->then(null, $onRejected);
+    }
+
     public function wait($unwrap = true, $defaultDelivery = null)
     {
         return $unwrap ? $this->value : null;

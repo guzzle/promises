@@ -55,6 +55,11 @@ class Promise implements PromiseInterface
         return $onRejected ? $rejection->then(null, $onRejected) : $rejection;
     }
 
+    public function otherwise(callable $onRejected)
+    {
+        return $this->then(null, $onRejected);
+    }
+
     public function wait($unwrap = true)
     {
         if ($this->state === self::PENDING) {

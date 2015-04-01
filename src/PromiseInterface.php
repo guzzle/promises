@@ -17,7 +17,8 @@ interface PromiseInterface
     const REJECTED = 'rejected';
 
     /**
-     * Create a new promise that chains off of the current promise.
+     * Appends fulfillment and rejection handlers to the promise, and returns
+     * a new promise resolving to the return value of the called handler.
      *
      * @param callable $onFulfilled Invoked when the promise fulfills.
      * @param callable $onRejected  Invoked when the promise is rejected.
@@ -28,6 +29,18 @@ interface PromiseInterface
         callable $onFulfilled = null,
         callable $onRejected = null
     );
+
+    /**
+     * Appends a rejection handler callback to the promise, and returns a new
+     * promise resolving to the return value of the callback if it is called,
+     * or to its original fulfillment value if the promise is instead
+     * fulfilled.
+     *
+     * @param callable $onRejected Invoked when the promise is rejected.
+     *
+     * @return PromiseInterface
+     */
+    public function otherwise(callable $onRejected);
 
     /**
      * Get the state of the promise ("pending", "rejected", or "fulfilled").
@@ -73,8 +86,8 @@ interface PromiseInterface
      * @param bool $unwrap
      *
      * @return mixed
-     * @throws \LogicException
-     * @throws \Exception
+     * @throws \LogicException if the promise has no wait function or if the
+     *                         promise does not settle after waiting.
      */
     public function wait($unwrap = true);
 }

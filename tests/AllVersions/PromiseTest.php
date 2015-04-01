@@ -518,4 +518,12 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(99, $parent->wait());
     }
+
+    public function testOtherwiseIsSugarForRejections()
+    {
+        $p = new Promise();
+        $p->reject('foo');
+        $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        $this->assertEquals($c, 'foo');
+    }
 }

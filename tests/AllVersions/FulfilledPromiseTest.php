@@ -83,4 +83,12 @@ class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
             $this->assertEquals('b', $e->getMessage());
         }
     }
+
+    public function testOtherwiseIsSugarForRejections()
+    {
+        $c = null;
+        $p = new FulfilledPromise('foo');
+        $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        $this->assertNull($c);
+    }
 }

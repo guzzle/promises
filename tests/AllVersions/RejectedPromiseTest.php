@@ -103,4 +103,11 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         $p = new RejectedPromise('a');
         $p->wait(false);
     }
+
+    public function testOtherwiseIsSugarForRejections()
+    {
+        $p = new RejectedPromise('foo');
+        $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        $this->assertSame('foo', $c);
+    }
 }
