@@ -50,6 +50,8 @@ class FulfilledPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
+        trampoline()->run();
+
         return $unwrap ? $this->value : null;
     }
 
