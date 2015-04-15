@@ -113,4 +113,17 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         \GuzzleHttp\Promise\trampoline()->run();
         $this->assertSame('foo', $c);
     }
+
+    public function testCanResolveThenWithSuccess()
+    {
+        $actual = null;
+        $p = new RejectedPromise('foo');
+        $p->otherwise(function ($v) {
+            return $v . ' bar';
+        })->then(function ($v) use (&$actual) {
+            $actual = $v;
+        });
+        \GuzzleHttp\Promise\trampoline()->run();
+        $this->assertEquals('foo bar', $actual);
+    }
 }
