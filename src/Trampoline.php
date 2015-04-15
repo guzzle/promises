@@ -6,29 +6,21 @@ namespace GuzzleHttp\Promise;
  *
  * This trampoline class is used to settle promises asynchronously and
  * maintains a constant stack size. You can use the trampoline asynchronously
- * by calling the `step()` function of the global trampoline in an event
- * loop. This will execute the thunks in the trampoline at the time in which
- * the `step()` function is invoked. Use the `run()` function to execute all
- * thunks, even new thunks that are added while running the trampoline.
+ * by calling the `run()` function of the global trampoline in an event loop.
  *
- *     GuzzleHttp\Promise\trampoline()->step();
- *
- * This class uses a linked list approach in order to efficiently keep track
- * of the first and last nodes in the trampoline. For performance reasons, this
- * is achieved using arrays and references rather than SplDoublyLinkedList or
- * SplQueue.
+ *     GuzzleHttp\Promise\trampoline()->run();
  */
 class Trampoline
 {
-    private $head;
-    private $tail;
     private $enableShutdown = true;
+    private $queue;
 
     public function __construct()
     {
-        $node = ['next' => null];
-        $this->head =& $node ;
-        $this->tail =& $node;
+        $this->queue = new \SplQueue();
+        $this->queue->setIteratorMode(
+            \SplQueue::IT_MODE_FIFO | \SplQueue::IT_MODE_DELETE
+        );
 
         register_shutdown_function(function () {
             if ($this->enableShutdown) {
@@ -48,7 +40,7 @@ class Trampoline
      */
     public function hasThunks()
     {
-        return isset($this->head['thunk']);
+        return !$this->queue->isEmpty();
     }
 
     /**
@@ -58,10 +50,7 @@ class Trampoline
      */
     public function enqueue(callable $thunk)
     {
-        $this->tail['thunk'] = $thunk;
-        $next = ['next' => null];
-        $this->tail['next'] = &$next;
-        $this->tail =& $this->tail['next'];
+        $this->queue[] = $thunk;
     }
 
     /**
@@ -69,29 +58,8 @@ class Trampoline
      */
     public function run()
     {
-        /** @var callable $thunk */
-        while (isset($this->head['thunk'])) {
-            $thunk = $this->head['thunk'];
-            $this->head =& $this->head['next'];
+        foreach ($this->queue as $thunk) {
             $thunk();
-        }
-    }
-
-    /**
-     * Execute all of the currently available thunks in the trampoline without
-     * executing any thunks adding during this step.
-     */
-    public function step()
-    {
-        $currentTail = $this->tail;
-
-        while (isset($this->head['thunk'])) {
-            $thunk = $this->head['thunk'];
-            $this->head =& $this->head['next'];
-            $thunk();
-            if ($this->head === $currentTail) {
-                break;
-            }
         }
     }
 

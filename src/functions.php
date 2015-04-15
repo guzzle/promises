@@ -9,13 +9,13 @@ if (function_exists('GuzzleHttp\Promise\promise_for')) {
 /**
  * Get the global trampoline used for promise resolution.
  *
- * This trampoline MUST be "stepped" in an event loop in order for promises to
- * be settle asynchronously. It will be automatically stepped when
- * synchronously waiting on a promise.
+ * This trampoline MUST be run in an event loop in order for promises to be
+ * settled asynchronously. It will be automatically run when synchronously
+ * waiting on a promise.
  *
  * <code>
  * while ($eventLoop->isRunning()) {
- *     GuzzleHttp\Promise\trampoline()->step();
+ *     GuzzleHttp\Promise\trampoline()->run();
  * }
  * </code>
  *
@@ -423,22 +423,10 @@ function is_settled(PromiseInterface $promise)
  */
 function coroutine(callable $generatorFn)
 {
-    $queue = [];
-    $promise = new Promise(
-        function () use (&$queue) {
-            while ($promise = array_pop($queue)) {
-                $promise->wait(false);
-            }
-        },
-        function () use (&$queue) {
-            while ($promise = array_pop($queue)) {
-                $promise->cancel();
-            }
-        }
-    );
-
     $generator = $generatorFn();
-    __next_coroutine($generator->current(), $generator, $promise, $queue);
+    $coro = __next_coroutine($generator->current(), $generator);
+    $promise = new Promise([$coro, 'wait']);
+    $coro->then([$promise, 'resolve'], [$promise, 'reject']);
 
     return $promise;
 }
@@ -446,76 +434,20 @@ function coroutine(callable $generatorFn)
 /** @internal */
 function __next_coroutine(
     $yielded,
-    \Generator $generator,
-    PromiseInterface $promise,
-    array &$queue
+    \Generator $generator
 ) {
-    $queue[] = promise_for($yielded)->then(
-        function ($value) use ($generator, $promise, &$queue) {
-            // No longer need to track the last added promise.
-            array_pop($queue);
-            __process_coroutine($value, $generator, $promise, $queue);
-        },
-        function ($reason) use ($generator, $promise, &$queue) {
-            // No longer need to track the last added promise.
-            array_pop($queue);
-            __process_coroutine($reason, $generator, $promise, $queue, true);
-        }
-    );
-}
-
-function __process_coroutine(
-    $value,
-    \Generator $generator,
-    PromiseInterface $promise,
-    array &$queue,
-    $isRejection = false
-) {
-    if ($isRejection) {
-        goto reject;
-    }
-
-    send_value: {
-        try {
+    return promise_for($yielded)->then(
+        function ($value) use ($generator) {
             $nextYield = $generator->send($value);
             if ($generator->valid()) {
-                goto process_yield;
+                return __next_coroutine($nextYield, $generator);
             }
-            $promise->resolve($value);
-            return;
-        } catch (\Exception $value) {
-            goto reject;
-        }
-    }
-
-    process_yield: {
-        // Need to use a promise to resolve a nested promise.
-        if (!($nextYield instanceof PromiseInterface)
-            || $nextYield->getState() === PromiseInterface::PENDING
-        ) {
-            // Non fulfilled promise, so create a new coroutine promise
-            __next_coroutine($nextYield, $generator, $promise, $queue);
-            return;
-        }
-
-        // Process the rejection
-        if ($nextYield->getState() === PromiseInterface::REJECTED) {
-            $value = inspect($nextYield)['reason'];
-            goto reject;
-        }
-
-        // Fulfilled promise, so get the value and send it to the gen.
-        $value = $nextYield->wait();
-        goto send_value;
-    }
-
-    reject: {
-        try {
-            $nextYield = $generator->throw(exception_for($value));
+            return $value;
+        },
+        function ($reason) use ($generator) {
+            $nextYield = $generator->throw(exception_for($reason));
             // The throw was caught, so keep iterating on the coroutine
-            goto process_yield;
-        } catch (\Exception $e) {
-            $promise->reject($e);
+            return __next_coroutine($nextYield, $generator);
         }
-    }
+    );
 }

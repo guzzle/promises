@@ -262,7 +262,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        \GuzzleHttp\Promise\trampoline()->step();
+        \GuzzleHttp\Promise\trampoline()->run();
         $this->assertEquals('foo', $carry);
     }
 
@@ -294,7 +294,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        P\trampoline()->step();
+        P\trampoline()->run();
         $this->assertEquals('foo', $carry);
     }
 
