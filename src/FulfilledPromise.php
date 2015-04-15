@@ -77,7 +77,7 @@ class FulfilledPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $value, callable $onFulfilled)
     {
-        trampoline()->enqueue(function () use ($p, $value, $onFulfilled) {
+        trampoline()->schedule(function () use ($p, $value, $onFulfilled) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     $p->resolve($onFulfilled($value));

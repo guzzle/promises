@@ -159,7 +159,7 @@ class Promise implements PromiseInterface
             // in the next trampoline using the correct ID.
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the trampoline.
-            trampoline()->enqueue(static function () use ($id, $value, $handlers) {
+            trampoline()->schedule(static function () use ($id, $value, $handlers) {
                 foreach ($handlers as $handler) {
                     self::callHandler($id, $value, $handler);
                 }
@@ -170,14 +170,14 @@ class Promise implements PromiseInterface
         // Resolve the handlers when the forwarded promise is resolved.
         $value->then(
             static function ($value) use ($handlers) {
-                trampoline()->enqueue(function () use ($handlers, $value) {
+                trampoline()->schedule(function () use ($handlers, $value) {
                     foreach ($handlers as $handler) {
                         self::callHandler(1, $value, $handler);
                     }
                 });
             },
             static function ($reason) use ($handlers) {
-            trampoline()->enqueue(function () use ($handlers, $reason) {
+            trampoline()->schedule(function () use ($handlers, $reason) {
                 foreach ($handlers as $handler) {
                     self::callHandler(2, $reason, $handler);
                 }

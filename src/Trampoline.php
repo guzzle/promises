@@ -34,13 +34,13 @@ class Trampoline
     }
 
     /**
-     * Returns true if the trampoline contains any thunks to execute.
+     * Returns true if the trampoline is empty.
      *
      * @return bool
      */
-    public function hasThunks()
+    public function isEmpty()
     {
-        return !$this->queue->isEmpty();
+        return $this->queue->isEmpty();
     }
 
     /**
@@ -48,7 +48,7 @@ class Trampoline
      *
      * @param callable $thunk
      */
-    public function enqueue(callable $thunk)
+    public function schedule(callable $thunk)
     {
         $this->queue[] = $thunk;
     }

@@ -79,7 +79,7 @@ class RejectedPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $reason, callable $onRejected)
     {
-        trampoline()->enqueue(function () use ($p, $reason, $onRejected) {
+        trampoline()->schedule(function () use ($p, $reason, $onRejected) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     // Return a resolved promise if onRejected does not throw.
