@@ -424,11 +424,7 @@ function is_settled(PromiseInterface $promise)
 function coroutine(callable $generatorFn)
 {
     $generator = $generatorFn();
-    $coro = __next_coroutine($generator->current(), $generator);
-    $promise = new Promise([$coro, 'wait']);
-    $coro->then([$promise, 'resolve'], [$promise, 'reject']);
-
-    return $promise;
+    return __next_coroutine($generator->current(), $generator)->then();
 }
 
 /** @internal */

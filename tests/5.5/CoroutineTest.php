@@ -127,6 +127,28 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(999, $r);
     }
 
+    public function testLotsOfTryCatchingDoesNotBlowStack()
+    {
+        $promise = Promise\coroutine(function () {
+            $value = 0;
+            for ($i = 0; $i < 1000; $i++) {
+                try {
+                    if ($i % 2) {
+                        $value = (yield new Promise\FulfilledPromise($i));
+                    } else {
+                        $value = (yield new Promise\RejectedPromise($i));
+                    }
+                } catch (\Exception $e) {
+                    $value = (yield new Promise\FulfilledPromise($i));
+                }
+            }
+            yield $value;
+        });
+        $promise->then(function ($v) use (&$r) { $r = $v; });
+        P\trampoline()->run();
+        $this->assertEquals(999, $r);
+    }
+
     public function testAsyncPromisesWithCorrectlyYieldedValues()
     {
         $promises = [
@@ -299,5 +321,24 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
 
         $res = Promise\inspect($co);
         $this->assertEquals('f', $res['reason']);
+    }
+
+    public function testCoroutineOtherwiseIntegrationTest()
+    {
+        $a = new Promise\Promise();
+        $b = new Promise\Promise();
+        $promise = Promise\coroutine(function () use ($a, $b) {
+            // Execute the pool of commands concurrently, and process errors.
+            yield $a;
+            yield $b;
+        })->otherwise(function (\Exception $e) {
+            // Throw errors from the operations as a specific Multipart error.
+            throw new \OutOfBoundsException('a', 0, $e);
+        });
+        $a->resolve('a');
+        $b->reject('b');
+        $reason = Promise\inspect($promise)['reason'];
+        $this->assertInstanceOf('OutOfBoundsException', $reason);
+        $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $reason->getPrevious());
     }
 }
