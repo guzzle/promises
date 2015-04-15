@@ -81,6 +81,38 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('no!', $result->getReason());
     }
 
+    public function testCanCatchAndThrowOtherException()
+    {
+        $promise = Promise\coroutine(function () {
+            try {
+                yield new Promise\RejectedPromise('a');
+                $this->fail('Should have thrown into the coroutine!');
+            } catch (Promise\RejectionException $e) {
+                throw new \Exception('foo');
+            }
+        });
+        $promise->otherwise(function ($value) use (&$result) { $result = $value; });
+        P\trampoline()->run();
+        $this->assertEquals(Promise\PromiseInterface::REJECTED, $promise->getState());
+        $this->assertContains('foo', $result->getMessage());
+    }
+
+    public function testCanCatchAndYieldOtherException()
+    {
+        $promise = Promise\coroutine(function () {
+            try {
+                yield new Promise\RejectedPromise('a');
+                $this->fail('Should have thrown into the coroutine!');
+            } catch (Promise\RejectionException $e) {
+                yield new Promise\RejectedPromise('foo');
+            }
+        });
+        $promise->otherwise(function ($value) use (&$result) { $result = $value; });
+        P\trampoline()->run();
+        $this->assertEquals(Promise\PromiseInterface::REJECTED, $promise->getState());
+        $this->assertContains('foo', $result->getMessage());
+    }
+
     public function testLotsOfSynchronousDoesNotBlowStack()
     {
         $promise = Promise\coroutine(function () {
