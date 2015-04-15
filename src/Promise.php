@@ -55,31 +55,8 @@ class Promise implements PromiseInterface
 
     public function wait($unwrap = true)
     {
-        if ($this->state === self::PENDING) {
-            if ($this->waitFn || $this->waitList) {
-                $this->invokeWait();
-            } else {
-                // If there's not wait function, then reject the promise.
-                $this->reject('Cannot wait on a promise that has '
-                    . 'no internal wait function. You must provide a wait '
-                    . 'function when constructing the promise to be able to '
-                    . 'wait on a promise.');
-            }
-        }
-
-        // If there's no promise forwarding, then return/throw what we have.
-        if (!($this->result instanceof PromiseInterface)) {
-            if (!$unwrap) {
-                return null;
-            } elseif ($this->state === self::FULFILLED) {
-                return $this->result;
-            }
-            // It's rejected so "unwrap" and throw an exception.
-            throw exception_for($this->result);
-        }
-
         // Wait on nested promises until a normal value is unwrapped/thrown.
-        return $this->result->wait($unwrap);
+        return $this->waitType($unwrap, true);
     }
 
     public function getState()
@@ -191,8 +168,13 @@ class Promise implements PromiseInterface
     ) {
         $p = new Promise(null, [$this, 'cancel']);
         $this->handlers[] = [$p, $onFulfilled, $onRejected];
-        $p->waitList = $this->waitList ?: [];
-        $p->waitList[] = [$this, 'wait'];
+        if ($this->waitList) {
+            $p->waitList = clone $this->waitList;
+        } else {
+            $p->waitList = new \SplQueue();
+            $p->waitList->setIteratorMode(\SplQueue::IT_MODE_FIFO | \SplQueue::IT_MODE_DELETE);
+        }
+        $p->waitList[] = $this;
 
         return $p;
     }
@@ -232,6 +214,34 @@ class Promise implements PromiseInterface
         }
     }
 
+    private function waitType($unwrap, $deep)
+    {
+        if ($this->state === self::PENDING) {
+            if ($this->waitFn || $this->waitList) {
+                $this->invokeWait();
+            } else {
+                // If there's not wait function, then reject the promise.
+                $this->reject('Cannot wait on a promise that has '
+                    . 'no internal wait function. You must provide a wait '
+                    . 'function when constructing the promise to be able to '
+                    . 'wait on a promise.');
+            }
+        }
+
+        // If there's no promise forwarding, then return/throw what we have.
+        if (!($this->result instanceof PromiseInterface)) {
+            if (!$unwrap) {
+                return null;
+            } elseif ($this->state === self::FULFILLED) {
+                return $this->result;
+            }
+            // It's rejected so "unwrap" and throw an exception.
+            throw exception_for($this->result);
+        }
+
+        return $deep ? $this->result->wait($unwrap) : $this->result;
+    }
+
     private function invokeWait()
     {
         $wfn = $this->waitFn;
@@ -239,13 +249,18 @@ class Promise implements PromiseInterface
 
         try {
             if ($wfn) {
-                $wfn();
+                $wfn(true);
             } else {
-                foreach ($this->waitList as $wfn) {
-                    $wfn(false);
+                // This will invoke the wait functions in the list iteratively
+                // without recursing into promises when waiting on forwarded
+                // promise values.
+                foreach ($this->waitList as $p) {
+                    $result = $p->waitType(false, false);
+                    if ($result instanceof PromiseInterface) {
+                        $this->waitList[] = $result;
+                    }
                 }
             }
-            $this->waitList = null;
             trampoline()->run();
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {

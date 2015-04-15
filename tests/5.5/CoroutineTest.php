@@ -113,23 +113,36 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('foo', $result->getMessage());
     }
 
-    public function testLotsOfSynchronousDoesNotBlowStack()
+    public function createLotsOfSynchronousPromise()
     {
-        $promise = Promise\coroutine(function () {
+        return Promise\coroutine(function () {
             $value = 0;
             for ($i = 0; $i < 1000; $i++) {
                 $value = (yield new Promise\FulfilledPromise($i));
             }
             yield $value;
         });
+    }
+
+    public function testLotsOfSynchronousDoesNotBlowStack()
+    {
+        $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
         P\trampoline()->run();
         $this->assertEquals(999, $r);
     }
 
-    public function testLotsOfTryCatchingDoesNotBlowStack()
+    public function testLotsOfSynchronousWaitDoesNotBlowStack()
     {
-        $promise = Promise\coroutine(function () {
+        $promise = $this->createLotsOfSynchronousPromise();
+        $promise->then(function ($v) use (&$r) { $r = $v; });
+        $this->assertEquals(999, $promise->wait());
+        $this->assertEquals(999, $r);
+    }
+
+    private function createLotsOfFlappingPromise()
+    {
+        return Promise\coroutine(function () {
             $value = 0;
             for ($i = 0; $i < 1000; $i++) {
                 try {
@@ -144,8 +157,21 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             }
             yield $value;
         });
+    }
+
+    public function testLotsOfTryCatchingDoesNotBlowStack()
+    {
+        $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
         P\trampoline()->run();
+        $this->assertEquals(999, $r);
+    }
+
+    public function testLotsOfTryCatchingWaitingDoesNotBlowStack()
+    {
+        $promise = $this->createLotsOfFlappingPromise();
+        $promise->then(function ($v) use (&$r) { $r = $v; });
+        $this->assertEquals(999, $promise->wait());
         $this->assertEquals(999, $r);
     }
 
