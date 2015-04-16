@@ -281,4 +281,32 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $p = new Promise();
         $this->assertFalse(P\is_settled($p));
     }
+
+    public function testReturnsTrampoline()
+    {
+        $this->assertInstanceOf('GuzzleHttp\Promise\Trampoline', P\trampoline());
+        $this->assertSame(P\trampoline(), P\trampoline());
+    }
+
+    public function testCanScheduleThunk()
+    {
+        $tramp = P\trampoline();
+        $promise = P\thunk_promise(function () { return 'Hi!'; });
+        $c = null;
+        $promise->then(function ($v) use (&$c) { $c = $v; });
+        $this->assertNull($c);
+        $tramp->run();
+        $this->assertEquals('Hi!', $c);
+    }
+
+    public function testCanScheduleThunkWithRejection()
+    {
+        $tramp = P\trampoline();
+        $promise = P\thunk_promise(function () { throw new \Exception('Hi!'); });
+        $c = null;
+        $promise->otherwise(function ($v) use (&$c) { $c = $v; });
+        $this->assertNull($c);
+        $tramp->run();
+        $this->assertEquals('Hi!', $c->getMessage());
+    }
 }
