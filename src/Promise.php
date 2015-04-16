@@ -70,8 +70,7 @@ class Promise implements PromiseInterface
             return;
         }
 
-        $this->waitFn = null;
-        $this->waitList = null;
+        $this->waitFn = $this->waitList = null;
 
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
@@ -116,8 +115,7 @@ class Promise implements PromiseInterface
         $this->result = $value;
         $handlers = $this->handlers;
         $this->handlers = null;
-        $this->waitList = null;
-        $this->waitFn = null;
+        $this->waitList = $this->waitFn = null;
         $this->cancelFn = null;
 
         if (!$handlers) {
@@ -168,12 +166,7 @@ class Promise implements PromiseInterface
     ) {
         $p = new Promise(null, [$this, 'cancel']);
         $this->handlers[] = [$p, $onFulfilled, $onRejected];
-        if ($this->waitList) {
-            $p->waitList = clone $this->waitList;
-        } else {
-            $p->waitList = new \SplQueue();
-            $p->waitList->setIteratorMode(\SplQueue::IT_MODE_FIFO | \SplQueue::IT_MODE_DELETE);
-        }
+        $p->waitList = $this->waitList;
         $p->waitList[] = $this;
 
         return $p;
@@ -254,10 +247,17 @@ class Promise implements PromiseInterface
                 // This will invoke the wait functions in the list iteratively
                 // without recursing into promises when waiting on forwarded
                 // promise values.
-                foreach ($this->waitList as $p) {
-                    $result = $p->waitType(false, false);
+                $waitList = $this->waitList;
+                while ($promise = array_shift($waitList)) {
+                    wait_again:
+                    $result = $promise->waitType(false, false);
                     if ($result instanceof PromiseInterface) {
-                        $this->waitList[] = $result;
+                        // The result was a promise so wait on that before
+                        // waiting on promises further down the chain. Using
+                        // goto here avoids having to reindex the array twice
+                        // in one loop.
+                        $promise = $result;
+                        goto wait_again;
                     }
                 }
             }
