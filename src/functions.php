@@ -33,18 +33,18 @@ function trampoline()
 }
 
 /**
- * Schedules a function to run in the trampoline when it is next run and
+ * Adds a function to run in the trampoline when it is next `run()` and
  * returns a promise that is fulfilled or rejected with the result.
  *
  * @param callable $thunk Thunk function to run.
  *
  * @return Promise
  */
-function thunk_promise(callable $thunk)
+function thunk(callable $thunk)
 {
     $tramp = trampoline();
     $promise = new Promise([$tramp, 'run']);
-    $tramp->schedule(function () use ($thunk, $promise) {
+    $tramp->add(function () use ($thunk, $promise) {
         // The promise may have been waited upon with a wait function.
         if (!is_settled($promise)) {
             try {

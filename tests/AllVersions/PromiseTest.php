@@ -13,7 +13,7 @@ use GuzzleHttp\Promise\RejectionException;
 class PromiseTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @expectedException \RuntimeException
+     * @expectedException \LogicException
      * @expectedExceptionMessage The promise is already fulfilled
      */
     public function testCannotResolveNonPendingPromise()
@@ -24,8 +24,15 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('foo', $p->wait());
     }
 
+    public function testCanResolveWithSameValue()
+    {
+        $p = new Promise();
+        $p->resolve('foo');
+        $p->resolve('foo');
+    }
+
     /**
-     * @expectedException \RuntimeException
+     * @expectedException \LogicException
      * @expectedExceptionMessage Cannot change a fulfilled promise to rejected
      */
     public function testCannotRejectNonPendingPromise()
@@ -34,6 +41,24 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p->resolve('foo');
         $p->reject('bar');
         $this->assertEquals('foo', $p->wait());
+    }
+
+    public function testCanRejectWithSameValue()
+    {
+        $p = new Promise();
+        $p->reject('foo');
+        $p->reject('foo');
+    }
+
+    /**
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Cannot change a fulfilled promise to rejected
+     */
+    public function testCannotRejectResolveWithSameValue()
+    {
+        $p = new Promise();
+        $p->resolve('foo');
+        $p->reject('foo');
     }
 
     public function testInvokesWaitFunction()

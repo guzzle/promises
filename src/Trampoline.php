@@ -44,11 +44,12 @@ class Trampoline
     }
 
     /**
-     * Adds a thunk to the queue.
+     * Adds a thunk to the queue that will be executed the next time run is
+     * called.
      *
      * @param callable $thunk
      */
-    public function schedule(callable $thunk)
+    public function add(callable $thunk)
     {
         $this->queue[] = $thunk;
     }

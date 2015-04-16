@@ -105,9 +105,13 @@ class Promise implements PromiseInterface
     private function settle($state, $value)
     {
         if ($this->state !== self::PENDING) {
+            // Ignore calls with the same resolution.
+            if ($state === $this->state && $value === $this->result) {
+                return;
+            }
             throw $this->state === $state
-                ? new \RuntimeException("The promise is already {$state}.")
-                : new \RuntimeException("Cannot change a {$this->state} promise to {$state}");
+                ? new \LogicException("The promise is already {$state}.")
+                : new \LogicException("Cannot change a {$this->state} promise to {$state}");
         }
 
         if ($value === $this) {
@@ -138,7 +142,7 @@ class Promise implements PromiseInterface
             // in the next trampoline using the correct ID.
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the trampoline.
-            trampoline()->schedule(static function () use ($id, $value, $handlers) {
+            trampoline()->add(static function () use ($id, $value, $handlers) {
                 foreach ($handlers as $handler) {
                     self::callHandler($id, $value, $handler);
                 }
@@ -149,19 +153,19 @@ class Promise implements PromiseInterface
         // Resolve the handlers when the forwarded promise is resolved.
         $value->then(
             static function ($value) use ($handlers) {
-                trampoline()->schedule(function () use ($handlers, $value) {
+                trampoline()->add(function () use ($handlers, $value) {
                     foreach ($handlers as $handler) {
                         self::callHandler(1, $value, $handler);
                     }
                 });
             },
             static function ($reason) use ($handlers) {
-                trampoline()->schedule(function () use ($handlers, $reason) {
+                trampoline()->add(function () use ($handlers, $reason) {
                     foreach ($handlers as $handler) {
                         self::callHandler(2, $reason, $handler);
-                }
+                    }
+                });
             });
-        });
     }
 
     /**

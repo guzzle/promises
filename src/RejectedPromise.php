@@ -64,12 +64,14 @@ class RejectedPromise implements PromiseInterface
 
     public function resolve($value)
     {
-        throw new \RuntimeException("Cannot resolve a rejected promise");
+        throw new \LogicException("Cannot resolve a rejected promise");
     }
 
     public function reject($reason)
     {
-        throw new \RuntimeException("Cannot reject a rejected promise");
+        if ($reason !== $this->reason) {
+            throw new \LogicException("Cannot reject a rejected promise");
+        }
     }
 
     public function cancel()
@@ -79,7 +81,7 @@ class RejectedPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $reason, callable $onRejected)
     {
-        trampoline()->schedule(function () use ($p, $reason, $onRejected) {
+        trampoline()->add(function () use ($p, $reason, $onRejected) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     // Return a resolved promise if onRejected does not throw.

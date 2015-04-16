@@ -62,12 +62,14 @@ class FulfilledPromise implements PromiseInterface
 
     public function resolve($value)
     {
-        throw new \RuntimeException("Cannot resolve a fulfilled promise");
+        if ($value !== $this->value) {
+            throw new \LogicException("Cannot resolve a fulfilled promise");
+        }
     }
 
     public function reject($reason)
     {
-        throw new \RuntimeException("Cannot reject a fulfilled promise");
+        throw new \LogicException("Cannot reject a fulfilled promise");
     }
 
     public function cancel()
@@ -77,7 +79,7 @@ class FulfilledPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $value, callable $onFulfilled)
     {
-        trampoline()->schedule(function () use ($p, $value, $onFulfilled) {
+        trampoline()->add(function () use ($p, $value, $onFulfilled) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     $p->resolve($onFulfilled($value));

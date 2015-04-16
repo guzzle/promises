@@ -30,7 +30,7 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
+     * @expectedException \LogicException
      * @exepctedExceptionMessage Cannot resolve a rejected promise
      */
     public function testCannotResolve()
@@ -40,13 +40,19 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \RuntimeException
+     * @expectedException \LogicException
      * @exepctedExceptionMessage Cannot reject a rejected promise
      */
     public function testCannotReject()
     {
         $p = new RejectedPromise('foo');
         $p->reject('bar');
+    }
+
+    public function testCanRejectWithSameValue()
+    {
+        $p = new RejectedPromise('foo');
+        $p->reject('foo');
     }
 
     public function testThrowsSpecificException()

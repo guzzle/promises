@@ -291,7 +291,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     public function testCanScheduleThunk()
     {
         $tramp = P\trampoline();
-        $promise = P\thunk_promise(function () { return 'Hi!'; });
+        $promise = P\thunk(function () { return 'Hi!'; });
         $c = null;
         $promise->then(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
@@ -302,7 +302,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     public function testCanScheduleThunkWithRejection()
     {
         $tramp = P\trampoline();
-        $promise = P\thunk_promise(function () { throw new \Exception('Hi!'); });
+        $promise = P\thunk(function () { throw new \Exception('Hi!'); });
         $c = null;
         $promise->otherwise(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
