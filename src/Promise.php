@@ -32,7 +32,11 @@ class Promise implements PromiseInterface
         callable $onRejected = null
     ) {
         if ($this->state === self::PENDING) {
-            return $this->createPendingThen($onFulfilled, $onRejected);
+            $p = new Promise(null, [$this, 'cancel']);
+            $this->handlers[] = [$p, $onFulfilled, $onRejected];
+            $p->waitList = $this->waitList;
+            $p->waitList[] = $this;
+            return $p;
         }
 
         // Return a fulfilled promise and immediately invoke any callbacks.
@@ -152,24 +156,12 @@ class Promise implements PromiseInterface
                 });
             },
             static function ($reason) use ($handlers) {
-            trampoline()->schedule(function () use ($handlers, $reason) {
-                foreach ($handlers as $handler) {
-                    self::callHandler(2, $reason, $handler);
+                trampoline()->schedule(function () use ($handlers, $reason) {
+                    foreach ($handlers as $handler) {
+                        self::callHandler(2, $reason, $handler);
                 }
             });
         });
-    }
-
-    private function createPendingThen(
-        callable $onFulfilled = null,
-        callable $onRejected = null
-    ) {
-        $p = new Promise(null, [$this, 'cancel']);
-        $this->handlers[] = [$p, $onFulfilled, $onRejected];
-        $p->waitList = $this->waitList;
-        $p->waitList[] = $this;
-
-        return $p;
     }
 
     /**
