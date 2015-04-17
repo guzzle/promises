@@ -246,14 +246,18 @@ class Promise implements PromiseInterface
                 $waitList = $this->waitList;
                 while ($promise = array_shift($waitList)) {
                     wait_again:
-                    $result = $promise->waitType(false, false);
-                    if ($result instanceof PromiseInterface) {
-                        // The result was a promise so wait on that before
-                        // waiting on promises further down the chain. Using
-                        // goto here avoids having to reindex the array twice
-                        // in one loop.
-                        $promise = $result;
-                        goto wait_again;
+                    if ($promise instanceof Promise) {
+                        $result = $promise->waitType(false, false);
+                        if ($result instanceof PromiseInterface) {
+                            // The result was a promise so wait on that before
+                            // waiting on promises further down the chain.
+                            // Using goto here avoids having to reindex the
+                            // array twice in one loop.
+                            $promise = $result;
+                            goto wait_again;
+                        }
+                    } elseif ($promise->getState() === self::PENDING) {
+                        $promise->wait();
                     }
                 }
             }
