@@ -38,20 +38,17 @@ function queue()
  *
  * @param callable $task Task function to run.
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function task(callable $task)
 {
     $queue = queue();
     $promise = new Promise([$queue, 'run']);
     $queue->add(function () use ($task, $promise) {
-        // The promise may have been waited upon with a wait function.
-        if (!is_settled($promise)) {
-            try {
-                $promise->resolve($task());
-            } catch (\Exception $e) {
-                $promise->reject($e);
-            }
+        try {
+            $promise->resolve($task());
+        } catch (\Exception $e) {
+            $promise->reject($e);
         }
     });
 

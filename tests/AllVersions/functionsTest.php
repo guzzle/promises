@@ -309,4 +309,12 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $tramp->run();
         $this->assertEquals('Hi!', $c->getMessage());
     }
+
+    public function testCanScheduleThunkWithWait()
+    {
+        $tramp = P\queue();
+        $promise = P\task(function () { return 'a'; });
+        $this->assertEquals('a', $promise->wait());
+        $tramp->run();
+    }
 }
