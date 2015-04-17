@@ -59,8 +59,20 @@ class Promise implements PromiseInterface
 
     public function wait($unwrap = true)
     {
-        // Wait on nested promises until a normal value is unwrapped/thrown.
-        return $this->waitType($unwrap, true);
+        $this->waitIfPending();
+
+        if (!$unwrap) {
+            return null;
+        }
+
+        if ($this->result instanceof PromiseInterface) {
+            return $this->result->wait($unwrap);
+        } elseif ($this->state === self::FULFILLED) {
+            return $this->result;
+        } else {
+            // It's rejected so "unwrap" and throw an exception.
+            throw exception_for($this->result);
+        }
     }
 
     public function getState()
@@ -131,8 +143,7 @@ class Promise implements PromiseInterface
         }
 
         if ($value instanceof Promise) {
-            $nextState = $value->getState();
-            if ($nextState === self::PENDING) {
+            if ($value->getState() === self::PENDING) {
                 // We can just merge our handlers onto the next promise.
                 $value->handlers = array_merge($value->handlers, $handlers);
                 return;
@@ -203,65 +214,35 @@ class Promise implements PromiseInterface
         }
     }
 
-    private function waitType($unwrap, $deep)
+    private function waitIfPending()
     {
+        if ($this->state !== self::PENDING) {
+            return;
+        } elseif ($this->waitFn) {
+            $this->invokeWaitFn();
+        } elseif ($this->waitList) {
+            $this->invokeWaitList();
+        } else {
+            // If there's not wait function, then reject the promise.
+            $this->reject('Cannot wait on a promise that has '
+                . 'no internal wait function. You must provide a wait '
+                . 'function when constructing the promise to be able to '
+                . 'wait on a promise.');
+        }
+
+        queue()->run();
+
         if ($this->state === self::PENDING) {
-            if ($this->waitFn || $this->waitList) {
-                $this->invokeWait();
-            } else {
-                // If there's not wait function, then reject the promise.
-                $this->reject('Cannot wait on a promise that has '
-                    . 'no internal wait function. You must provide a wait '
-                    . 'function when constructing the promise to be able to '
-                    . 'wait on a promise.');
-            }
+            $this->reject('Invoking the wait callback did not resolve the promise');
         }
-
-        // If there's no promise forwarding, then return/throw what we have.
-        if (!($this->result instanceof PromiseInterface)) {
-            if (!$unwrap) {
-                return null;
-            } elseif ($this->state === self::FULFILLED) {
-                return $this->result;
-            }
-            // It's rejected so "unwrap" and throw an exception.
-            throw exception_for($this->result);
-        }
-
-        return $deep ? $this->result->wait($unwrap) : $this->result;
     }
 
-    private function invokeWait()
+    private function invokeWaitFn()
     {
-        $wfn = $this->waitFn;
-        $this->waitFn = null;
-
         try {
-            if ($wfn) {
-                $wfn(true);
-            } else {
-                // This will invoke the wait functions in the list iteratively
-                // without recursing into promises when waiting on forwarded
-                // promise values.
-                $waitList = $this->waitList;
-                while ($promise = array_shift($waitList)) {
-                    wait_again:
-                    if ($promise instanceof Promise) {
-                        $result = $promise->waitType(false, false);
-                        if ($result instanceof PromiseInterface) {
-                            // The result was a promise so wait on that before
-                            // waiting on promises further down the chain.
-                            // Using goto here avoids having to reindex the
-                            // array twice in one loop.
-                            $promise = $result;
-                            goto wait_again;
-                        }
-                    } elseif ($promise->getState() === self::PENDING) {
-                        $promise->wait();
-                    }
-                }
-            }
-            queue()->run();
+            $wfn = $this->waitFn;
+            $this->waitFn = null;
+            $wfn(true);
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise
@@ -273,9 +254,20 @@ class Promise implements PromiseInterface
                 throw $reason;
             }
         }
+    }
 
-        if ($this->state === self::PENDING) {
-            $this->reject('Invoking the wait callback did not resolve the promise');
+    private function invokeWaitList()
+    {
+        $waitList = $this->waitList;
+        $this->waitList = null;
+
+        foreach ($waitList as $result) {
+            descend:
+            $result->waitIfPending();
+            if ($result->result instanceof Promise) {
+                $result = $result->result;
+                goto descend;
+            }
         }
     }
 }
