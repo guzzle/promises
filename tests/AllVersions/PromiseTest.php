@@ -274,7 +274,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->resolve('foo');
-        P\trampoline()->run();
+        P\queue()->run();
 
         $this->assertEquals('foo', $carry);
     }
@@ -287,7 +287,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        \GuzzleHttp\Promise\trampoline()->run();
+        \GuzzleHttp\Promise\queue()->run();
         $this->assertEquals('foo', $carry);
     }
 
@@ -307,7 +307,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->reject('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $carry);
     }
 
@@ -319,7 +319,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $carry);
     }
 
@@ -360,7 +360,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->resolve('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('foo2', $r2);
     }
@@ -373,7 +373,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(null, function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->reject('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('foo2', $r2);
     }
@@ -393,7 +393,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $r);
         $this->assertSame($e, $r2);
     }
@@ -413,7 +413,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('foo', $r);
         $this->assertEquals('bar', $r2);
         try {
@@ -433,7 +433,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($value) use (&$resolved) { $resolved = $value; });
         $p->resolve('a');
         $p2->resolve('b');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('b', $resolved);
     }
 
@@ -467,7 +467,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
@@ -482,7 +482,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(null, function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->reject('a');
         $p->then(null, function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
@@ -497,7 +497,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['B:a', 'D:a'], $res);
     }
 
@@ -512,7 +512,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
@@ -526,10 +526,10 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['B', 'D:a'], $res);
         $p2->resolve('foo');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
 
@@ -573,7 +573,7 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $p = new Promise();
         $p->reject('foo');
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals($c, 'foo');
     }
 }

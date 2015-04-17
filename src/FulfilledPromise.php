@@ -30,13 +30,13 @@ class FulfilledPromise implements PromiseInterface
             return $this;
         }
 
-        // Waiting on the promise will add a task to the trampoline.
+        // Waiting on the promise will add a task to the task queue.
         $value = $this->value;
         $p = new Promise(static function () use (&$p, $value, $onFulfilled) {
             self::settle($p, $value, $onFulfilled);
         });
 
-        // Enqueue the trampoline resolver right away. It might beat the wait
+        // Enqueue the task queue resolver right away. It might beat the wait
         // function.
         self::settle($p, $value, $onFulfilled);
 
@@ -50,7 +50,7 @@ class FulfilledPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
-        trampoline()->run();
+        queue()->run();
 
         return $unwrap ? $this->value : null;
     }
@@ -79,7 +79,7 @@ class FulfilledPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $value, callable $onFulfilled)
     {
-        trampoline()->add(function () use ($p, $value, $onFulfilled) {
+        queue()->add(function () use ($p, $value, $onFulfilled) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     $p->resolve($onFulfilled($value));

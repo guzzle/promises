@@ -139,10 +139,10 @@ class Promise implements PromiseInterface
             }
         } elseif (!method_exists($value, 'then')) {
             // The value was not a settled promise or a thenable, so resolve it
-            // in the next trampoline using the correct ID.
+            // in the task queue using the correct ID.
             $id = $state === self::FULFILLED ? 1 : 2;
-            // It's a success, so resolve the handlers in the trampoline.
-            trampoline()->add(static function () use ($id, $value, $handlers) {
+            // It's a success, so resolve the handlers in the queue.
+            queue()->add(static function () use ($id, $value, $handlers) {
                 foreach ($handlers as $handler) {
                     self::callHandler($id, $value, $handler);
                 }
@@ -153,14 +153,14 @@ class Promise implements PromiseInterface
         // Resolve the handlers when the forwarded promise is resolved.
         $value->then(
             static function ($value) use ($handlers) {
-                trampoline()->add(function () use ($handlers, $value) {
+                queue()->add(function () use ($handlers, $value) {
                     foreach ($handlers as $handler) {
                         self::callHandler(1, $value, $handler);
                     }
                 });
             },
             static function ($reason) use ($handlers) {
-                trampoline()->add(function () use ($handlers, $reason) {
+                queue()->add(function () use ($handlers, $reason) {
                     foreach ($handlers as $handler) {
                         self::callHandler(2, $reason, $handler);
                     }
@@ -183,7 +183,7 @@ class Promise implements PromiseInterface
         $promise = $handler[0];
 
         // The promise may have been cancelled or resolved before placing
-        // this thunk in the trampoline.
+        // this thunk in the queue.
         if ($promise->getState() !== self::PENDING) {
             return;
         }
@@ -261,7 +261,7 @@ class Promise implements PromiseInterface
                     }
                 }
             }
-            trampoline()->run();
+            queue()->run();
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise

@@ -30,13 +30,13 @@ class RejectedPromise implements PromiseInterface
             return $this;
         }
 
-        // Waiting on the promise will add a task to the trampoline.
+        // Waiting on the promise will add a task to the task queue.
         $reason = $this->reason;
         $p = new Promise(static function () use (&$p, $reason, $onRejected) {
             self::settle($p, $reason, $onRejected);
         });
 
-        // Enqueue the trampoline resolver right away. It might beat the wait
+        // Enqueue the task queue resolver right away. It might beat the wait
         // function.
         self::settle($p, $reason, $onRejected);
 
@@ -50,7 +50,7 @@ class RejectedPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
-        trampoline()->run();
+        queue()->run();
 
         if ($unwrap) {
             throw exception_for($this->reason);
@@ -81,7 +81,7 @@ class RejectedPromise implements PromiseInterface
 
     private static function settle(PromiseInterface $p, $reason, callable $onRejected)
     {
-        trampoline()->add(function () use ($p, $reason, $onRejected) {
+        queue()->add(function () use ($p, $reason, $onRejected) {
             if ($p->getState() === $p::PENDING) {
                 try {
                     // Return a resolved promise if onRejected does not throw.

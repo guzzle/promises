@@ -72,7 +72,7 @@ class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
         $this->assertNull($r);
-        \GuzzleHttp\Promise\trampoline()->run();
+        \GuzzleHttp\Promise\queue()->run();
         $this->assertEquals('a', $r);
     }
 

@@ -410,27 +410,26 @@ promise in order to utilize wait and cancel functions with foreign promises.
 ## Event Loop Integration
 
 In order to keep the stack size constant, Guzzle promises are resolved
-asynchronously using a [trampoline](http://en.wikipedia.org/wiki/Trampoline_%28computing%29).
-When waiting on promises synchronously, the trampoline will be automatically
-run to ensure that the blocking promise and any forwarded promises are
-resolved. When using promises asynchronously in an event loop, you will need
-to run the trampoline on each tick of the loop. If you do not run the
-trampoline, then promises will not be resolved.
+asynchronously using a task queue. When waiting on promises synchronously, the
+task queue will be automatically run to ensure that the blocking promise and
+any forwarded promises are resolved. When using promises asynchronously in an
+event loop, you will need to run the task queue on each tick of the loop. If
+you do not run the task queue, then promises will not be resolved.
 
-You can run the trampoline using the `run()` method of the global trampoline
+You can run the task queue using the `run()` method of the global task queue
 instance.
 
 ```php
-// Get the global trampoline
-$tramp = \GuzzleHttp\Promise\trampoline();
-$tramp->run();
+// Get the global task queue
+$queue = \GuzzleHttp\Promise\queue();
+$queue->run();
 ```
 
 For example, you could use Guzzle promises with React using a periodic timer:
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$loop->addPeriodicTimer(0, [$tramp, 'run']);
+$loop->addPeriodicTimer(0, [$queue, 'run']);
 ```
 
 *TODO*: Perhaps adding a `futureTick()` on each tick would be faster?

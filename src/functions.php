@@ -7,48 +7,48 @@ if (function_exists('GuzzleHttp\Promise\promise_for')) {
 }
 
 /**
- * Get the global trampoline used for promise resolution.
+ * Get the global task queue used for promise resolution.
  *
- * This trampoline MUST be run in an event loop in order for promises to be
+ * This task queue MUST be run in an event loop in order for promises to be
  * settled asynchronously. It will be automatically run when synchronously
  * waiting on a promise.
  *
  * <code>
  * while ($eventLoop->isRunning()) {
- *     GuzzleHttp\Promise\trampoline()->run();
+ *     GuzzleHttp\Promise\queue()->run();
  * }
  * </code>
  *
- * @return Trampoline
+ * @return TaskQueue
  */
-function trampoline()
+function queue()
 {
-    static $tramp;
+    static $queue;
 
-    if (!$tramp) {
-        $tramp = new Trampoline();
+    if (!$queue) {
+        $queue = new TaskQueue();
     }
 
-    return $tramp;
+    return $queue;
 }
 
 /**
- * Adds a function to run in the trampoline when it is next `run()` and
- * returns a promise that is fulfilled or rejected with the result.
+ * Adds a function to run in the task queue when it is next `run()` and returns
+ * a promise that is fulfilled or rejected with the result.
  *
- * @param callable $thunk Thunk function to run.
+ * @param callable $task Task function to run.
  *
  * @return Promise
  */
-function thunk(callable $thunk)
+function task(callable $task)
 {
-    $tramp = trampoline();
-    $promise = new Promise([$tramp, 'run']);
-    $tramp->add(function () use ($thunk, $promise) {
+    $queue = queue();
+    $promise = new Promise([$queue, 'run']);
+    $queue->add(function () use ($task, $promise) {
         // The promise may have been waited upon with a wait function.
         if (!is_settled($promise)) {
             try {
-                $promise->resolve($thunk());
+                $promise->resolve($task());
             } catch (\Exception $e) {
                 $promise->reject($e);
             }
@@ -454,17 +454,14 @@ function coroutine(callable $generatorFn)
 }
 
 /** @internal */
-function __next_coroutine(
-    $yielded,
-    \Generator $generator
-) {
+function __next_coroutine($yielded, \Generator $generator)
+{
     return promise_for($yielded)->then(
         function ($value) use ($generator) {
             $nextYield = $generator->send($value);
-            if ($generator->valid()) {
-                return __next_coroutine($nextYield, $generator);
-            }
-            return $value;
+            return $generator->valid()
+                ? __next_coroutine($nextYield, $generator)
+                : $value;
         },
         function ($reason) use ($generator) {
             $nextYield = $generator->throw(exception_for($reason));

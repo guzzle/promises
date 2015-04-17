@@ -88,7 +88,7 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         $f = function ($reason) use (&$r) { $r = $reason; };
         $p->then(null, $f);
         $this->assertNull($r);
-        \GuzzleHttp\Promise\trampoline()->run();
+        \GuzzleHttp\Promise\queue()->run();
         $this->assertEquals('a', $r);
     }
 
@@ -116,7 +116,7 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
     {
         $p = new RejectedPromise('foo');
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
-        \GuzzleHttp\Promise\trampoline()->run();
+        \GuzzleHttp\Promise\queue()->run();
         $this->assertSame('foo', $c);
     }
 
@@ -129,7 +129,7 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         })->then(function ($v) use (&$actual) {
             $actual = $v;
         });
-        \GuzzleHttp\Promise\trampoline()->run();
+        \GuzzleHttp\Promise\queue()->run();
         $this->assertEquals('foo bar', $actual);
     }
 }

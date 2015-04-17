@@ -13,7 +13,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             yield  $value . 'b';
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('ab', $result);
     }
 
@@ -29,7 +29,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             }
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(Promise\PromiseInterface::FULFILLED, $promise->getState());
         $this->assertEquals('ab', $result);
     }
@@ -44,7 +44,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             function () { $this->fail(); },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertInstanceOf('Exception', $result);
         $this->assertEquals('a', $result->getMessage());
     }
@@ -59,7 +59,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             function () { $this->fail(); },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
         $this->assertEquals('no!', $result->getReason());
     }
@@ -76,7 +76,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             function ($reason) use (&$result) { $result = $reason; }
         );
         $rej->reject('no!');
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
         $this->assertEquals('no!', $result->getReason());
     }
@@ -92,7 +92,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(Promise\PromiseInterface::REJECTED, $promise->getState());
         $this->assertContains('foo', $result->getMessage());
     }
@@ -108,7 +108,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(Promise\PromiseInterface::REJECTED, $promise->getState());
         $this->assertContains('foo', $result->getMessage());
     }
@@ -128,7 +128,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
     {
         $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(999, $r);
     }
 
@@ -163,7 +163,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
     {
         $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(999, $r);
     }
 
@@ -200,7 +200,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $promises[2]->resolve(2);
 
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals(2, $r);
     }
 
@@ -216,7 +216,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
             yield $p1;
             yield $p2;
         });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('hello!', $co->wait());
     }
 
@@ -231,7 +231,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $p1->resolve('a');
         $p2->resolve('b');
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('b', $result);
     }
 
@@ -261,7 +261,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         $p4->reject('d');
         $p5->resolve('e');
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('e', $result);
     }
 
@@ -292,7 +292,7 @@ class CoroutineTest extends \PHPUnit_Framework_TestCase
         }
 
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\trampoline()->run();
+        P\queue()->run();
         $this->assertEquals('19', $result);
     }
 
