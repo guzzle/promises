@@ -30,15 +30,18 @@ class RejectedPromise implements PromiseInterface
             return $this;
         }
 
-        // Waiting on the promise will add a task to the task queue.
+        $queue = queue();
         $reason = $this->reason;
-        $p = new Promise(static function () use (&$p, $reason, $onRejected) {
-            self::settle($p, $reason, $onRejected);
+        $p = new Promise([$queue, 'run']);
+        $queue->add(static function () use ($p, $reason, $onRejected) {
+            try {
+                // Return a resolved promise if onRejected does not throw.
+                $p->resolve($onRejected($reason));
+            } catch (\Exception $e) {
+                // onRejected threw, so return a rejected promise.
+                $p->reject($e);
+            }
         });
-
-        // Enqueue the task queue resolver right away. It might beat the wait
-        // function.
-        self::settle($p, $reason, $onRejected);
 
         return $p;
     }
@@ -77,20 +80,5 @@ class RejectedPromise implements PromiseInterface
     public function cancel()
     {
         // pass
-    }
-
-    private static function settle(PromiseInterface $p, $reason, callable $onRejected)
-    {
-        queue()->add(function () use ($p, $reason, $onRejected) {
-            if ($p->getState() === $p::PENDING) {
-                try {
-                    // Return a resolved promise if onRejected does not throw.
-                    $p->resolve($onRejected($reason));
-                } catch (\Exception $e) {
-                    // onRejected threw, so return a rejected promise.
-                    $p->reject($e);
-                }
-            }
-        });
     }
 }

@@ -30,15 +30,16 @@ class FulfilledPromise implements PromiseInterface
             return $this;
         }
 
-        // Waiting on the promise will add a task to the task queue.
+        $queue = queue();
+        $p = new Promise([$queue, 'run']);
         $value = $this->value;
-        $p = new Promise(static function () use (&$p, $value, $onFulfilled) {
-            self::settle($p, $value, $onFulfilled);
+        $queue->add(function () use ($p, $value, $onFulfilled) {
+            try {
+                $p->resolve($onFulfilled($value));
+            } catch (\Exception $e) {
+                $p->reject($e);
+            }
         });
-
-        // Enqueue the task queue resolver right away. It might beat the wait
-        // function.
-        self::settle($p, $value, $onFulfilled);
 
         return $p;
     }
@@ -75,18 +76,5 @@ class FulfilledPromise implements PromiseInterface
     public function cancel()
     {
         // pass
-    }
-
-    private static function settle(PromiseInterface $p, $value, callable $onFulfilled)
-    {
-        queue()->add(function () use ($p, $value, $onFulfilled) {
-            if ($p->getState() === $p::PENDING) {
-                try {
-                    $p->resolve($onFulfilled($value));
-                } catch (\Exception $e) {
-                    $p->reject($e);
-                }
-            }
-        });
     }
 }
