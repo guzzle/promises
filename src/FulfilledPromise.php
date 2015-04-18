@@ -33,7 +33,7 @@ class FulfilledPromise implements PromiseInterface
         $queue = queue();
         $p = new Promise([$queue, 'run']);
         $value = $this->value;
-        $queue->add(function () use ($p, $value, $onFulfilled) {
+        $queue->add(static function () use ($p, $value, $onFulfilled) {
             try {
                 $p->resolve($onFulfilled($value));
             } catch (\Exception $e) {
