@@ -97,4 +97,12 @@ class FulfilledPromiseTest extends \PHPUnit_Framework_TestCase
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
     }
+
+    public function testDoesNotTryToFulfillTwiceDuringTrampoline()
+    {
+        $fp = new FulfilledPromise('a');
+        $t1 = $fp->then(function ($v) { return $v . ' b'; });
+        $t1->resolve('why!');
+        $this->assertEquals('why!', $t1->wait());
+    }
 }

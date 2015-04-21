@@ -132,4 +132,12 @@ class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
         \GuzzleHttp\Promise\queue()->run();
         $this->assertEquals('foo bar', $actual);
     }
+
+    public function testDoesNotTryToRejectTwiceDuringTrampoline()
+    {
+        $fp = new RejectedPromise('a');
+        $t1 = $fp->then(null, function ($v) { return $v . ' b'; });
+        $t1->resolve('why!');
+        $this->assertEquals('why!', $t1->wait());
+    }
 }
