@@ -3,8 +3,7 @@
          colors="true">
   <testsuites>
     <testsuite>
-      <directory>tests/AllVersions</directory>
-      <directory phpVersion="5.5.0" phpVersionOperator=">=">tests/5.5</directory>
+      <directory>tests</directory>
     </testsuite>
   </testsuites>
   <filter>

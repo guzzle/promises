@@ -418,8 +418,6 @@ function is_settled(PromiseInterface $promise)
  * This can lead to less verbose code when doing lots of sequential async calls
  * with minimal processing in between.
  *
- * NOTE: Requires PHP 5.5 or greater.
- *
  *     use GuzzleHttp\Promise;
  *
  *     function createPromise($value) {

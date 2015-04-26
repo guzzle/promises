@@ -8,18 +8,21 @@ namespace GuzzleHttp\Promise;
 class EachPromise implements PromisorInterface
 {
     private $pending = [];
+
     /** @var \Iterator */
     private $iterable;
+
     /** @var callable|int */
     private $concurrency;
+
     /** @var callable */
     private $onFulfilled;
+
     /** @var callable */
     private $onRejected;
+
     /** @var Promise */
     private $aggregate;
-    /** @var callable */
-    private $mapfn;
 
     /**
      * Configuration hash can include the following key value pairs:
@@ -38,17 +41,11 @@ class EachPromise implements PromisorInterface
      * - concurrency: (integer) Pass this configuration option to limit the
      *   allowed number of outstanding concurrently executing promises,
      *   creating a capped pool of promises. There is no limit by default.
-     * - mapfn: (callable) If provided, this function is provided the next
-     *   value from the iterator and returns a mapped value. This function may
-     *   be used to create promises from an iterator, validate each element
-     *   yielded by the iterator, etc. If an exception is thrown while
-     *   invoking the map function, the promise will be rejected with the
-     *   exception.
      *
      * @param mixed    $iterable Promises or values to iterate.
      * @param array    $config   Configuration options
      */
-    public function __construct($iterable, array $config)
+    public function __construct($iterable, array $config = [])
     {
         $this->iterable = iter_for($iterable);
 
@@ -63,10 +60,6 @@ class EachPromise implements PromisorInterface
         if (isset($config['rejected'])) {
             $this->onRejected = $config['rejected'];
         }
-
-        if (isset($config['mapfn'])) {
-            $this->mapfn = $config['mapfn'];
-        }
     }
 
     public function promise()
@@ -75,9 +68,13 @@ class EachPromise implements PromisorInterface
             return $this->aggregate;
         }
 
-        $this->createPromise();
-        $this->iterable->rewind();
-        $this->refillPending();
+        try {
+            $this->createPromise();
+            $this->iterable->rewind();
+            $this->refillPending();
+        } catch (\Exception $e) {
+            $this->aggregate->reject($e);
+        }
 
         return $this->aggregate;
     }
@@ -128,20 +125,16 @@ class EachPromise implements PromisorInterface
             return false;
         }
 
-        if (!$this->mapfn) {
-            $promise = promise_for($this->iterable->current());
-        } else {
-            try {
-                $fn = $this->mapfn;
-                $promise = promise_for($fn($this->iterable->current()));
-            } catch (\Exception $e) {
-                $this->aggregate->reject($e);
-                return false;
-            }
+        $promise = promise_for($this->iterable->current());
+        $idx = $this->iterable->key();
+
+        try {
+            $this->iterable->next();
+        } catch (\Exception $e) {
+            $this->aggregate->reject($e);
+            return false;
         }
 
-        $idx = $this->iterable->key();
-        $this->iterable->next();
         $this->pending[$idx] = $promise->then(
             function ($value) use ($idx) {
                 if ($this->onFulfilled) {

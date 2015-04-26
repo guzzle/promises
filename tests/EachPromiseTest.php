@@ -198,32 +198,31 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(range(0, 99), $values);
     }
 
-    public function testCanMapIterable()
+    public function testReturnsPromiseForWhatever()
     {
         $called = [];
         $arr = ['a', 'b'];
-        $mapfn = function ($value) use (&$called) {
-            $called[] = $value;
-            return new FulfilledPromise($value);
-        };
-        $each = new EachPromise($arr, ['mapfn' => $mapfn]);
+        $each = new EachPromise($arr, [
+            'fulfilled' => function ($v) use (&$called) { $called[] = $v; }
+        ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
         $this->assertEquals(['a', 'b'], $called);
     }
 
-    public function testRejectsAggregateWhenMapThrows()
+    public function testRejectsAggregateWhenNextThrows()
     {
-        $each = new EachPromise(['a'], [
-            'mapfn' => function ($value) {
-                throw new \Exception('Failure: ' . $value);
-            }
-        ]);
+        $iter = function () {
+            yield 'a';
+            throw new \Exception('Failure');
+        };
+        $each = new EachPromise($iter());
         $p = $each->promise();
         $e = null;
+        $received = null;
         $p->then(null, function ($reason) use (&$e) { $e = $reason; });
         P\queue()->run();
         $this->assertInstanceOf('Exception', $e);
-        $this->assertEquals('Failure: a', $e->getMessage());
+        $this->assertEquals('Failure', $e->getMessage());
     }
 }
