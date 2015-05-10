@@ -55,8 +55,6 @@ class RejectedPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
-        queue()->run();
-
         if ($unwrap) {
             throw exception_for($this->reason);
         }
