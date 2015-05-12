@@ -1,5 +1,5 @@
 <?php
-namespace GuzzleHttp\Tests\RejectedPromise;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\AggregateException;
 

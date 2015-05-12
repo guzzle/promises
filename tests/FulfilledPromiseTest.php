@@ -1,5 +1,5 @@
 <?php
-namespace GuzzleHttp\Tests\Promise\RejectedPromise;
+namespace GuzzleHttp\Tests\Promise;
 
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\FulfilledPromise;

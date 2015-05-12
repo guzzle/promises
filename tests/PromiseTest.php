@@ -1,5 +1,5 @@
 <?php
-namespace GuzzleHttp\Tests;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise as P;

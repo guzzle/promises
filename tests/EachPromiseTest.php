@@ -1,6 +1,11 @@
 <?php
-namespace GuzzleHttp\Promise;
+namespace GuzzleHttp\Promise\Tests;
 
+use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise as P;
 
 /**

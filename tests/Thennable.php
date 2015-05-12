@@ -1,5 +1,5 @@
 <?php
-namespace GuzzleHttp\Tests;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\Promise;
 

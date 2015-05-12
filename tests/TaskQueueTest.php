@@ -1,5 +1,5 @@
 <?php
-namespace GuzzleHttp\Test;
+namespace GuzzleHttp\Promise\Test;
 
 use GuzzleHttp\Promise\TaskQueue;
 
