@@ -142,15 +142,9 @@ class Promise implements PromiseInterface
             return;
         }
 
-        if ($value instanceof Promise) {
-            if ($value->getState() === self::PENDING) {
-                // We can just merge our handlers onto the next promise.
-                $value->handlers = array_merge($value->handlers, $handlers);
-                return;
-            }
-        } elseif (!method_exists($value, 'then')) {
-            // The value was not a settled promise or a thenable, so resolve it
-            // in the task queue using the correct ID.
+        // If the value was not a settled promise or a thenable, then resolve
+        // it in the task queue using the correct ID.
+        if (!method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
             queue()->add(static function () use ($id, $value, $handlers) {
@@ -158,25 +152,26 @@ class Promise implements PromiseInterface
                     self::callHandler($id, $value, $handler);
                 }
             });
-            return;
-        }
-
-        // Resolve the handlers when the forwarded promise is resolved.
-        $value->then(
-            static function ($value) use ($handlers) {
-                queue()->add(function () use ($handlers, $value) {
+        } elseif ($value instanceof Promise
+            && $value->getState() === self::PENDING
+        ) {
+            // We can just merge our handlers onto the next promise.
+            $value->handlers = array_merge($value->handlers, $handlers);
+        } else {
+            // Resolve the handlers when the forwarded promise is resolved.
+            $value->then(
+                static function ($value) use ($handlers) {
                     foreach ($handlers as $handler) {
                         self::callHandler(1, $value, $handler);
                     }
-                });
-            },
-            static function ($reason) use ($handlers) {
-                queue()->add(function () use ($handlers, $reason) {
+                },
+                static function ($reason) use ($handlers) {
                     foreach ($handlers as $handler) {
                         self::callHandler(2, $reason, $handler);
                     }
-                });
-            });
+                }
+            );
+        }
     }
 
     /**
