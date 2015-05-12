@@ -13,15 +13,10 @@ namespace GuzzleHttp\Promise;
 class TaskQueue
 {
     private $enableShutdown = true;
-    private $queue;
+    private $queue = [];
 
     public function __construct()
     {
-        $this->queue = new \SplQueue();
-        $this->queue->setIteratorMode(
-            \SplQueue::IT_MODE_FIFO | \SplQueue::IT_MODE_DELETE
-        );
-
         register_shutdown_function(function () {
             if ($this->enableShutdown) {
                 // Only run the tasks if an E_ERROR didn't occur.
@@ -40,7 +35,7 @@ class TaskQueue
      */
     public function isEmpty()
     {
-        return $this->queue->isEmpty();
+        return !$this->queue;
     }
 
     /**
@@ -59,7 +54,7 @@ class TaskQueue
      */
     public function run()
     {
-        foreach ($this->queue as $task) {
+        while ($task = array_shift($this->queue)) {
             $task();
         }
     }
