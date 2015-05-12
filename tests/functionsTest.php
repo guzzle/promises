@@ -134,19 +134,21 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['b', 'c'], $result);
     }
 
-    public function testSomeRejectsOnFirstReject()
+    public function testSomeRejectsWhenTooManyRejections()
     {
         $a = new Promise();
         $b = new Promise();
         $d = \GuzzleHttp\Promise\some(2, [$a, $b]);
         $a->reject('bad');
+        $b->resolve('good');
         P\queue()->run();
         $this->assertEquals($a::REJECTED, $d->getState());
         $d->then(null, function ($reason) use (&$called) {
             $called = $reason;
         });
         P\queue()->run();
-        $this->assertEquals('bad', $called);
+        $this->assertInstanceOf('GuzzleHttp\Promise\AggregateException', $called);
+        $this->assertContains('bad', $called->getReasons());
     }
 
     public function testCanWaitUntilSomeCountIsSatisfied()
@@ -159,8 +161,8 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \GuzzleHttp\Promise\RejectionException
-     * @expectedExceptionMessage The promise was rejected with reason: Not enough promises to fulfill count
+     * @expectedException \GuzzleHttp\Promise\AggregateException
+     * @expectedExceptionMessage Not enough promises to fulfill count
      */
     public function testThrowsIfImpossibleToWaitForSomeCount()
     {
@@ -170,8 +172,8 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \GuzzleHttp\Promise\RejectionException
-     * @expectedExceptionMessage The promise was rejected with reason: Not enough promises to fulfill count
+     * @expectedException \GuzzleHttp\Promise\AggregateException
+     * @expectedExceptionMessage Not enough promises to fulfill count
      */
     public function testThrowsIfResolvedWithoutCountTotalResults()
     {

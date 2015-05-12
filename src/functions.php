@@ -237,6 +237,9 @@ function all($promises)
  * fulfilled with an array that contains the fulfillment values of the winners
  * in order of resolution.
  *
+ * This prommise is rejected with a {@see GuzzleHttp\Promise\AggregateException}
+ * if the number of fulfilled promises is less than the desired $count.
+ *
  * @param int   $count    Total number of promises.
  * @param mixed $promises Promises or values.
  *
@@ -245,6 +248,7 @@ function all($promises)
 function some($count, $promises)
 {
     $results = [];
+    $rejections = [];
 
     return each(
         $promises,
@@ -257,13 +261,16 @@ function some($count, $promises)
                 $p->resolve(null);
             }
         },
-        function ($reason, $idx, Promise $aggregate) {
-            $aggregate->reject($reason);
+        function ($reason) use (&$rejections) {
+            $rejections[] = $reason;
         }
     )->then(
-        function () use (&$results, $count) {
+        function () use (&$results, &$rejections, $count) {
             if (count($results) !== $count) {
-                return new RejectedPromise('Not enough promises to fulfill count');
+                throw new AggregateException(
+                    'Not enough promises to fulfill count',
+                    $rejections
+                );
             }
             ksort($results);
             return array_values($results);
