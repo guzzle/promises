@@ -15,17 +15,19 @@ class TaskQueue
     private $enableShutdown = true;
     private $queue = [];
 
-    public function __construct()
+    public function __construct($withShutdown = true)
     {
-        register_shutdown_function(function () {
-            if ($this->enableShutdown) {
-                // Only run the tasks if an E_ERROR didn't occur.
-                $err = error_get_last();
-                if (!$err || ($err['type'] ^ E_ERROR)) {
-                    $this->run();
+        if ($withShutdown) {
+            register_shutdown_function(function () {
+                if ($this->enableShutdown) {
+                    // Only run the tasks if an E_ERROR didn't occur.
+                    $err = error_get_last();
+                    if (!$err || ($err['type'] ^ E_ERROR)) {
+                        $this->run();
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
