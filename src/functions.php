@@ -372,6 +372,32 @@ function each_limit(
 }
 
 /**
+ * Like each_limit, but ensures that no promise in the given $iterable argument
+ * is rejected. If any promise is rejected, then the aggregate promise is
+ * rejected with the encountered rejection.
+ *
+ * @param mixed        $iterable
+ * @param int|callable $concurrency
+ * @param callable     $onFulfilled
+ *
+ * @return mixed
+ */
+function each_limit_all(
+    $iterable,
+    $concurrency,
+    callable $onFulfilled = null
+) {
+    return each_limit(
+        $iterable,
+        $concurrency,
+        $onFulfilled,
+        function ($reason, $idx, PromiseInterface $aggregate) {
+            $aggregate->reject($reason);
+        }
+    );
+}
+
+/**
  * Returns true if a promise is fulfilled.
  *
  * @param PromiseInterface $promise

@@ -254,6 +254,16 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($p::FULFILLED, $aggregate->getState());
     }
 
+    public function testEachLimitAllRejectsOnFailure()
+    {
+        $p = [new FulfilledPromise('a'), new RejectedPromise('b')];
+        $aggregate = \GuzzleHttp\Promise\each_limit_all($p, 2);
+        P\queue()->run();
+        $this->assertEquals(P\PromiseInterface::REJECTED, $aggregate->getState());
+        $result = \GuzzleHttp\Promise\inspect($aggregate);
+        $this->assertEquals('b', $result['reason']);
+    }
+
     public function testIterForReturnsIterator()
     {
         $iter = new \ArrayIterator();
