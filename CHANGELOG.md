@@ -1,5 +1,5 @@
 # CHANGELOG
 
-## 0.1.0 - 2015-03-18
+## 1.0.0 - 2015-05-12
 
 Initial release
