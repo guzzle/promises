@@ -4,18 +4,13 @@ namespace GuzzleHttp\Promise;
 /**
  * Exception thrown when too many errors occur in the some() or any() methods.
  */
-class AggregateException extends \Exception
+class AggregateException extends RejectionException
 {
-    private $reasons;
-
     public function __construct($msg, array $reasons)
     {
-        parent::__construct($msg);
-        $this->reasons = $reasons;
-    }
-
-    public function getReasons()
-    {
-        return $this->reasons;
+        parent::__construct(
+            $reasons,
+            sprintf('%s; %d rejected promises', $msg, count($reasons))
+        );
     }
 }

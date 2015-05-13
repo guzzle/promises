@@ -3,7 +3,7 @@ namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\RejectionException;
 
-class Thing
+class Thing1
 {
     public function __construct($message)
     {
@@ -16,6 +16,14 @@ class Thing
     }
 }
 
+class Thing2 implements \JsonSerializable
+{
+    public function jsonSerialize()
+    {
+        return '{}';
+    }
+}
+
 /**
  * @covers GuzzleHttp\Promise\RejectionException
  */
@@ -23,17 +31,17 @@ class RejectionExceptionTest extends \PHPUnit_Framework_TestCase
 {
     public function testCanGetReasonFromException()
     {
-        $thing = new Thing('foo');
+        $thing = new Thing1('foo');
         $e = new RejectionException($thing);
 
         $this->assertSame($thing, $e->getReason());
         $this->assertEquals('The promise was rejected with reason: foo', $e->getMessage());
     }
 
-    public function testCanGetReasonMessageFromArrayOrJson()
+    public function testCanGetReasonMessageFromJson()
     {
-        $reason = ['foo' => 'bar'];
+        $reason = new Thing2();
         $e = new RejectionException($reason);
-        $this->assertContains("{\n    \"foo\": \"bar\"\n}", $e->getMessage());
+        $this->assertContains("{}", $e->getMessage());
     }
 }

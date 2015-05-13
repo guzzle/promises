@@ -148,7 +148,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         });
         P\queue()->run();
         $this->assertInstanceOf('GuzzleHttp\Promise\AggregateException', $called);
-        $this->assertContains('bad', $called->getReasons());
+        $this->assertContains('bad', $called->getReason());
     }
 
     public function testCanWaitUntilSomeCountIsSatisfied()

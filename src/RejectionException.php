@@ -12,18 +12,22 @@ class RejectionException extends \RuntimeException
     private $reason;
 
     /**
-     * @param mixed $reason Rejection reason.
+     * @param mixed $reason       Rejection reason.
+     * @param string $description Optional description
      */
-    public function __construct($reason)
+    public function __construct($reason, $description = null)
     {
         $this->reason = $reason;
 
         $message = 'The promise was rejected';
-        if (is_string($reason)
+
+        if ($description) {
+            $message .= ' with reason: ' . $description;
+        } elseif (is_string($reason)
             || (is_object($reason) && method_exists($reason, '__toString'))
         ) {
             $message .= ' with reason: ' . $this->reason;
-        } elseif (is_array($reason) || $reason instanceof \JsonSerializable) {
+        } elseif ($reason instanceof \JsonSerializable) {
             $message .= ' with reason: '
                 . json_encode($this->reason, JSON_PRETTY_PRINT);
         }
