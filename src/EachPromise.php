@@ -82,7 +82,6 @@ class EachPromise implements PromisorInterface
     private function createPromise()
     {
         $this->aggregate = new Promise(function () {
-            $this->refillPending();
             reset($this->pending);
             // Consume a potentially fluctuating list of promises while
             // ensuring that indexes are maintained (precluding array_shift).
@@ -108,15 +107,28 @@ class EachPromise implements PromisorInterface
     {
         if (!$this->concurrency) {
             // Add all pending promises.
-            while ($this->addPending());
-        } else {
-            // Add only up to N pending promises.
-            $concurrency = is_callable($this->concurrency)
-                ? call_user_func($this->concurrency, count($this->pending))
-                : $this->concurrency;
-            $concurrency = max($concurrency - count($this->pending), 0);
-            while ($concurrency-- && $this->addPending());
+            while ($this->addPending() && $this->advanceIterator());
+            return;
         }
+
+        // Add only up to N pending promises.
+        $concurrency = is_callable($this->concurrency)
+            ? call_user_func($this->concurrency, count($this->pending))
+            : $this->concurrency;
+        $concurrency = max($concurrency - count($this->pending), 0);
+        // Concurrency may be set to 0 to disallow new promises.
+        if (!$concurrency) {
+            return;
+        }
+        // Add the first pending promise.
+        $this->addPending();
+        // Note this is special handling for concurrency=1 so that we do
+        // not advance the iterator after adding the first promise. This
+        // helps work around issues with generators that might not have the
+        // next value to yield until promise callbacks are called.
+        while (--$concurrency
+            && $this->advanceIterator()
+            && $this->addPending());
     }
 
     private function addPending()
@@ -127,13 +139,6 @@ class EachPromise implements PromisorInterface
 
         $promise = promise_for($this->iterable->current());
         $idx = $this->iterable->key();
-
-        try {
-            $this->iterable->next();
-        } catch (\Exception $e) {
-            $this->aggregate->reject($e);
-            return false;
-        }
 
         $this->pending[$idx] = $promise->then(
             function ($value) use ($idx) {
@@ -157,15 +162,15 @@ class EachPromise implements PromisorInterface
         return true;
     }
 
-    private function checkIfFinished()
+    private function advanceIterator()
     {
-        if (!$this->pending && !$this->iterable->valid()) {
-            // Resolve the promise if there's nothing left to do.
-            $this->aggregate->resolve(null);
+        try {
+            $this->iterable->next();
             return true;
+        } catch (\Exception $e) {
+            $this->aggregate->reject($e);
+            return false;
         }
-
-        return false;
     }
 
     private function step($idx)
@@ -176,10 +181,22 @@ class EachPromise implements PromisorInterface
         }
 
         unset($this->pending[$idx]);
+        $this->advanceIterator();
 
         if (!$this->checkIfFinished()) {
             // Add more pending promises if possible.
             $this->refillPending();
         }
+    }
+
+    private function checkIfFinished()
+    {
+        if (!$this->pending && !$this->iterable->valid()) {
+            // Resolve the promise if there's nothing left to do.
+            $this->aggregate->resolve(null);
+            return true;
+        }
+
+        return false;
     }
 }
