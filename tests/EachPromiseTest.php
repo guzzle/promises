@@ -91,7 +91,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $pending[1]->resolve('b');
         P\queue()->run();
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
-        $this->assertFalse($promises->valid());
+        $this->assertTrue($promises->valid());
         $promises[2]->resolve('c');
         P\queue()->run();
         $this->assertCount(1, $this->readAttribute($each, 'pending'));
@@ -100,6 +100,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         P\queue()->run();
         $this->assertNull($this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
+        $this->assertFalse($promises->valid());
     }
 
     public function testDynamicallyLimitsPendingPromises()
@@ -120,7 +121,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $pending[1]->resolve('b');
         $this->assertCount(2, $this->readAttribute($each, 'pending'));
         P\queue()->run();
-        $this->assertFalse($promises->valid());
+        $this->assertTrue($promises->valid());
         $promises[2]->resolve('c');
         P\queue()->run();
         $this->assertCount(1, $this->readAttribute($each, 'pending'));
@@ -130,6 +131,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($this->readAttribute($each, 'pending'));
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
         $this->assertEquals([0, 1, 1, 1], $calls);
+        $this->assertFalse($promises->valid());
     }
 
     public function testClearsReferencesWhenResolved()
@@ -229,5 +231,58 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         P\queue()->run();
         $this->assertInstanceOf('Exception', $e);
         $this->assertEquals('Failure', $e->getMessage());
+    }
+
+    public function testDoesNotCallNextOnIteratorUntilNeededWhenWaiting()
+    {
+        $results = [];
+        $values = [10];
+        $remaining = 9;
+        $iter = function () use (&$values) {
+            while ($value = array_pop($values)) {
+                yield $value;
+            }
+        };
+        $each = new EachPromise($iter(), [
+            'concurrency' => 1,
+            'fulfilled' => function ($r) use (&$results, &$values, &$remaining) {
+                $results[] = $r;
+                if ($remaining > 0) {
+                    $values[] = $remaining--;
+                }
+            }
+        ]);
+        $each->promise()->wait();
+        $this->assertEquals(range(10, 1), $results);
+    }
+
+    public function testDoesNotCallNextOnIteratorUntilNeededWhenAsync()
+    {
+        $firstPromise = new Promise();
+        $pending = [$firstPromise];
+        $values = [$firstPromise];
+        $results = [];
+        $remaining = 9;
+        $iter = function () use (&$values) {
+            while ($value = array_pop($values)) {
+                yield $value;
+            }
+        };
+        $each = new EachPromise($iter(), [
+            'concurrency' => 1,
+            'fulfilled' => function ($r) use (&$results, &$values, &$remaining, &$pending) {
+                $results[] = $r;
+                if ($remaining-- > 0) {
+                    $pending[] = $values[] = new Promise();
+                }
+            }
+        ]);
+        $i = 0;
+        $each->promise();
+        while ($promise = array_pop($pending)) {
+            $promise->resolve($i++);
+            P\queue()->run();
+        }
+        $this->assertEquals(range(0, 9), $results);
     }
 }
