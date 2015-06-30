@@ -1,11 +1,6 @@
 <?php
 namespace GuzzleHttp\Promise;
 
-// Don't redefine the functions if included multiple times.
-if (function_exists('GuzzleHttp\Promise\promise_for')) {
-    return;
-}
-
 /**
  * Get the global task queue used for promise resolution.
  *

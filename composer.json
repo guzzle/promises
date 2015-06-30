@@ -21,7 +21,7 @@
         "psr-4": {
             "GuzzleHttp\\Promise\\": "src/"
         },
-        "files": ["src/functions.php"]
+        "files": ["src/functions_include.php"]
     },
     "extra": {
         "branch-alias": {
