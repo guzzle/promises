@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.0.2 - 2015-05-15
+
+* Conditionally require functions.php.
+
 ## 1.0.1 - 2015-06-24
 
 * Updating EachPromise to call next on the underlying promise iterator as late
