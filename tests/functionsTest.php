@@ -509,13 +509,16 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
 
         $promise = P\coroutine(function () use ($promises) {
             $value = null;
-            $this->assertEquals('skip', (yield new P\FulfilledPromise('skip')));
+            $skip =  (yield new P\FulfilledPromise('skip'));
+            $this->assertEquals('skip', $skip);
             foreach ($promises as $idx => $p) {
                 $value = (yield $p);
                 $this->assertEquals($value, $idx);
-                $this->assertEquals('skip', (yield new P\FulfilledPromise('skip')));
+                $skip =  (yield new P\FulfilledPromise('skip'));
+                $this->assertEquals('skip', $skip);
             }
-            $this->assertEquals('skip', (yield new P\FulfilledPromise('skip')));
+            $skip =  (yield new P\FulfilledPromise('skip'));
+            $this->assertEquals('skip', $skip);
             yield $value;
         });
 

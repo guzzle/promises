@@ -473,6 +473,9 @@ function is_settled(PromiseInterface $promise)
 function coroutine(callable $generatorFn)
 {
     $generator = $generatorFn();
+    if (defined('HHVM_VERSION')) {
+      $generator->next();
+    }
     return __next_coroutine($generator->current(), $generator)->then();
 }
 
@@ -487,7 +490,11 @@ function __next_coroutine($yielded, \Generator $generator)
                 : $value;
         },
         function ($reason) use ($generator) {
-            $nextYield = $generator->throw(exception_for($reason));
+            if (defined('HHVM_VERSION')) {
+              $nextYield = $generator->raise(exception_for($reason));
+            } else {
+              $nextYield = $generator->throw(exception_for($reason));
+            }
             // The throw was caught, so keep iterating on the coroutine
             return __next_coroutine($nextYield, $generator);
         }
