@@ -8,6 +8,9 @@ php:
 
 sudo: false
 
+before_script:
+  - if [[ "$TRAVIS_PHP_VERSION" = "hhv*" ]]; then find . -type f -name "*.php" -exec sed -i '' 's/(\(yield .*\));/\1;/g' {} +; fi
+
 install:
   - travis_retry composer install --no-interaction --prefer-source
 
