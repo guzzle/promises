@@ -61,17 +61,19 @@ class Promise implements PromiseInterface
     {
         $this->waitIfPending();
 
-        if (!$unwrap) {
-            return null;
-        }
+        $inner = $this->result instanceof PromiseInterface
+            ? $this->result->wait($unwrap)
+            : $this->result;
 
-        if ($this->result instanceof PromiseInterface) {
-            return $this->result->wait($unwrap);
-        } elseif ($this->state === self::FULFILLED) {
-            return $this->result;
-        } else {
-            // It's rejected so "unwrap" and throw an exception.
-            throw exception_for($this->result);
+        if ($unwrap) {
+            if ($this->result instanceof PromiseInterface
+                || $this->state === self::FULFILLED
+            ) {
+                return $inner;
+            } else {
+                // It's rejected so "unwrap" and throw an exception.
+                throw exception_for($inner);
+            }
         }
     }
 
