@@ -172,6 +172,18 @@ class PromiseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('Whoop', $p->wait());
     }
 
+    public function testWaitsOnAPromiseChainEvenWhenNotUnwrapped()
+    {
+        $p2 = new Promise(function () use (&$p2) {
+            $p2->reject('Fail');
+        });
+        $p = new Promise(function () use ($p2, &$p) {
+            $p->resolve($p2);
+        });
+        $p->wait(false);
+        $this->assertSame(Promise::REJECTED, $p2->getState());
+    }
+
     public function testCannotCancelNonPending()
     {
         $p = new Promise();
