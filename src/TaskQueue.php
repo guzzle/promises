@@ -56,6 +56,7 @@ class TaskQueue
      */
     public function run()
     {
+        /** @var callable $task */
         while ($task = array_shift($this->queue)) {
             $task();
         }
