@@ -146,9 +146,9 @@ function inspect(PromiseInterface $promise)
             'value' => $promise->wait()
         ];
     } catch (RejectionException $e) {
-        return ['state' => 'rejected', 'reason' => $e->getReason()];
+        return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
     } catch (\Exception $e) {
-        return ['state' => 'rejected', 'reason' => $e];
+        return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
     }
 }
 
@@ -304,10 +304,10 @@ function settle($promises)
     return each(
         $promises,
         function ($value, $idx) use (&$results) {
-            $results[$idx] = ['state' => 'fulfilled', 'value' => $value];
+            $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
         },
         function ($reason, $idx) use (&$results) {
-            $results[$idx] = ['state' => 'rejected', 'reason' => $reason];
+            $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
         }
     )->then(function () use (&$results) {
         ksort($results);
