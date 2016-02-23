@@ -260,10 +260,10 @@ class Promise implements PromiseInterface
 
         foreach ($waitList as $result) {
             $result->waitIfPending();
-	        while ($result->result instanceof Promise) {
-	            $result = $result->result;
+            while ($result->result instanceof Promise) {
+                $result = $result->result;
                 $result->waitIfPending();
-	        }
+            }
         }
     }
 }
