@@ -24,6 +24,9 @@ class EachPromise implements PromisorInterface
     /** @var Promise */
     private $aggregate;
 
+    /** @var bool */
+    private $mutex;
+
     /**
      * Configuration hash can include the following key value pairs:
      *
@@ -81,6 +84,7 @@ class EachPromise implements PromisorInterface
 
     private function createPromise()
     {
+        $this->mutex = false;
         $this->aggregate = new Promise(function () {
             reset($this->pending);
             if (empty($this->pending) && !$this->iterable->valid()) {
@@ -169,11 +173,21 @@ class EachPromise implements PromisorInterface
 
     private function advanceIterator()
     {
+        // Place a lock on the iterator so that we ensure to not recurse,
+        // preventing fatal generator errors.
+        if ($this->mutex) {
+            return false;
+        }
+
+        $this->mutex = true;
+
         try {
             $this->iterable->next();
+            $this->mutex = false;
             return true;
         } catch (\Exception $e) {
             $this->aggregate->reject($e);
+            $this->mutex = false;
             return false;
         }
     }
@@ -186,9 +200,11 @@ class EachPromise implements PromisorInterface
         }
 
         unset($this->pending[$idx]);
-        $this->advanceIterator();
 
-        if (!$this->checkIfFinished()) {
+        // Only refill pending promises if we are not locked, preventing the
+        // EachPromise to recursively invoke the provided iterator, which
+        // cause a fatal error: "Cannot resume an already running generator"
+        if ($this->advanceIterator() && !$this->checkIfFinished()) {
             // Add more pending promises if possible.
             $this->refillPending();
         }
