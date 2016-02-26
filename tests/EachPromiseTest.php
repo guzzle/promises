@@ -39,8 +39,8 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
 
     public function testIsWaitable()
     {
-        $a = new Promise(function () use (&$a) { $a->resolve('a'); });
-        $b = new Promise(function () use (&$b) { $b->resolve('b'); });
+        $a = $this->createSelfResolvingPromise('a');
+        $b = $this->createSelfResolvingPromise('b');
         $called = [];
         $each = new EachPromise([$a, $b], [
             'fulfilled' => function ($value) use (&$called) { $called[] = $value; }
@@ -54,7 +54,7 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
     public function testCanResolveBeforeConsumingAll()
     {
         $called = 0;
-        $a = new Promise(function () use (&$a) { $a->resolve('a'); });
+        $a = $this->createSelfResolvingPromise('a');
         $b = new Promise(function () { $this->fail(); });
         $each = new EachPromise([$a, $b], [
             'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called) {
@@ -290,5 +290,47 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
             P\queue()->run();
         }
         $this->assertEquals(range(0, 9), $results);
+    }
+
+    private function createSelfResolvingPromise($value)
+    {
+        $p = new Promise(function () use (&$p, $value) {
+            $p->resolve($value);
+        });
+
+        return $p;
+    }
+
+    public function testMutexPreventsGeneratorRecursion()
+    {
+        $results = $promises = [];
+        for ($i = 0; $i < 20; $i++) {
+            $p = $this->createSelfResolvingPromise($i);
+            $pending[] = $p;
+            $promises[] = $p;
+        }
+
+        $iter = function () use (&$promises, &$pending) {
+            foreach ($promises as $promise) {
+                // Resolve a promises, which will trigger the then() function,
+                // which would cause the EachPromise to try to add more
+                // promises to the queue. Without a lock, this would trigger
+                // a "Cannot resume an already running generator" fatal error.
+                if ($p = array_pop($pending)) {
+                    $p->wait();
+                }
+                yield $promise;
+            }
+        };
+
+        $each = new EachPromise($iter(), [
+            'concurrency' => 5,
+            'fulfilled' => function ($r) use (&$results, &$pending) {
+                $results[] = $r;
+            }
+        ]);
+
+        $each->promise()->wait();
+        $this->assertCount(20, $results);
     }
 }
