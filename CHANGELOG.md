@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.1.0 - 2016-03-07
+
+* Update EachPromise to prevent recurring on a iterator when advancing, as this
+  could trigger fatal generator errors.
+* Update Promise to allow recursive waiting without unwrapping exceptions.
+
 ## 1.0.3 - 2015-10-15
 
 * Update EachPromise to immediately resolve when the underlying promise iterator
