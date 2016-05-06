@@ -14,13 +14,17 @@ namespace GuzzleHttp\Promise;
  * }
  * </code>
  *
+ * @param $assign Optionally specify a new queue instance.
+ *
  * @return TaskQueue
  */
-function queue()
+function queue(TaskQueue $assign = null)
 {
     static $queue;
 
-    if (!$queue) {
+    if ($assign) {
+        $queue = $assign;
+    } elseif (!$queue) {
         $queue = new TaskQueue();
     }
 
