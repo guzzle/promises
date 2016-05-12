@@ -208,7 +208,7 @@ of the promise is called.
 
 ```php
 $promise = new Promise(function () use (&$promise) {
-    $promise->deliver('foo');
+    $promise->resolve('foo');
 });
 
 // Calling wait will return the value of the promise.
@@ -227,11 +227,11 @@ $promise->wait(); // throws the exception.
 ```
 
 Calling `wait` on a promise that has been fulfilled will not trigger the wait
-function. It will simply return the previously delivered value.
+function. It will simply return the previously resolved value.
 
 ```php
 $promise = new Promise(function () { die('this is not called!'); });
-$promise->deliver('foo');
+$promise->resolve('foo');
 echo $promise->wait(); // outputs "foo"
 ```
 
@@ -268,7 +268,7 @@ $promise->reject('foo');
 $promise->wait(false);
 ```
 
-When unwrapping a promise, the delivered value of the promise will be waited
+When unwrapping a promise, the resolved value of the promise will be waited
 upon until the unwrapped value is not a promise. This means that if you resolve
 promise A with a promise B and unwrap promise A, the value returned by the
 wait function will be the value delivered to promise B.
@@ -496,6 +496,6 @@ deferred, it is a small price to pay for keeping the stack size constant.
 $promise = new Promise();
 $promise->then(function ($value) { echo $value; });
 // The promise is the deferred value, so you can deliver a value to it.
-$promise->deliver('foo');
+$promise->resolve('foo');
 // prints "foo"
 ```
