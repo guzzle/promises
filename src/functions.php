@@ -504,6 +504,8 @@ function __next_coroutine($yielded, \Generator $generator, \stdClass $state)
                 }
             } catch (\Throwable $e) {
                 $state->resultPlaceholder->reject($e);
+            } catch (\Exception $e) {
+                $state->resultPlaceholder->reject($e);
             }
         },
         function ($reason) use ($generator, $state) {
@@ -514,6 +516,8 @@ function __next_coroutine($yielded, \Generator $generator, \stdClass $state)
                 // The throw was caught, so keep iterating on the coroutine
                 __next_coroutine($nextYield, $generator, $state);
             } catch (\Throwable $e) {
+                $state->resultPlaceholder->reject($e);
+            } catch (\Exception $e) {
                 $state->resultPlaceholder->reject($e);
             }
         }
