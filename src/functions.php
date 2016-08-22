@@ -478,23 +478,44 @@ function is_settled(PromiseInterface $promise)
 function coroutine(callable $generatorFn)
 {
     $generator = $generatorFn();
-    return __next_coroutine($generator->current(), $generator)->then();
+    $state = new \stdClass;
+    $state->resultPlaceholder = new Promise(function () use ($state) {
+        while (isset($state->currentPromise)) {
+            $state->currentPromise->wait();
+        }
+    });
+    __next_coroutine($generator->current(), $generator, $state);
+    return $state->resultPlaceholder;
 }
 
 /** @internal */
-function __next_coroutine($yielded, \Generator $generator)
+function __next_coroutine($yielded, \Generator $generator, \stdClass $state)
 {
-    return promise_for($yielded)->then(
-        function ($value) use ($generator) {
-            $nextYield = $generator->send($value);
-            return $generator->valid()
-                ? __next_coroutine($nextYield, $generator)
-                : $value;
+    $state->currentPromise = promise_for($yielded)->then(
+        function ($value) use ($generator, $state) {
+            unset($state->currentPromise);
+
+            try {
+                $nextYield = $generator->send($value);
+                if ($generator->valid()) {
+                    __next_coroutine($nextYield, $generator, $state);
+                } else {
+                    $state->resultPlaceholder->resolve($value);
+                }
+            } catch (\Throwable $e) {
+                $state->resultPlaceholder->reject($e);
+            }
         },
-        function ($reason) use ($generator) {
-            $nextYield = $generator->throw(exception_for($reason));
-            // The throw was caught, so keep iterating on the coroutine
-            return __next_coroutine($nextYield, $generator);
+        function ($reason) use ($generator, $state) {
+            unset($state->currentPromise);
+
+            try {
+                $nextYield = $generator->throw(exception_for($reason));
+                // The throw was caught, so keep iterating on the coroutine
+                __next_coroutine($nextYield, $generator, $state);
+            } catch (\Throwable $e) {
+                $state->resultPlaceholder->reject($e);
+            }
         }
     );
 }
