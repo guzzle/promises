@@ -363,7 +363,7 @@ function each(
  * @param callable     $onFulfilled
  * @param callable     $onRejected
  *
- * @return mixed
+ * @return Promise
  */
 function each_limit(
     $iterable,
@@ -387,7 +387,7 @@ function each_limit(
  * @param int|callable $concurrency
  * @param callable     $onFulfilled
  *
- * @return mixed
+ * @return Promise
  */
 function each_limit_all(
     $iterable,
