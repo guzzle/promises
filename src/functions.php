@@ -210,7 +210,7 @@ function unwrap($promises)
  *
  * @param mixed $promises Promises or values.
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function all($promises)
 {
@@ -243,7 +243,7 @@ function all($promises)
  * @param int   $count    Total number of promises.
  * @param mixed $promises Promises or values.
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function some($count, $promises)
 {
@@ -299,7 +299,7 @@ function any($promises)
  *
  * @param mixed $promises Promises or values.
  *
- * @return Promise
+ * @return PromiseInterface
  * @see GuzzleHttp\Promise\inspect for the inspection state array format.
  */
 function settle($promises)
@@ -337,7 +337,7 @@ function settle($promises)
  * @param callable $onFulfilled
  * @param callable $onRejected
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function each(
     $iterable,
@@ -363,7 +363,7 @@ function each(
  * @param callable     $onFulfilled
  * @param callable     $onRejected
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function each_limit(
     $iterable,
@@ -387,7 +387,7 @@ function each_limit(
  * @param int|callable $concurrency
  * @param callable     $onFulfilled
  *
- * @return Promise
+ * @return PromiseInterface
  */
 function each_limit_all(
     $iterable,
@@ -472,7 +472,7 @@ function is_settled(PromiseInterface $promise)
  *
  * @param callable $generatorFn Generator function to wrap into a promise.
  *
- * @return Promise
+ * @return PromiseInterface
  * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 function coroutine(callable $generatorFn)
