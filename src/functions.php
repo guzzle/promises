@@ -441,85 +441,13 @@ function is_settled(PromiseInterface $promise)
 }
 
 /**
- * Creates a promise that is resolved using a generator that yields values or
- * promises (somewhat similar to C#'s async keyword).
+ * @see Coroutine
  *
- * When called, the coroutine function will start an instance of the generator
- * and returns a promise that is fulfilled with its final yielded value.
- *
- * Control is returned back to the generator when the yielded promise settles.
- * This can lead to less verbose code when doing lots of sequential async calls
- * with minimal processing in between.
- *
- *     use GuzzleHttp\Promise;
- *
- *     function createPromise($value) {
- *         return new Promise\FulfilledPromise($value);
- *     }
- *
- *     $promise = Promise\coroutine(function () {
- *         $value = (yield createPromise('a'));
- *         try {
- *             $value = (yield createPromise($value . 'b'));
- *         } catch (\Exception $e) {
- *             // The promise was rejected.
- *         }
- *         yield $value . 'c';
- *     });
- *
- *     // Outputs "abc"
- *     $promise->then(function ($v) { echo $v; });
- *
- * @param callable $generatorFn Generator function to wrap into a promise.
+ * @param callable $generatorFn
  *
  * @return PromiseInterface
- * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 function coroutine(callable $generatorFn)
 {
-    $generator = $generatorFn();
-    $state = new \stdClass;
-    $state->resultPlaceholder = new Promise(function () use ($state) {
-        while (isset($state->currentPromise)) {
-            $state->currentPromise->wait();
-        }
-    });
-    __next_coroutine($generator->current(), $generator, $state);
-    return $state->resultPlaceholder;
-}
-
-/** @internal */
-function __next_coroutine($yielded, \Generator $generator, \stdClass $state)
-{
-    $state->currentPromise = promise_for($yielded)->then(
-        function ($value) use ($generator, $state) {
-            unset($state->currentPromise);
-
-            try {
-                $nextYield = $generator->send($value);
-                if ($generator->valid()) {
-                    __next_coroutine($nextYield, $generator, $state);
-                } else {
-                    $state->resultPlaceholder->resolve($value);
-                }
-            } catch (\Throwable $e) {
-                $state->resultPlaceholder->reject($e);
-            } catch (\Exception $e) {
-                $state->resultPlaceholder->reject($e);
-            }
-        },
-        function ($reason) use ($generator, $state) {
-            unset($state->currentPromise);
-
-            try {
-                $nextYield = $generator->throw(exception_for($reason));
-                // The throw was caught, so keep iterating on the coroutine
-                __next_coroutine($nextYield, $generator, $state);
-            } catch (\Throwable $e) {
-                $state->resultPlaceholder->reject($e);
-            } catch (\Exception $e) {
-                $state->resultPlaceholder->reject($e);
-            }
-        }
-    );
+    return (new Coroutine($generatorFn))->promise();
 }
