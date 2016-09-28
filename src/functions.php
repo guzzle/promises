@@ -449,5 +449,5 @@ function is_settled(PromiseInterface $promise)
  */
 function coroutine(callable $generatorFn)
 {
-    return (new Coroutine($generatorFn))->promise();
+    return new Coroutine($generatorFn);
 }

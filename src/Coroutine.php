@@ -40,7 +40,7 @@ use Throwable;
  * @return Promise
  * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
-final class Coroutine implements PromisorInterface
+final class Coroutine implements PromiseInterface
 {
     /**
      * @var PromiseInterface|null
@@ -62,15 +62,48 @@ final class Coroutine implements PromisorInterface
         $this->generator = $generatorFn();
         $this->result = new Promise(function () {
             while (isset($this->currentPromise)) {
-                $this->currentPromise->wait(false);
+                $this->currentPromise->wait();
             }
         });
+        $this->nextCoroutine($this->generator->current());
     }
 
-    public function promise()
+    public function then(
+        callable $onFulfilled = null,
+        callable $onRejected = null
+    ) {
+        return $this->result->then($onFulfilled, $onRejected);
+    }
+
+    public function otherwise(callable $onRejected)
     {
-        $this->nextCoroutine($this->generator->current());
-        return $this->result;
+        return $this->result->otherwise($onRejected);
+    }
+
+    public function wait($unwrap = true)
+    {
+        return $this->result->wait($unwrap);
+    }
+
+    public function getState()
+    {
+        return $this->result->getState();
+    }
+
+    public function resolve($value)
+    {
+        $this->result->resolve($value);
+    }
+
+    public function reject($reason)
+    {
+        $this->result->reject($reason);
+    }
+
+    public function cancel()
+    {
+        $this->currentPromise->cancel();
+        $this->result->cancel();
     }
 
     private function nextCoroutine($yielded)
