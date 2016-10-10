@@ -445,60 +445,13 @@ function is_settled(PromiseInterface $promise)
 }
 
 /**
- * Creates a promise that is resolved using a generator that yields values or
- * promises (somewhat similar to C#'s async keyword).
+ * @see Coroutine
  *
- * When called, the coroutine function will start an instance of the generator
- * and returns a promise that is fulfilled with its final yielded value.
- *
- * Control is returned back to the generator when the yielded promise settles.
- * This can lead to less verbose code when doing lots of sequential async calls
- * with minimal processing in between.
- *
- *     use GuzzleHttp\Promise;
- *
- *     function createPromise($value) {
- *         return new Promise\FulfilledPromise($value);
- *     }
- *
- *     $promise = Promise\coroutine(function () {
- *         $value = (yield createPromise('a'));
- *         try {
- *             $value = (yield createPromise($value . 'b'));
- *         } catch (\Exception $e) {
- *             // The promise was rejected.
- *         }
- *         yield $value . 'c';
- *     });
- *
- *     // Outputs "abc"
- *     $promise->then(function ($v) { echo $v; });
- *
- * @param callable $generatorFn Generator function to wrap into a promise.
+ * @param callable $generatorFn
  *
  * @return PromiseInterface
- * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 function coroutine(callable $generatorFn)
 {
-    $generator = $generatorFn();
-    return __next_coroutine($generator->current(), $generator)->then();
-}
-
-/** @internal */
-function __next_coroutine($yielded, \Generator $generator)
-{
-    return promise_for($yielded)->then(
-        function ($value) use ($generator) {
-            $nextYield = $generator->send($value);
-            return $generator->valid()
-                ? __next_coroutine($nextYield, $generator)
-                : $value;
-        },
-        function ($reason) use ($generator) {
-            $nextYield = $generator->throw(exception_for($reason));
-            // The throw was caught, so keep iterating on the coroutine
-            return __next_coroutine($nextYield, $generator);
-        }
-    );
+    return new Coroutine($generatorFn);
 }
