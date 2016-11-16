@@ -455,3 +455,26 @@ function coroutine(callable $generatorFn)
 {
     return new Coroutine($generatorFn);
 }
+
+/**
+ * @param callable $generatorFn
+ *
+ * @return callable
+ */
+function coroutine_fn(callable $generatorFn)
+{
+    return function (...$args) use ($generatorFn) {
+        // Proxy arguments to generator too.
+        return new CoroutineInvocation($generatorFn(...$args));
+    };
+}
+
+/**
+ * @param \Generator $generator
+ *
+ * @return PromiseInterface
+ */
+function coroutine_invocation(\Generator $generator)
+{
+    return new CoroutineInvocation($generator);
+}
