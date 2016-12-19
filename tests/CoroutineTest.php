@@ -78,4 +78,28 @@ class CoroutineTest extends PHPUnit_Framework_TestCase
 
         $this->assertSame(1, $promise->wait());
     }
+
+    public function testWaitShouldHandleIntermediateErrors()
+    {
+        $promise = \GuzzleHttp\Promise\coroutine(function () {
+            yield $promise = new Promise(function () use (&$promise) {
+                $promise->resolve(1);
+            });
+        })
+        ->then(function () {
+            return \GuzzleHttp\Promise\coroutine(function () {
+                yield $promise = new Promise(function () use (&$promise) {
+                    $promise->reject(new \Exception);
+                });
+            });
+        })
+        ->otherwise(function (\Exception $error = null) {
+            if (!$error) {
+                self::fail('Error did not propagate.');
+            }
+            return 3;
+        });
+
+        $this->assertSame(3, $promise->wait());
+    }
 }
