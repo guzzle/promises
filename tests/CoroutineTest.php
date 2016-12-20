@@ -2,6 +2,7 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\Coroutine;
+use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use PHPUnit_Framework_TestCase;
 use ReflectionClass;
@@ -61,5 +62,44 @@ class CoroutineTest extends PHPUnit_Framework_TestCase
         }
 
         $coroutine->cancel();
+    }
+
+    public function testWaitShouldResolveChainedCoroutines()
+    {
+        $promisor = function () {
+            return \GuzzleHttp\Promise\coroutine(function () {
+                yield $promise = new Promise(function () use (&$promise) {
+                    $promise->resolve(1);
+                });
+            });
+        };
+
+        $promise = $promisor()->then($promisor)->then($promisor);
+
+        $this->assertSame(1, $promise->wait());
+    }
+
+    public function testWaitShouldHandleIntermediateErrors()
+    {
+        $promise = \GuzzleHttp\Promise\coroutine(function () {
+            yield $promise = new Promise(function () use (&$promise) {
+                $promise->resolve(1);
+            });
+        })
+        ->then(function () {
+            return \GuzzleHttp\Promise\coroutine(function () {
+                yield $promise = new Promise(function () use (&$promise) {
+                    $promise->reject(new \Exception);
+                });
+            });
+        })
+        ->otherwise(function (\Exception $error = null) {
+            if (!$error) {
+                self::fail('Error did not propagate.');
+            }
+            return 3;
+        });
+
+        $this->assertSame(3, $promise->wait());
     }
 }
