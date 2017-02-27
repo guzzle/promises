@@ -207,7 +207,7 @@ function provided to a promise constructor is invoked when the `wait` function
 of the promise is called.
 
 ```php
-$promise = new Promise(function () use (&$promise) {
+$promise = new Promise(function (PromiseInterface $promise) {
     $promise->resolve('foo');
 });
 
@@ -219,7 +219,7 @@ If an exception is encountered while invoking the wait function of a promise,
 the promise is rejected with the exception and the exception is thrown.
 
 ```php
-$promise = new Promise(function () use (&$promise) {
+$promise = new Promise(function (PromiseInterface $promise) {
     throw new \Exception('foo');
 });
 
@@ -299,7 +299,7 @@ that is expected to cancel the computation of a promise. It is invoked when the
 use GuzzleHttp\Promise\Promise;
 
 $promise = new Promise(
-    function () use (&$promise) {
+    function ($promise) {
         $promise->resolve('waited');
     },
     function () {
