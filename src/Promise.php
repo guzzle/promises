@@ -243,7 +243,7 @@ class Promise implements PromiseInterface
         try {
             $wfn = $this->waitFn;
             $this->waitFn = null;
-            $wfn(true);
+            $wfn($this);
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise
