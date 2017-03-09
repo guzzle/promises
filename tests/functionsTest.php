@@ -106,8 +106,10 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
     public function testPromisesDynamicallyAddedToStack()
     {
         $promises = new \ArrayIterator();
+        $counter = 0;
         $promises['a'] = new FulfilledPromise('a');
-        $promises['b'] = $promise = new Promise(function () use (&$promise, &$promises) {
+        $promises['b'] = $promise = new Promise(function () use (&$promise, &$promises, &$counter) {
+            $counter++; // Make sure the wait function is called only once
             $promise->resolve('b');
             $promises['c'] = $subPromise = new Promise(function () use (&$subPromise) {
                 $subPromise->resolve('c');
@@ -117,6 +119,7 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(3, $promises);
         $this->assertCount(3, $result);
         $this->assertEquals($result['c'], 'c');
+        $this->assertSame(1, $counter);
     }
 
     public function testAllThrowsWhenAnyRejected()
