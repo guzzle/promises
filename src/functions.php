@@ -213,10 +213,11 @@ function unwrap($promises)
  * rejects, the returned promise is rejected with the rejection reason.
  *
  * @param mixed $promises Promises or values.
+ * @param bool $recursive - If true, resolves new promises that might have been added to the stack during its own resolution.
  *
  * @return PromiseInterface
  */
-function all($promises)
+function all($promises, $recursive = false)
 {
     $results = [];
     return each(
@@ -229,6 +230,15 @@ function all($promises)
         }
     )->then(function () use (&$results) {
         ksort($results);
+        return $results;
+    })->then(function ($results) use ($recursive, &$promises) {
+        if (true === $recursive && !$promises instanceof \Generator) {
+            foreach ($promises AS $promise) {
+                if (\GuzzleHttp\Promise\PromiseInterface::PENDING === $promise->getState()) {
+                    return all($promises, $recursive);
+                }
+            }
+        }
         return $results;
     });
 }

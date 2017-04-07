@@ -103,6 +103,22 @@ class FunctionsTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['a', 'b', 'c'], $result);
     }
 
+    public function testPromisesDynamicallyAddedToStack()
+    {
+        $promises = new \ArrayIterator();
+        $promises['a'] = new FulfilledPromise('a');
+        $promises['b'] = $promise = new Promise(function () use (&$promise, &$promises) {
+            $promise->resolve('b');
+            $promises['c'] = $subPromise = new Promise(function () use (&$subPromise) {
+                $subPromise->resolve('c');
+            });
+        });
+        $result = \GuzzleHttp\Promise\all($promises, true)->wait();
+        $this->assertCount(3, $promises);
+        $this->assertCount(3, $result);
+        $this->assertEquals($result['c'], 'c');
+    }
+
     public function testAllThrowsWhenAnyRejected()
     {
         $a = new Promise();
