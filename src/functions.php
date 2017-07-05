@@ -212,16 +212,36 @@ function unwrap($promises)
  * respective positions to the original array. If any promise in the array
  * rejects, the returned promise is rejected with the rejection reason.
  *
- * @param mixed $promises Promises or values.
- * @param bool $recursive - If true, resolves new promises that might have been added to the stack during its own resolution.
+ * @param mixed $promises  Promises or values.
+ * @param bool  $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
  *
  * @return PromiseInterface
  */
 function all($promises, $recursive = false)
 {
+    return all_limit($promises, null, $recursive);
+}
+
+/**
+ * Like all(), but only allows a certain number of outstanding promises at any
+ * given time.
+ *
+ * $concurrency may be an integer or a function that accepts the number of
+ * pending promises and returns a numeric concurrency limit value to allow for
+ * dynamic a concurrency size.
+ *
+ * @param mixed        $promises  Promises or values.
+ * @param int|callable $concurrency
+ * @param bool         $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+ *
+ * @return PromiseInterface
+ */
+function all_limit($promises, $concurrency, $recursive = false)
+{
     $results = [];
-    $promise = each(
+    $promise = each_limit(
         $promises,
+        $concurrency,
         function ($value, $idx) use (&$results) {
             $results[$idx] = $value;
         },
@@ -265,11 +285,31 @@ function all($promises, $recursive = false)
  */
 function some($count, $promises)
 {
+    return some_limit($count, $promises, null);
+}
+
+/**
+ * Like some(), but only allows a certain number of outstanding promises at any
+ * given time.
+ *
+ * $concurrency may be an integer or a function that accepts the number of
+ * pending promises and returns a numeric concurrency limit value to allow for
+ * dynamic a concurrency size.
+ *
+ * @param int          $count    Total number of promises.
+ * @param mixed        $promises Promises or values.
+ * @param int|callable $concurrency
+ *
+ * @return PromiseInterface
+ */
+function some_limit($count, $promises, $concurrency)
+{
     $results = [];
     $rejections = [];
 
-    return each(
+    return each_limit(
         $promises,
+        $concurrency,
         function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
             if ($p->getState() !== PromiseInterface::PENDING) {
                 return;
@@ -310,6 +350,24 @@ function any($promises)
 }
 
 /**
+ * Like any(), but only allows a certain number of outstanding promises at any
+ * given time.
+ *
+ * $concurrency may be an integer or a function that accepts the number of
+ * pending promises and returns a numeric concurrency limit value to allow for
+ * dynamic a concurrency size.
+ *
+ * @param mixed        $promises Promises or values.
+ * @param int|callable $concurrency
+ *
+ * @return PromiseInterface
+ */
+function any_limit($promises, $concurrency)
+{
+    return some_limit(1, $promises, $concurrency)->then(function ($values) { return $values[0]; });
+}
+
+/**
  * Returns a promise that is fulfilled when all of the provided promises have
  * been fulfilled or rejected.
  *
@@ -322,10 +380,29 @@ function any($promises)
  */
 function settle($promises)
 {
+    return settle_limit($promises, null);
+}
+
+/**
+ * Like any(), but only allows a certain number of outstanding promises at any
+ * given time.
+ *
+ * $concurrency may be an integer or a function that accepts the number of
+ * pending promises and returns a numeric concurrency limit value to allow for
+ * dynamic a concurrency size.
+ *
+ * @param mixed        $promises Promises or values.
+ * @param int|callable $concurrency
+ *
+ * @return PromiseInterface
+ */
+function settle_limit($promises, $concurrency)
+{
     $results = [];
 
-    return each(
+    return each_limit(
         $promises,
+        $concurrency,
         function ($value, $idx) use (&$results) {
             $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
         },
@@ -369,7 +446,7 @@ function each(
 }
 
 /**
- * Like each, but only allows a certain number of outstanding promises at any
+ * Like each(), but only allows a certain number of outstanding promises at any
  * given time.
  *
  * $concurrency may be an integer or a function that accepts the number of
@@ -397,7 +474,7 @@ function each_limit(
 }
 
 /**
- * Like each_limit, but ensures that no promise in the given $iterable argument
+ * Like each_limit(), but ensures that no promise in the given $iterable argument
  * is rejected. If any promise is rejected, then the aggregate promise is
  * rejected with the encountered rejection.
  *
