@@ -167,7 +167,23 @@ class EachPromiseTest extends TestCase
 
     public function testCanBeCancelled()
     {
-        $this->markTestIncomplete();
+        $called = false;
+        $a = new FulfilledPromise('a');
+        $b = new Promise(function () use (&$called) { $called = true; });
+        $each = new EachPromise([$a, $b], [
+            'fulfilled' => function ($value, $idx, Promise $aggregate) {
+                $aggregate->cancel();
+            },
+            'rejected' => function ($reason) use (&$called) {
+                $called = true;
+            },
+        ]);
+        $p = $each->promise();
+        $p->wait(false);
+        $this->assertEquals(PromiseInterface::FULFILLED, $a->getState());
+        $this->assertEquals(PromiseInterface::PENDING, $b->getState());
+        $this->assertEquals(PromiseInterface::REJECTED, $p->getState());
+        $this->assertFalse($called);
     }
 
     public function testDoesNotBlowStackWithFulfilledPromises()
