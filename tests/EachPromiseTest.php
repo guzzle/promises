@@ -25,7 +25,7 @@ class EachPromiseTest extends TestCase
         $promises = [];
         $each = new EachPromise($promises);
         $p = $each->promise();
-        P\queue()->run();
+        $this->assertNull($p->wait());
         $this->assertEquals(PromiseInterface::FULFILLED, $p->getState());
     }
 
@@ -168,12 +168,6 @@ class EachPromiseTest extends TestCase
     public function testCanBeCancelled()
     {
         $this->markTestIncomplete();
-    }
-
-    public function testFulfillsImmediatelyWhenGivenAnEmptyIterator()
-    {
-        $each = new EachPromise(new \ArrayIterator([]));
-        $result = $each->promise()->wait();
     }
 
     public function testDoesNotBlowStackWithFulfilledPromises()
