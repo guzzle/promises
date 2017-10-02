@@ -2,9 +2,13 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
+use GuzzleHttp\Promise\AggregateException;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\RejectionException;
+use GuzzleHttp\Promise\TaskQueue;
 use PHPUnit\Framework\TestCase;
 
 class FunctionsTest extends TestCase
@@ -12,7 +16,7 @@ class FunctionsTest extends TestCase
     public function testCreatesPromiseForValue()
     {
         $p = \GuzzleHttp\Promise\promise_for('foo');
-        $this->assertInstanceOf('GuzzleHttp\Promise\FulfilledPromise', $p);
+        $this->assertInstanceOf(FulfilledPromise::class, $p);
     }
 
     public function testReturnsPromiseForPromise()
@@ -26,7 +30,7 @@ class FunctionsTest extends TestCase
         $p = new Thennable();
         $wrapped = \GuzzleHttp\Promise\promise_for($p);
         $this->assertNotSame($p, $wrapped);
-        $this->assertInstanceOf('GuzzleHttp\Promise\PromiseInterface', $wrapped);
+        $this->assertInstanceOf(PromiseInterface::class, $wrapped);
         $p->resolve('foo');
         P\queue()->run();
         $this->assertEquals('foo', $wrapped->wait());
@@ -35,7 +39,7 @@ class FunctionsTest extends TestCase
     public function testReturnsRejection()
     {
         $p = \GuzzleHttp\Promise\rejection_for('fail');
-        $this->assertInstanceOf('GuzzleHttp\Promise\RejectedPromise', $p);
+        $this->assertInstanceOf(RejectedPromise::class, $p);
         $this->assertEquals('fail', $this->readAttribute($p, 'reason'));
     }
 
@@ -167,7 +171,7 @@ class FunctionsTest extends TestCase
             $called = $reason;
         });
         P\queue()->run();
-        $this->assertInstanceOf('GuzzleHttp\Promise\AggregateException', $called);
+        $this->assertInstanceOf(AggregateException::class, $called);
         $this->assertContains('bad', $called->getReason());
     }
 
@@ -281,7 +285,7 @@ class FunctionsTest extends TestCase
         $p = [new FulfilledPromise('a'), new RejectedPromise('b')];
         $aggregate = \GuzzleHttp\Promise\each_limit_all($p, 2);
         P\queue()->run();
-        $this->assertEquals(P\PromiseInterface::REJECTED, $aggregate->getState());
+        $this->assertEquals(PromiseInterface::REJECTED, $aggregate->getState());
         $result = \GuzzleHttp\Promise\inspect($aggregate);
         $this->assertEquals('b', $result['reason']);
     }
@@ -316,7 +320,7 @@ class FunctionsTest extends TestCase
 
     public function testReturnsTrampoline()
     {
-        $this->assertInstanceOf('GuzzleHttp\Promise\TaskQueue', P\queue());
+        $this->assertInstanceOf(TaskQueue::class, P\queue());
         $this->assertSame(P\queue(), P\queue());
     }
 
@@ -367,14 +371,14 @@ class FunctionsTest extends TestCase
             try {
                 yield new P\RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
-            } catch (P\RejectionException $e) {
+            } catch (RejectionException $e) {
                 $value = (yield new P\FulfilledPromise($e->getReason()));
                 yield  $value . 'b';
             }
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
         P\queue()->run();
-        $this->assertEquals(P\PromiseInterface::FULFILLED, $promise->getState());
+        $this->assertEquals(PromiseInterface::FULFILLED, $promise->getState());
         $this->assertEquals('ab', $result);
     }
 
@@ -389,7 +393,7 @@ class FunctionsTest extends TestCase
             function ($reason) use (&$result) { $result = $reason; }
         );
         P\queue()->run();
-        $this->assertInstanceOf('Exception', $result);
+        $this->assertInstanceOf(\Exception::class, $result);
         $this->assertEquals('a', $result->getMessage());
     }
 
@@ -404,7 +408,7 @@ class FunctionsTest extends TestCase
             function ($reason) use (&$result) { $result = $reason; }
         );
         P\queue()->run();
-        $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
+        $this->assertInstanceOf(RejectionException::class, $result);
         $this->assertEquals('no!', $result->getReason());
     }
 
@@ -421,7 +425,7 @@ class FunctionsTest extends TestCase
         );
         $rej->reject('no!');
         P\queue()->run();
-        $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $result);
+        $this->assertInstanceOf(RejectionException::class, $result);
         $this->assertEquals('no!', $result->getReason());
     }
 
@@ -431,13 +435,13 @@ class FunctionsTest extends TestCase
             try {
                 yield new P\RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
-            } catch (P\RejectionException $e) {
+            } catch (RejectionException $e) {
                 throw new \Exception('foo');
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\queue()->run();
-        $this->assertEquals(P\PromiseInterface::REJECTED, $promise->getState());
+        $this->assertEquals(PromiseInterface::REJECTED, $promise->getState());
         $this->assertContains('foo', $result->getMessage());
     }
 
@@ -447,13 +451,13 @@ class FunctionsTest extends TestCase
             try {
                 yield new P\RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
-            } catch (P\RejectionException $e) {
+            } catch (RejectionException $e) {
                 yield new P\RejectedPromise('foo');
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\queue()->run();
-        $this->assertEquals(P\PromiseInterface::REJECTED, $promise->getState());
+        $this->assertEquals(PromiseInterface::REJECTED, $promise->getState());
         $this->assertContains('foo', $result->getMessage());
     }
 
@@ -708,7 +712,7 @@ class FunctionsTest extends TestCase
         $a->resolve('a');
         $b->reject('b');
         $reason = P\inspect($promise)['reason'];
-        $this->assertInstanceOf('OutOfBoundsException', $reason);
-        $this->assertInstanceOf('GuzzleHttp\Promise\RejectionException', $reason->getPrevious());
+        $this->assertInstanceOf(\OutOfBoundsException::class, $reason);
+        $this->assertInstanceOf(RejectionException::class, $reason->getPrevious());
     }
 }

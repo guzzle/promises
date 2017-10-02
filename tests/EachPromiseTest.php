@@ -245,7 +245,7 @@ class EachPromiseTest extends TestCase
         $received = null;
         $p->then(null, function ($reason) use (&$e) { $e = $reason; });
         P\queue()->run();
-        $this->assertInstanceOf('Exception', $e);
+        $this->assertInstanceOf(\Exception::class, $e);
         $this->assertEquals('Failure', $e->getMessage());
     }
 
