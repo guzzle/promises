@@ -88,7 +88,7 @@ $promise
     });
 
 // Resolving the promise triggers the $onFulfilled callbacks and outputs
-// "Hello, reader".
+// "Hello, reader."
 $promise->resolve('reader.');
 ```
 
