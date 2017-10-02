@@ -346,10 +346,10 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
     public function testIteratorWithSameKey()
     {
         $iter = function () {
-            yield 'foo' => 1;
-            yield 'foo' => 2;
-            yield 1 => 3;
-            yield 1 => 4;
+            yield 'foo' => $this->createSelfResolvingPromise(1);
+            yield 'foo' => $this->createSelfResolvingPromise(2);
+            yield 1 => $this->createSelfResolvingPromise(3);
+            yield 1 => $this->createSelfResolvingPromise(4);
         };
         $called = 0;
         $each = new EachPromise($iter(), [
