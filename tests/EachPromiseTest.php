@@ -7,11 +7,12 @@ use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise as P;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\EachPromise
  */
-class EachPromiseTest extends \PHPUnit_Framework_TestCase
+class EachPromiseTest extends TestCase
 {
     public function testReturnsSameInstance()
     {

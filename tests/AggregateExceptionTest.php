@@ -2,8 +2,9 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\AggregateException;
+use PHPUnit\Framework\TestCase;
 
-class AggregateExceptionTest extends \PHPUnit_Framework_TestCase
+class AggregateExceptionTest extends TestCase
 {
     public function testHasReason()
     {

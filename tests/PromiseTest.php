@@ -6,11 +6,12 @@ use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Promise\RejectionException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\Promise
  */
-class PromiseTest extends \PHPUnit_Framework_TestCase
+class PromiseTest extends TestCase
 {
     /**
      * @expectedException \LogicException

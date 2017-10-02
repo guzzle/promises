@@ -2,8 +2,9 @@
 namespace GuzzleHttp\Promise\Test;
 
 use GuzzleHttp\Promise\TaskQueue;
+use PHPUnit\Framework\TestCase;
 
-class TaskQueueTest extends \PHPUnit_Framework_TestCase
+class TaskQueueTest extends TestCase
 {
     public function testKnowsIfEmpty()
     {
