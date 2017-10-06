@@ -532,15 +532,13 @@ class FunctionsTest extends TestCase
         ];
 
         $promise = P\coroutine(function () use ($promises) {
-            $value = null;
             $this->assertEquals('skip', (yield new FulfilledPromise('skip')));
             foreach ($promises as $idx => $p) {
-                $value = (yield $p);
-                $this->assertEquals($value, $idx);
+                $this->assertEquals($idx, (yield $p));
                 $this->assertEquals('skip', (yield new FulfilledPromise('skip')));
             }
             $this->assertEquals('skip', (yield new FulfilledPromise('skip')));
-            yield $value;
+            yield 2;
         });
 
         $promises[0]->resolve(0);
