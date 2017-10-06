@@ -342,4 +342,27 @@ class EachPromiseTest extends \PHPUnit_Framework_TestCase
         $each->promise()->wait();
         $this->assertCount(20, $results);
     }
+
+    public function testIteratorWithSameKey()
+    {
+        $iter = function () {
+            yield 'foo' => $this->createSelfResolvingPromise(1);
+            yield 'foo' => $this->createSelfResolvingPromise(2);
+            yield 1 => $this->createSelfResolvingPromise(3);
+            yield 1 => $this->createSelfResolvingPromise(4);
+        };
+        $called = 0;
+        $each = new EachPromise($iter(), [
+            'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called) {
+                $called++;
+                if ($value < 3) {
+                    $this->assertSame('foo', $idx);
+                } else {
+                    $this->assertSame(1, $idx);
+                }
+            },
+        ]);
+        $each->promise()->wait();
+        $this->assertSame(4, $called);
+    }
 }
