@@ -3,11 +3,12 @@ namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\RejectedPromise
  */
-class RejectedPromiseTest extends \PHPUnit_Framework_TestCase
+class RejectedPromiseTest extends TestCase
 {
     public function testThrowsReasonWhenWaitedUpon()
     {

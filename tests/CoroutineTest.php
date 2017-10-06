@@ -4,10 +4,10 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise\Coroutine;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
-class CoroutineTest extends PHPUnit_Framework_TestCase
+class CoroutineTest extends TestCase
 {
     /**
      * @dataProvider promiseInterfaceMethodProvider
