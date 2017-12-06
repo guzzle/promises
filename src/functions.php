@@ -255,7 +255,7 @@ function all($promises, $recursive = false)
  * fulfilled with an array that contains the fulfillment values of the winners
  * in order of resolution.
  *
- * This prommise is rejected with a {@see GuzzleHttp\Promise\AggregateException}
+ * This promise is rejected with a {@see GuzzleHttp\Promise\AggregateException}
  * if the number of fulfilled promises is less than the desired $count.
  *
  * @param int   $count    Total number of promises.
