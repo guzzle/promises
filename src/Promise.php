@@ -23,6 +23,8 @@ class Promise implements PromiseInterface
         callable $waitFn = null,
         callable $cancelFn = null
     ) {
+        $this->state = self::PENDING;
+        $this->handlers = [];
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
     }
