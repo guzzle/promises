@@ -41,9 +41,8 @@ class Promise implements PromiseInterface
 
         // Return a fulfilled promise and immediately invoke any callbacks.
         if ($this->state === self::FULFILLED) {
-            return $onFulfilled
-                ? promise_for($this->result)->then($onFulfilled)
-                : promise_for($this->result);
+            $promise = promise_for($this->result);
+            return $onFulfilled ? $promise->then($onFulfilled) : $promise;
         }
 
         // It's either cancelled or rejected, so return a rejected promise
@@ -61,19 +60,15 @@ class Promise implements PromiseInterface
     {
         $this->waitIfPending();
 
-        $inner = $this->result instanceof PromiseInterface
-            ? $this->result->wait($unwrap)
-            : $this->result;
-
+        if ($this->result instanceof PromiseInterface) {
+            return $this->result->wait($unwrap);
+        }
         if ($unwrap) {
-            if ($this->result instanceof PromiseInterface
-                || $this->state === self::FULFILLED
-            ) {
-                return $inner;
-            } else {
-                // It's rejected so "unwrap" and throw an exception.
-                throw exception_for($inner);
+            if ($this->state === self::FULFILLED) {
+                return $this->result;
             }
+            // It's rejected so "unwrap" and throw an exception.
+            throw exception_for($this->result);
         }
     }
 
@@ -263,17 +258,13 @@ class Promise implements PromiseInterface
         $this->waitList = null;
 
         foreach ($waitList as $result) {
-            while (true) {
+            do {
                 $result->waitIfPending();
+                $result = $result->result;
+            } while ($result instanceof Promise);
 
-                if ($result->result instanceof Promise) {
-                    $result = $result->result;
-                } else {
-                    if ($result->result instanceof PromiseInterface) {
-                        $result->result->wait(false);
-                    }
-                    break;
-                }
+            if ($result instanceof PromiseInterface) {
+                $result->wait(false);
             }
         }
     }
