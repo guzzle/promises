@@ -382,12 +382,11 @@ class FunctionsTest extends TestCase
         $this->assertEquals('ab', $result);
     }
 
-    public function testRejectsParentExceptionWhenException()
+    /**
+     * @dataProvider rejectsParentExceptionProvider
+     */
+    public function testRejectsParentExceptionWhenException(PromiseInterface $promise)
     {
-        $promise = P\coroutine(function () {
-            yield new FulfilledPromise(0);
-            throw new \Exception('a');
-        });
         $promise->then(
             function () { $this->fail(); },
             function ($reason) use (&$result) { $result = $reason; }
@@ -395,6 +394,20 @@ class FunctionsTest extends TestCase
         P\queue()->run();
         $this->assertInstanceOf(\Exception::class, $result);
         $this->assertEquals('a', $result->getMessage());
+    }
+
+    public function rejectsParentExceptionProvider()
+    {
+        return [
+            [ P\coroutine(function () {
+                yield new FulfilledPromise(0);
+                throw new \Exception('a');
+            }) ],
+            [ P\coroutine(function () {
+                throw new \Exception('a');
+                yield new FulfilledPromise(0);
+            }) ],
+        ];
     }
 
     public function testCanRejectFromRejectionCallback()
