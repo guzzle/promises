@@ -242,20 +242,20 @@ function all_limit($promises, $concurrency, $recursive = false)
     $promise = each_limit(
         $promises,
         $concurrency,
-        function ($value, $idx) use (&$results) {
+        static function ($value, $idx) use (&$results) {
             $results[$idx] = $value;
         },
-        function ($reason, $idx, Promise $aggregate) {
+        static function ($reason, $idx, Promise $aggregate) {
             $aggregate->reject($reason);
         }
-    )->then(function () use (&$results) {
+    )->then(static function () use (&$results) {
         ksort($results);
         return $results;
     });
 
     if (true === $recursive) {
-        $promise = $promise->then(function ($results) use ($recursive, &$promises) {
-            foreach ($promises AS $promise) {
+        $promise = $promise->then(static function ($results) use ($recursive, &$promises) {
+            foreach ($promises as $promise) {
                 if (\GuzzleHttp\Promise\PromiseInterface::PENDING === $promise->getState()) {
                     return all($promises, $recursive);
                 }
@@ -310,7 +310,7 @@ function some_limit($count, $promises, $concurrency)
     return each_limit(
         $promises,
         $concurrency,
-        function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
+        static function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
             if ($p->getState() !== PromiseInterface::PENDING) {
                 return;
             }
@@ -319,11 +319,11 @@ function some_limit($count, $promises, $concurrency)
                 $p->resolve(null);
             }
         },
-        function ($reason) use (&$rejections) {
+        static function ($reason) use (&$rejections) {
             $rejections[] = $reason;
         }
     )->then(
-        function () use (&$results, &$rejections, $count) {
+        static function () use (&$results, &$rejections, $count) {
             if (count($results) !== $count) {
                 throw new AggregateException(
                     'Not enough promises to fulfill count',
@@ -403,13 +403,13 @@ function settle_limit($promises, $concurrency)
     return each_limit(
         $promises,
         $concurrency,
-        function ($value, $idx) use (&$results) {
+        static function ($value, $idx) use (&$results) {
             $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
         },
-        function ($reason, $idx) use (&$results) {
+        static function ($reason, $idx) use (&$results) {
             $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
         }
-    )->then(function () use (&$results) {
+    )->then(static function () use (&$results) {
         ksort($results);
         return $results;
     });
@@ -493,7 +493,7 @@ function each_limit_all(
         $iterable,
         $concurrency,
         $onFulfilled,
-        function ($reason, $idx, PromiseInterface $aggregate) {
+        static function ($reason, $idx, PromiseInterface $aggregate) {
             $aggregate->reject($reason);
         }
     );
