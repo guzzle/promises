@@ -49,6 +49,7 @@ class FulfilledPromiseTest extends TestCase
     {
         $p = new FulfilledPromise('foo');
         $p->resolve('foo');
+        $this->assertSame('foo', $p->wait());
     }
 
     /**

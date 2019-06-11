@@ -2,7 +2,7 @@
 <phpunit
     colors="true"
     beStrictAboutOutputDuringTests="true"
-    beStrictAboutTestsThatDoNotTestAnything="false"
+    beStrictAboutTestsThatDoNotTestAnything="true"
     bootstrap="vendor/autoload.php"
 >
     <testsuites>

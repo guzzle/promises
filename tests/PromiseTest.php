@@ -31,6 +31,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $p->resolve('foo');
+        $this->assertSame('foo', $p->wait());
     }
 
     /**
@@ -50,6 +51,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->reject('foo');
         $p->reject('foo');
+        $this->assertSame('rejected', $p->getState());
     }
 
     /**
@@ -71,6 +73,7 @@ class PromiseTest extends TestCase
 
     /**
      * @expectedException \GuzzleHttp\Promise\RejectionException
+     * @expectedExceptionMessage The promise was rejected with reason: Invoking the wait callback did not resolve the promise
      */
     public function testRejectsAndThrowsWhenWaitFailsToResolve()
     {
