@@ -220,7 +220,7 @@ function unwrap($promises)
 function all($promises, $recursive = false)
 {
     $results = [];
-    $promise = each(
+    $promise = \GuzzleHttp\Promise\each(
         $promises,
         function ($value, $idx) use (&$results) {
             $results[$idx] = $value;
@@ -268,7 +268,7 @@ function some($count, $promises)
     $results = [];
     $rejections = [];
 
-    return each(
+    return \GuzzleHttp\Promise\each(
         $promises,
         function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
             if ($p->getState() !== PromiseInterface::PENDING) {
@@ -324,7 +324,7 @@ function settle($promises)
 {
     $results = [];
 
-    return each(
+    return \GuzzleHttp\Promise\each(
         $promises,
         function ($value, $idx) use (&$results) {
             $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
