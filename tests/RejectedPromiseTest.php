@@ -54,6 +54,7 @@ class RejectedPromiseTest extends TestCase
     {
         $p = new RejectedPromise('foo');
         $p->reject('foo');
+        $this->assertSame('rejected', $p->getState());
     }
 
     public function testThrowsSpecificException()
@@ -111,6 +112,7 @@ class RejectedPromiseTest extends TestCase
     {
         $p = new RejectedPromise('a');
         $p->wait(false);
+        $this->assertSame('rejected', $p->getState());
     }
 
     public function testOtherwiseIsSugarForRejections()

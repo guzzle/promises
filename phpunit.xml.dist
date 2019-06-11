@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit colors="true" bootstrap="vendor/autoload.php">
+<phpunit
+    colors="true"
+    beStrictAboutOutputDuringTests="true"
+    beStrictAboutTestsThatDoNotTestAnything="true"
+    bootstrap="vendor/autoload.php"
+>
     <testsuites>
         <testsuite name="GuzzleHttp Promise Test Suite">
             <directory>tests/</directory>
@@ -7,7 +12,7 @@
     </testsuites>
     <filter>
         <whitelist>
-            <directory suffix=".php">src/</directory>
+            <directory>src/</directory>
             <exclude>
                 <directory suffix="Interface.php">src/</directory>
             </exclude>
