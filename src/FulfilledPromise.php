@@ -13,7 +13,7 @@ class FulfilledPromise implements PromiseInterface
 
     public function __construct($value)
     {
-        if (method_exists($value, 'then')) {
+        if (is_object($value) && method_exists($value, 'then')) {
             throw new \InvalidArgumentException(
                 'You cannot create a FulfilledPromise with a promise.');
         }
