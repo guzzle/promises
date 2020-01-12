@@ -30,7 +30,7 @@ class RejectedPromise implements PromiseInterface
             return $this;
         }
 
-        $queue = queue();
+        $queue = Utils::queue();
         $reason = $this->reason;
         $p = new Promise([$queue, 'run']);
         $queue->add(static function () use ($p, $reason, $onRejected) {
@@ -39,9 +39,6 @@ class RejectedPromise implements PromiseInterface
                     // Return a resolved promise if onRejected does not throw.
                     $p->resolve($onRejected($reason));
                 } catch (\Throwable $e) {
-                    // onRejected threw, so return a rejected promise.
-                    $p->reject($e);
-                } catch (\Exception $e) {
                     // onRejected threw, so return a rejected promise.
                     $p->reject($e);
                 }
@@ -56,10 +53,10 @@ class RejectedPromise implements PromiseInterface
         return $this->then(null, $onRejected);
     }
 
-    public function wait($unwrap = true, $defaultDelivery = null)
+    public function wait(bool $unwrap = true, $defaultDelivery = null)
     {
         if ($unwrap) {
-            throw exception_for($this->reason);
+            throw Utils::exceptionFor($this->reason);
         }
     }
 

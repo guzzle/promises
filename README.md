@@ -236,7 +236,7 @@ echo $promise->wait(); // outputs "foo"
 ```
 
 Calling `wait` on a promise that has been rejected will throw an exception. If
-the rejection reason is an instance of `\Exception` the reason is thrown.
+the rejection reason is an instance of `\Throwable` the reason is thrown.
 Otherwise, a `GuzzleHttp\Promise\RejectionException` is thrown and the reason
 can be obtained by calling the `getReason` method of the exception.
 

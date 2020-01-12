@@ -50,7 +50,7 @@ class EachPromise implements PromisorInterface
      */
     public function __construct($iterable, array $config = [])
     {
-        $this->iterable = iter_for($iterable);
+        $this->iterable = Utils::iterFor($iterable);
 
         if (isset($config['concurrency'])) {
             $this->concurrency = $config['concurrency'];
@@ -78,8 +78,6 @@ class EachPromise implements PromisorInterface
                 $this->refillPending();
             }
         } catch (\Throwable $e) {
-            $this->aggregate->reject($e);
-        } catch (\Exception $e) {
             $this->aggregate->reject($e);
         }
 
@@ -145,7 +143,7 @@ class EachPromise implements PromisorInterface
             return false;
         }
 
-        $promise = promise_for($this->iterable->current());
+        $promise = Utils::promiseFor($this->iterable->current());
         $key = $this->iterable->key();
 
         // Iterable keys may not be unique, so we add the promises at the end
@@ -194,14 +192,10 @@ class EachPromise implements PromisorInterface
             $this->aggregate->reject($e);
             $this->mutex = false;
             return false;
-        } catch (\Exception $e) {
-            $this->aggregate->reject($e);
-            $this->mutex = false;
-            return false;
         }
     }
 
-    private function step($idx)
+    private function step(int $idx)
     {
         // If the promise was already resolved, then ignore this step.
         if ($this->aggregate->getState() !== PromiseInterface::PENDING) {

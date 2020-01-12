@@ -6,7 +6,7 @@ namespace GuzzleHttp\Promise;
  */
 class AggregateException extends RejectionException
 {
-    public function __construct($msg, array $reasons)
+    public function __construct(string $msg, array $reasons)
     {
         parent::__construct(
             $reasons,

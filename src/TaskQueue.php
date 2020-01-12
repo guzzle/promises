@@ -8,14 +8,14 @@ namespace GuzzleHttp\Promise;
  * maintains a constant stack size. You can use the task queue asynchronously
  * by calling the `run()` function of the global task queue in an event loop.
  *
- *     GuzzleHttp\Promise\queue()->run();
+ *     GuzzleHttp\Promise\Utils::queue()->run();
  */
 class TaskQueue implements TaskQueueInterface
 {
     private $enableShutdown = true;
     private $queue = [];
 
-    public function __construct($withShutdown = true)
+    public function __construct(bool $withShutdown = true)
     {
         if ($withShutdown) {
             register_shutdown_function(function () {

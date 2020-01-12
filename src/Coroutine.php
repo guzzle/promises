@@ -1,7 +1,6 @@
 <?php
 namespace GuzzleHttp\Promise;
 
-use Exception;
 use Generator;
 use Throwable;
 
@@ -22,11 +21,11 @@ use Throwable;
  *         return new Promise\FulfilledPromise($value);
  *     }
  *
- *     $promise = Promise\coroutine(function () {
+ *     $promise = Promise\Utils::coroutine(function () {
  *         $value = (yield createPromise('a'));
  *         try {
  *             $value = (yield createPromise($value . 'b'));
- *         } catch (\Exception $e) {
+ *         } catch (\Throwable $e) {
  *             // The promise was rejected.
  *         }
  *         yield $value . 'c';
@@ -80,7 +79,7 @@ final class Coroutine implements PromiseInterface
         return $this->result->otherwise($onRejected);
     }
 
-    public function wait($unwrap = true)
+    public function wait(bool $unwrap = true)
     {
         return $this->result->wait($unwrap);
     }
@@ -108,7 +107,7 @@ final class Coroutine implements PromiseInterface
 
     private function nextCoroutine($yielded)
     {
-        $this->currentPromise = promise_for($yielded)
+        $this->currentPromise = Utils::promiseFor($yielded)
             ->then([$this, '_handleSuccess'], [$this, '_handleFailure']);
     }
 
@@ -125,8 +124,6 @@ final class Coroutine implements PromiseInterface
             } else {
                 $this->result->resolve($value);
             }
-        } catch (Exception $exception) {
-            $this->result->reject($exception);
         } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
@@ -142,8 +139,6 @@ final class Coroutine implements PromiseInterface
             $nextYield = $this->generator->throw(exception_for($reason));
             // The throw was caught, so keep iterating on the coroutine
             $this->nextCoroutine($nextYield);
-        } catch (Exception $exception) {
-            $this->result->reject($exception);
         } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
