@@ -65,7 +65,13 @@ final class Coroutine implements PromiseInterface
                 $this->currentPromise->wait();
             }
         });
-        $this->nextCoroutine($this->generator->current());
+        try {
+            $this->nextCoroutine($this->generator->current());
+        } catch (\Exception $exception) {
+            $this->result->reject($exception);
+        } catch (Throwable $throwable) {
+            $this->result->reject($throwable);
+        }
     }
 
     public function then(
