@@ -67,11 +67,9 @@ final class Coroutine implements PromiseInterface
         });
         try {
             $this->nextCoroutine($this->generator->current());
-        }
-        catch (\Exception $exception) {
+        } catch (\Exception $exception) {
             $this->result->reject($exception);
-        }
-        catch (Throwable $throwable) {
+        } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
     }
