@@ -148,7 +148,7 @@ class Promise implements PromiseInterface
 
         // If the value was not a settled promise or a thenable, then resolve
         // it in the task queue using the correct ID.
-        if (!method_exists($value, 'then')) {
+        if (!is_object($value) || !method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
             queue()->add(static function () use ($id, $value, $handlers) {
