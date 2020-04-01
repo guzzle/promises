@@ -67,8 +67,11 @@ class Promise implements PromiseInterface
             if ($this->state === self::FULFILLED) {
                 return $this->result;
             }
+            $exception = $this->result;
+            // Unset exception form Promise, because it will case memory leak.
+            unset($this->result);
             // It's rejected so "unwrap" and throw an exception.
-            throw exception_for($this->result);
+            throw exception_for($exception);
         }
     }
 
