@@ -68,7 +68,7 @@ class Promise implements PromiseInterface
                 return $this->result;
             }
             $exception = $this->result;
-            // Unset exception form Promise, because it will case memory leak.
+            // Unset exception from Promise otherwise it will cause a memory leak.
             $this->result = null;
             // It's rejected so "unwrap" and throw an exception.
             throw exception_for($exception);
