@@ -1,4 +1,5 @@
 <?php
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -50,7 +51,7 @@ class EachPromise implements PromisorInterface
      */
     public function __construct($iterable, array $config = [])
     {
-        $this->iterable = iter_for($iterable);
+        $this->iterable = Create::iterFor($iterable);
 
         if (isset($config['concurrency'])) {
             $this->concurrency = $config['concurrency'];
@@ -96,7 +97,7 @@ class EachPromise implements PromisorInterface
             while ($promise = current($this->pending)) {
                 next($this->pending);
                 $promise->wait();
-                if ($this->aggregate->getState() !== PromiseInterface::PENDING) {
+                if (Is::settled($this->aggregate)) {
                     return;
                 }
             }
@@ -145,7 +146,7 @@ class EachPromise implements PromisorInterface
             return false;
         }
 
-        $promise = promise_for($this->iterable->current());
+        $promise = Create::promiseFor($this->iterable->current());
         $key = $this->iterable->key();
 
         // Iterable keys may not be unique, so we add the promises at the end
@@ -204,7 +205,7 @@ class EachPromise implements PromisorInterface
     private function step($idx)
     {
         // If the promise was already resolved, then ignore this step.
-        if ($this->aggregate->getState() !== PromiseInterface::PENDING) {
+        if (Is::settled($this->aggregate)) {
             return;
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
@@ -11,53 +12,16 @@ use GuzzleHttp\Promise\RejectionException;
 use GuzzleHttp\Promise\TaskQueue;
 use PHPUnit\Framework\TestCase;
 
-class FunctionsTest extends TestCase
+class UtilsTest extends TestCase
 {
-    public function testCreatesPromiseForValue()
-    {
-        $p = P\promise_for('foo');
-        $this->assertInstanceOf(FulfilledPromise::class, $p);
-    }
-
-    public function testReturnsPromiseForPromise()
-    {
-        $p = new Promise();
-        $this->assertSame($p, P\promise_for($p));
-    }
-
-    public function testReturnsPromiseForThennable()
-    {
-        $p = new Thennable();
-        $wrapped = P\promise_for($p);
-        $this->assertNotSame($p, $wrapped);
-        $this->assertInstanceOf(PromiseInterface::class, $wrapped);
-        $p->resolve('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $wrapped->wait());
-    }
-
-    public function testReturnsRejection()
-    {
-        $p = P\rejection_for('fail');
-        $this->assertInstanceOf(RejectedPromise::class, $p);
-        $this->assertEquals('fail', $this->readAttribute($p, 'reason'));
-    }
-
-    public function testReturnsPromisesAsIsInRejectionFor()
-    {
-        $a = new Promise();
-        $b = P\rejection_for($a);
-        $this->assertSame($a, $b);
-    }
-
     public function testWaitsOnAllPromisesIntoArray()
     {
         $e = new \Exception();
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $b = new Promise(function () use (&$b) { $b->reject('b'); });
         $c = new Promise(function () use (&$c, $e) { $c->reject($e); });
-        $results = P\inspect_all([$a, $b, $c]);
-        $this->assertEquals([
+        $results = P\Utils::inspectAll([$a, $b, $c]);
+        $this->assertSame([
             ['state' => 'fulfilled', 'value' => 'a'],
             ['state' => 'rejected', 'reason' => 'b'],
             ['state' => 'rejected', 'reason' => $e]
@@ -70,13 +34,13 @@ class FunctionsTest extends TestCase
     public function testUnwrapsPromisesWithNoDefaultAndFailure()
     {
         $promises = [new FulfilledPromise('a'), new Promise()];
-        P\unwrap($promises);
+        P\Utils::unwrap($promises);
     }
 
     public function testUnwrapsPromisesWithNoDefault()
     {
         $promises = [new FulfilledPromise('a')];
-        $this->assertEquals(['a'], P\unwrap($promises));
+        $this->assertSame(['a'], P\Utils::unwrap($promises));
     }
 
     public function testUnwrapsPromisesWithKeys()
@@ -85,10 +49,10 @@ class FunctionsTest extends TestCase
             'foo' => new FulfilledPromise('a'),
             'bar' => new FulfilledPromise('b'),
         ];
-        $this->assertEquals([
+        $this->assertSame([
             'foo' => 'a',
             'bar' => 'b'
-        ], P\unwrap($promises));
+        ], P\Utils::unwrap($promises));
     }
 
     public function testAllAggregatesSortedArray()
@@ -96,7 +60,7 @@ class FunctionsTest extends TestCase
         $a = new Promise();
         $b = new Promise();
         $c = new Promise();
-        $d = P\all([$a, $b, $c]);
+        $d = P\Utils::all([$a, $b, $c]);
         $b->resolve('b');
         $a->resolve('a');
         $c->resolve('c');
@@ -104,8 +68,8 @@ class FunctionsTest extends TestCase
             function ($value) use (&$result) { $result = $value; },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\queue()->run();
-        $this->assertEquals(['a', 'b', 'c'], $result);
+        P\Utils::queue()->run();
+        $this->assertSame(['a', 'b', 'c'], $result);
     }
 
     public function testPromisesDynamicallyAddedToStack()
@@ -120,10 +84,10 @@ class FunctionsTest extends TestCase
                 $subPromise->resolve('c');
             });
         });
-        $result = P\all($promises, true)->wait();
+        $result = P\Utils::all($promises, true)->wait();
         $this->assertCount(3, $promises);
         $this->assertCount(3, $result);
-        $this->assertEquals($result['c'], 'c');
+        $this->assertSame($result['c'], 'c');
         $this->assertSame(1, $counter);
     }
 
@@ -132,7 +96,7 @@ class FunctionsTest extends TestCase
         $a = new Promise();
         $b = new Promise();
         $c = new Promise();
-        $d = P\all([$a, $b, $c]);
+        $d = P\Utils::all([$a, $b, $c]);
         $b->resolve('b');
         $a->reject('fail');
         $c->resolve('c');
@@ -140,8 +104,8 @@ class FunctionsTest extends TestCase
             function ($value) use (&$result) { $result = $value; },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\queue()->run();
-        $this->assertEquals('fail', $result);
+        P\Utils::queue()->run();
+        $this->assertSame('fail', $result);
     }
 
     public function testSomeAggregatesSortedArrayWithMax()
@@ -149,28 +113,28 @@ class FunctionsTest extends TestCase
         $a = new Promise();
         $b = new Promise();
         $c = new Promise();
-        $d = P\some(2, [$a, $b, $c]);
+        $d = P\Utils::some(2, [$a, $b, $c]);
         $b->resolve('b');
         $c->resolve('c');
         $a->resolve('a');
         $d->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals(['b', 'c'], $result);
+        P\Utils::queue()->run();
+        $this->assertSame(['b', 'c'], $result);
     }
 
     public function testSomeRejectsWhenTooManyRejections()
     {
         $a = new Promise();
         $b = new Promise();
-        $d = P\some(2, [$a, $b]);
+        $d = P\Utils::some(2, [$a, $b]);
         $a->reject('bad');
         $b->resolve('good');
-        P\queue()->run();
-        $this->assertEquals($a::REJECTED, $d->getState());
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::rejected($d));
         $d->then(null, function ($reason) use (&$called) {
             $called = $reason;
         });
-        P\queue()->run();
+        P\Utils::queue()->run();
         $this->assertInstanceOf(AggregateException::class, $called);
         $this->assertContains('bad', $called->getReason());
     }
@@ -180,8 +144,8 @@ class FunctionsTest extends TestCase
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $b = new Promise(function () use (&$b) { $b->resolve('b'); });
         $c = new Promise(function () use (&$c) { $c->resolve('c'); });
-        $d = P\some(2, [$a, $b, $c]);
-        $this->assertEquals(['a', 'b'], $d->wait());
+        $d = P\Utils::some(2, [$a, $b, $c]);
+        $this->assertSame(['a', 'b'], $d->wait());
     }
 
     /**
@@ -191,7 +155,7 @@ class FunctionsTest extends TestCase
     public function testThrowsIfImpossibleToWaitForSomeCount()
     {
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
-        $d = P\some(2, [$a]);
+        $d = P\Utils::some(2, [$a]);
         $d->wait();
     }
 
@@ -203,7 +167,7 @@ class FunctionsTest extends TestCase
     {
         $a = new Promise();
         $b = new Promise();
-        $d = P\some(3, [$a, $b]);
+        $d = P\Utils::some(3, [$a, $b]);
         $a->resolve('a');
         $b->resolve('b');
         $d->wait();
@@ -213,14 +177,12 @@ class FunctionsTest extends TestCase
     {
         $a = new Promise();
         $b = new Promise();
-        $c = P\any([$a, $b]);
+        $c = P\Utils::any([$a, $b]);
         $b->resolve('b');
         $a->resolve('a');
-        //P\queue()->run();
-        //$this->assertEquals('fulfilled', $c->getState());
         $c->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals('b', $result);
+        P\Utils::queue()->run();
+        $this->assertSame('b', $result);
     }
 
     public function testSettleFulfillsWithFulfilledAndRejected()
@@ -228,15 +190,15 @@ class FunctionsTest extends TestCase
         $a = new Promise();
         $b = new Promise();
         $c = new Promise();
-        $d = P\settle([$a, $b, $c]);
+        $d = P\Utils::settle([$a, $b, $c]);
         $b->resolve('b');
         $c->resolve('c');
         $a->reject('a');
-        P\queue()->run();
-        $this->assertEquals('fulfilled', $d->getState());
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::fulfilled($d));
         $d->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals([
+        P\Utils::queue()->run();
+        $this->assertSame([
             ['state' => 'rejected', 'reason' => 'a'],
             ['state' => 'fulfilled', 'value' => 'b'],
             ['state' => 'fulfilled', 'value' => 'c']
@@ -246,111 +208,64 @@ class FunctionsTest extends TestCase
     public function testCanInspectFulfilledPromise()
     {
         $p = new FulfilledPromise('foo');
-        $this->assertEquals([
+        $this->assertSame([
             'state' => 'fulfilled',
             'value' => 'foo'
-        ], P\inspect($p));
+        ], P\Utils::inspect($p));
     }
 
     public function testCanInspectRejectedPromise()
     {
         $p = new RejectedPromise('foo');
-        $this->assertEquals([
+        $this->assertSame([
             'state'  => 'rejected',
             'reason' => 'foo'
-        ], P\inspect($p));
+        ], P\Utils::inspect($p));
     }
 
     public function testCanInspectRejectedPromiseWithNormalException()
     {
         $e = new \Exception('foo');
         $p = new RejectedPromise($e);
-        $this->assertEquals([
+        $this->assertSame([
             'state'  => 'rejected',
             'reason' => $e
-        ], P\inspect($p));
-    }
-
-    public function testCallsEachLimit()
-    {
-        $p = new Promise();
-        $aggregate = P\each_limit($p, 2);
-        $p->resolve('a');
-        P\queue()->run();
-        $this->assertEquals($p::FULFILLED, $aggregate->getState());
-    }
-
-    public function testEachLimitAllRejectsOnFailure()
-    {
-        $p = [new FulfilledPromise('a'), new RejectedPromise('b')];
-        $aggregate = P\each_limit_all($p, 2);
-        P\queue()->run();
-        $this->assertEquals(PromiseInterface::REJECTED, $aggregate->getState());
-        $result = P\inspect($aggregate);
-        $this->assertEquals('b', $result['reason']);
-    }
-
-    public function testIterForReturnsIterator()
-    {
-        $iter = new \ArrayIterator();
-        $this->assertSame($iter, P\iter_for($iter));
-    }
-
-    public function testKnowsIfFulfilled()
-    {
-        $p = new FulfilledPromise(null);
-        $this->assertTrue(P\is_fulfilled($p));
-        $this->assertFalse(P\is_rejected($p));
-    }
-
-    public function testKnowsIfRejected()
-    {
-        $p = new RejectedPromise(null);
-        $this->assertTrue(P\is_rejected($p));
-        $this->assertFalse(P\is_fulfilled($p));
-    }
-
-    public function testKnowsIfSettled()
-    {
-        $p = new RejectedPromise(null);
-        $this->assertTrue(P\is_settled($p));
-        $p = new Promise();
-        $this->assertFalse(P\is_settled($p));
+        ], P\Utils::inspect($p));
     }
 
     public function testReturnsTrampoline()
     {
-        $this->assertInstanceOf(TaskQueue::class, P\queue());
-        $this->assertSame(P\queue(), P\queue());
+        $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
+        $this->assertSame(P\Utils::queue(), P\Utils::queue());
     }
 
     public function testCanScheduleThunk()
     {
-        $tramp = P\queue();
+        $tramp = P\Utils::queue();
         $promise = P\task(function () { return 'Hi!'; });
         $c = null;
         $promise->then(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
         $tramp->run();
-        $this->assertEquals('Hi!', $c);
+        $this->assertSame('Hi!', $c);
     }
 
     public function testCanScheduleThunkWithRejection()
     {
-        $tramp = P\queue();
+        $tramp = P\Utils::queue();
         $promise = P\task(function () { throw new \Exception('Hi!'); });
         $c = null;
         $promise->otherwise(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
         $tramp->run();
-        $this->assertEquals('Hi!', $c->getMessage());
+        $this->assertSame('Hi!', $c->getMessage());
     }
 
     public function testCanScheduleThunkWithWait()
     {
-        $tramp = P\queue();
+        $tramp = P\Utils::queue();
         $promise = P\task(function () { return 'a'; });
-        $this->assertEquals('a', $promise->wait());
+        $this->assertSame('a', $promise->wait());
         $tramp->run();
     }
 
@@ -360,13 +275,13 @@ class FunctionsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\coroutine(function () {
+        $promise = P\Coroutine::of(function () {
             $value = (yield new FulfilledPromise('a'));
             yield  $value . 'b';
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals('ab', $result);
+        P\Utils::queue()->run();
+        $this->assertSame('ab', $result);
     }
 
     public function testCanCatchExceptionsInCoroutine()
@@ -375,7 +290,7 @@ class FunctionsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\coroutine(function () {
+        $promise = P\Coroutine::of(function () {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -385,9 +300,9 @@ class FunctionsTest extends TestCase
             }
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals(PromiseInterface::FULFILLED, $promise->getState());
-        $this->assertEquals('ab', $result);
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::fulfilled($promise));
+        $this->assertSame('ab', $result);
     }
 
     /**
@@ -399,19 +314,19 @@ class FunctionsTest extends TestCase
             function () { $this->fail(); },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\queue()->run();
+        P\Utils::queue()->run();
         $this->assertInstanceOf(\Exception::class, $result);
-        $this->assertEquals('a', $result->getMessage());
+        $this->assertSame('a', $result->getMessage());
     }
 
     public function rejectsParentExceptionProvider()
     {
         return [
-            [ P\coroutine(function () {
+            [ P\Coroutine::of(function () {
                 yield new FulfilledPromise(0);
                 throw new \Exception('a');
             }) ],
-            [ P\coroutine(function () {
+            [ P\Coroutine::of(function () {
                 throw new \Exception('a');
                 yield new FulfilledPromise(0);
             }) ],
@@ -424,7 +339,7 @@ class FunctionsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\coroutine(function () {
+        $promise = P\Coroutine::of(function () {
             yield new FulfilledPromise(0);
             yield new RejectedPromise('no!');
         });
@@ -432,9 +347,9 @@ class FunctionsTest extends TestCase
             function () { $this->fail(); },
             function ($reason) use (&$result) { $result = $reason; }
         );
-        P\queue()->run();
+        P\Utils::queue()->run();
         $this->assertInstanceOf(RejectionException::class, $result);
-        $this->assertEquals('no!', $result->getReason());
+        $this->assertSame('no!', $result->getReason());
     }
 
     public function testCanAsyncReject()
@@ -444,7 +359,7 @@ class FunctionsTest extends TestCase
         }
 
         $rej = new Promise();
-        $promise = P\coroutine(function () use ($rej) {
+        $promise = P\Coroutine::of(function () use ($rej) {
             yield new FulfilledPromise(0);
             yield $rej;
         });
@@ -453,14 +368,14 @@ class FunctionsTest extends TestCase
             function ($reason) use (&$result) { $result = $reason; }
         );
         $rej->reject('no!');
-        P\queue()->run();
+        P\Utils::queue()->run();
         $this->assertInstanceOf(RejectionException::class, $result);
-        $this->assertEquals('no!', $result->getReason());
+        $this->assertSame('no!', $result->getReason());
     }
 
     public function testCanCatchAndThrowOtherException()
     {
-        $promise = P\coroutine(function () {
+        $promise = P\Coroutine::of(function () {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -469,8 +384,8 @@ class FunctionsTest extends TestCase
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals(PromiseInterface::REJECTED, $promise->getState());
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::rejected($promise));
         $this->assertContains('foo', $result->getMessage());
     }
 
@@ -480,7 +395,7 @@ class FunctionsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\coroutine(function () {
+        $promise = P\Coroutine::of(function () {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -489,14 +404,14 @@ class FunctionsTest extends TestCase
             }
         });
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals(PromiseInterface::REJECTED, $promise->getState());
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::rejected($promise));
         $this->assertContains('foo', $result->getMessage());
     }
 
     public function createLotsOfSynchronousPromise()
     {
-        return P\coroutine(function () {
+        return P\Coroutine::of(function () {
             $value = 0;
             for ($i = 0; $i < 1000; $i++) {
                 $value = (yield new FulfilledPromise($i));
@@ -513,8 +428,8 @@ class FunctionsTest extends TestCase
 
         $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\queue()->run();
-        $this->assertEquals(999, $r);
+        P\Utils::queue()->run();
+        $this->assertSame(999, $r);
     }
 
     public function testLotsOfSynchronousWaitDoesNotBlowStack()
@@ -525,13 +440,13 @@ class FunctionsTest extends TestCase
 
         $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        $this->assertEquals(999, $promise->wait());
-        $this->assertEquals(999, $r);
+        $this->assertSame(999, $promise->wait());
+        $this->assertSame(999, $r);
     }
 
     private function createLotsOfFlappingPromise()
     {
-        return P\coroutine(function () {
+        return P\Coroutine::of(function () {
             $value = 0;
             for ($i = 0; $i < 1000; $i++) {
                 try {
@@ -556,8 +471,8 @@ class FunctionsTest extends TestCase
 
         $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\queue()->run();
-        $this->assertEquals(999, $r);
+        P\Utils::queue()->run();
+        $this->assertSame(999, $r);
     }
 
     public function testLotsOfTryCatchingWaitingDoesNotBlowStack()
@@ -568,8 +483,8 @@ class FunctionsTest extends TestCase
 
         $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        $this->assertEquals(999, $promise->wait());
-        $this->assertEquals(999, $r);
+        $this->assertSame(999, $promise->wait());
+        $this->assertSame(999, $r);
     }
 
     public function testAsyncPromisesWithCorrectlyYieldedValues()
@@ -585,15 +500,15 @@ class FunctionsTest extends TestCase
         ];
 
         eval('
-        $promise = \GuzzleHttp\Promise\coroutine(function () use ($promises) {
+        $promise = \GuzzleHttp\Promise\Coroutine::of(function () use ($promises) {
             $value = null;
-            $this->assertEquals(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
+            $this->assertSame(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
             foreach ($promises as $idx => $p) {
                 $value = (yield $p);
-                $this->assertEquals($idx, $value);
-                $this->assertEquals(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
+                $this->assertSame($idx, $value);
+                $this->assertSame(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
             }
-            $this->assertEquals(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
+            $this->assertSame(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
             yield $value;
         });
 ');
@@ -603,8 +518,8 @@ class FunctionsTest extends TestCase
         $promises[2]->resolve(2);
 
         $promise->then(function ($v) use (&$r) { $r = $v; });
-        P\queue()->run();
-        $this->assertEquals(2, $r);
+        P\Utils::queue()->run();
+        $this->assertSame(2, $r);
     }
 
     public function testYieldFinalWaitablePromise()
@@ -619,12 +534,12 @@ class FunctionsTest extends TestCase
         $p2 = new Promise(function () use (&$p2) {
             $p2->resolve('hello!');
         });
-        $co = P\coroutine(function() use ($p1, $p2) {
+        $co = P\Coroutine::of(function() use ($p1, $p2) {
             yield $p1;
             yield $p2;
         });
-        P\queue()->run();
-        $this->assertEquals('hello!', $co->wait());
+        P\Utils::queue()->run();
+        $this->assertSame('hello!', $co->wait());
     }
 
     public function testCanYieldFinalPendingPromise()
@@ -635,15 +550,15 @@ class FunctionsTest extends TestCase
 
         $p1 = new Promise();
         $p2 = new Promise();
-        $co = P\coroutine(function() use ($p1, $p2) {
+        $co = P\Coroutine::of(function() use ($p1, $p2) {
             yield $p1;
             yield $p2;
         });
         $p1->resolve('a');
         $p2->resolve('b');
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals('b', $result);
+        P\Utils::queue()->run();
+        $this->assertSame('b', $result);
     }
 
     public function testCanNestYieldsAndFailures()
@@ -657,7 +572,7 @@ class FunctionsTest extends TestCase
         $p3 = new Promise();
         $p4 = new Promise();
         $p5 = new Promise();
-        $co = P\coroutine(function() use ($p1, $p2, $p3, $p4, $p5) {
+        $co = P\Coroutine::of(function() use ($p1, $p2, $p3, $p4, $p5) {
             try {
                 yield $p1;
             } catch (\Exception $e) {
@@ -676,8 +591,8 @@ class FunctionsTest extends TestCase
         $p4->reject('d');
         $p5->resolve('e');
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals('e', $result);
+        P\Utils::queue()->run();
+        $this->assertSame('e', $result);
     }
 
     public function testCanYieldErrorsAndSuccessesWithoutRecursion()
@@ -691,7 +606,7 @@ class FunctionsTest extends TestCase
             $promises[] = new Promise();
         }
 
-        $co = P\coroutine(function() use ($promises) {
+        $co = P\Coroutine::of(function() use ($promises) {
             for ($i = 0; $i < 20; $i += 4) {
                 try {
                     yield $promises[$i];
@@ -711,8 +626,8 @@ class FunctionsTest extends TestCase
         }
 
         $co->then(function ($value) use (&$result) { $result = $value; });
-        P\queue()->run();
-        $this->assertEquals('19', $result);
+        P\Utils::queue()->run();
+        $this->assertSame(19, $result);
     }
 
     public function testCanWaitOnPromiseAfterFulfilled()
@@ -734,14 +649,14 @@ class FunctionsTest extends TestCase
             $promises[] = $f();
         }
 
-        $p = P\coroutine(function () use ($promises) {
+        $p = P\Coroutine::of(function () use ($promises) {
             yield new FulfilledPromise('foo!');
             foreach ($promises as $promise) {
                 yield $promise;
             }
         });
 
-        $this->assertEquals('20-bar', $p->wait());
+        $this->assertSame('20-bar', $p->wait());
     }
 
     public function testCanWaitOnErroredPromises()
@@ -757,7 +672,7 @@ class FunctionsTest extends TestCase
         $p5 = new Promise(function () use (&$p5) { $p5->resolve('e'); });
         $p6 = new Promise(function () use (&$p6) { $p6->reject('f'); });
 
-        $co = P\coroutine(function() use ($p1, $p2, $p3, $p4, $p5, $p6) {
+        $co = P\Coroutine::of(function() use ($p1, $p2, $p3, $p4, $p5, $p6) {
             try {
                 yield $p1;
             } catch (\Exception $e) {
@@ -772,8 +687,8 @@ class FunctionsTest extends TestCase
             }
         });
 
-        $res = P\inspect($co);
-        $this->assertEquals('f', $res['reason']);
+        $res = P\Utils::inspect($co);
+        $this->assertSame('f', $res['reason']);
     }
 
     public function testCoroutineOtherwiseIntegrationTest()
@@ -784,7 +699,7 @@ class FunctionsTest extends TestCase
 
         $a = new Promise();
         $b = new Promise();
-        $promise = P\coroutine(function () use ($a, $b) {
+        $promise = P\Coroutine::of(function () use ($a, $b) {
             // Execute the pool of commands concurrently, and process errors.
             yield $a;
             yield $b;
@@ -794,7 +709,7 @@ class FunctionsTest extends TestCase
         });
         $a->resolve('a');
         $b->reject('b');
-        $reason = P\inspect($promise)['reason'];
+        $reason = P\Utils::inspect($promise)['reason'];
         $this->assertInstanceOf(\OutOfBoundsException::class, $reason);
         $this->assertInstanceOf(RejectionException::class, $reason->getPrevious());
     }

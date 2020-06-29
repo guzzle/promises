@@ -1,4 +1,5 @@
 <?php
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -30,11 +31,11 @@ class FulfilledPromise implements PromiseInterface
             return $this;
         }
 
-        $queue = queue();
+        $queue = Utils::queue();
         $p = new Promise([$queue, 'run']);
         $value = $this->value;
         $queue->add(static function () use ($p, $value, $onFulfilled) {
-            if ($p->getState() === self::PENDING) {
+            if (Is::pending($p)) {
                 try {
                     $p->resolve($onFulfilled($value));
                 } catch (\Throwable $e) {

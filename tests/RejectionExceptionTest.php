@@ -1,29 +1,9 @@
 <?php
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\RejectionException;
 use PHPUnit\Framework\TestCase;
-
-class Thing1
-{
-    public function __construct($message)
-    {
-        $this->message = $message;
-    }
-
-    public function __toString()
-    {
-        return $this->message;
-    }
-}
-
-class Thing2 implements \JsonSerializable
-{
-    public function jsonSerialize()
-    {
-        return '{}';
-    }
-}
 
 /**
  * @covers GuzzleHttp\Promise\RejectionException
@@ -36,7 +16,7 @@ class RejectionExceptionTest extends TestCase
         $e = new RejectionException($thing);
 
         $this->assertSame($thing, $e->getReason());
-        $this->assertEquals('The promise was rejected with reason: foo', $e->getMessage());
+        $this->assertSame('The promise was rejected with reason: foo', $e->getMessage());
     }
 
     public function testCanGetReasonMessageFromJson()
