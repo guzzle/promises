@@ -182,7 +182,6 @@ invoked using the value returned from the `$onRejected` callback.
 
 ```php
 use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Promise\RejectedPromise;
 
 $promise = new Promise();
 $promise
