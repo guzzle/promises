@@ -228,14 +228,14 @@ class PromiseTest extends TestCase
             $p3->wait();
             $this->fail();
         } catch (CancellationException $e) {
-            $this->assertContains('cancelled', $e->getMessage());
+            $this->assertStringContainsString('cancelled', $e->getMessage());
         }
 
         try {
             $p4->wait();
             $this->fail();
         } catch (CancellationException $e) {
-            $this->assertContains('cancelled', $e->getMessage());
+            $this->assertStringContainsString('cancelled', $e->getMessage());
         }
 
         $this->assertTrue(P\Is::rejected($p4));

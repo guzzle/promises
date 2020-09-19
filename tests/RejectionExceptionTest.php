@@ -23,6 +23,6 @@ class RejectionExceptionTest extends TestCase
     {
         $reason = new Thing2();
         $e = new RejectionException($reason);
-        $this->assertContains("{}", $e->getMessage());
+        $this->assertStringContainsString("{}", $e->getMessage());
     }
 }
