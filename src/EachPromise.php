@@ -10,22 +10,22 @@ class EachPromise implements PromisorInterface
 {
     private $pending = [];
 
-    /** @var \Iterator */
+    /** @var \Iterator|null */
     private $iterable;
 
-    /** @var callable|int */
+    /** @var callable|int|null */
     private $concurrency;
 
-    /** @var callable */
+    /** @var callable|null */
     private $onFulfilled;
 
-    /** @var callable */
+    /** @var callable|null */
     private $onRejected;
 
-    /** @var Promise */
+    /** @var Promise|null */
     private $aggregate;
 
-    /** @var bool */
+    /** @var bool|null */
     private $mutex;
 
     /**
@@ -79,11 +79,14 @@ class EachPromise implements PromisorInterface
                 $this->refillPending();
             }
         } catch (\Throwable $e) {
+            // @phpstan-ignore-next-line
             $this->aggregate->reject($e);
         } catch (\Exception $e) {
+            // @phpstan-ignore-next-line
             $this->aggregate->reject($e);
         }
 
+        // @phpstan-ignore-next-line
         return $this->aggregate;
     }
 
