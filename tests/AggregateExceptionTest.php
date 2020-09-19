@@ -10,7 +10,7 @@ class AggregateExceptionTest extends TestCase
     public function testHasReason()
     {
         $e = new AggregateException('foo', ['baz', 'bar']);
-        $this->assertContains('foo', $e->getMessage());
+        $this->assertStringContainsString('foo', $e->getMessage());
         $this->assertSame(['baz', 'bar'], $e->getReason());
     }
 }

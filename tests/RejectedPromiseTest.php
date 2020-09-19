@@ -21,7 +21,7 @@ class RejectedPromiseTest extends TestCase
             $this->fail();
         } catch (\Exception $e) {
             $this->assertTrue(P\Is::rejected($p));
-            $this->assertContains('foo', $e->getMessage());
+            $this->assertStringContainsString('foo', $e->getMessage());
         }
     }
 

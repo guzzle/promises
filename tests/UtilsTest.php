@@ -383,7 +383,7 @@ class UtilsTest extends TestCase
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
-        $this->assertContains('foo', $result->getMessage());
+        $this->assertStringContainsString('foo', $result->getMessage());
     }
 
     public function testCanCatchAndYieldOtherException()
@@ -403,7 +403,7 @@ class UtilsTest extends TestCase
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
-        $this->assertContains('foo', $result->getMessage());
+        $this->assertStringContainsString('foo', $result->getMessage());
     }
 
     public function createLotsOfSynchronousPromise()

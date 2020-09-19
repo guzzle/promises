@@ -94,21 +94,21 @@ class EachPromiseTest extends TestCase
         $promises = new \ArrayIterator($pending);
         $each = new EachPromise($promises, ['concurrency' => 2]);
         $p = $each->promise();
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         $pending[0]->resolve('a');
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         $this->assertTrue($promises->valid());
         $pending[1]->resolve('b');
         P\Utils::queue()->run();
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         $this->assertTrue($promises->valid());
         $promises[2]->resolve('c');
         P\Utils::queue()->run();
-        $this->assertCount(1, $this->readAttribute($each, 'pending'));
+        $this->assertCount(1, PropertyHelper::get($each, 'pending'));
         $this->assertTrue(P\Is::pending($p));
         $promises[3]->resolve('d');
         P\Utils::queue()->run();
-        $this->assertNull($this->readAttribute($each, 'pending'));
+        $this->assertNull(PropertyHelper::get($each, 'pending'));
         $this->assertTrue(P\Is::fulfilled($p));
         $this->assertFalse($promises->valid());
     }
@@ -124,21 +124,21 @@ class EachPromiseTest extends TestCase
         $promises = new \ArrayIterator($pending);
         $each = new EachPromise($promises, ['concurrency' => $pendingFn]);
         $p = $each->promise();
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         $pending[0]->resolve('a');
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         $this->assertTrue($promises->valid());
         $pending[1]->resolve('b');
-        $this->assertCount(2, $this->readAttribute($each, 'pending'));
+        $this->assertCount(2, PropertyHelper::get($each, 'pending'));
         P\Utils::queue()->run();
         $this->assertTrue($promises->valid());
         $promises[2]->resolve('c');
         P\Utils::queue()->run();
-        $this->assertCount(1, $this->readAttribute($each, 'pending'));
+        $this->assertCount(1, PropertyHelper::get($each, 'pending'));
         $this->assertTrue(P\Is::pending($p));
         $promises[3]->resolve('d');
         P\Utils::queue()->run();
-        $this->assertNull($this->readAttribute($each, 'pending'));
+        $this->assertNull(PropertyHelper::get($each, 'pending'));
         $this->assertTrue(P\Is::fulfilled($p));
         $this->assertSame([0, 1, 1, 1], $calls);
         $this->assertFalse($promises->valid());
@@ -157,11 +157,11 @@ class EachPromiseTest extends TestCase
             'rejected'  => function () {}
         ]);
         $each->promise()->wait();
-        $this->assertNull($this->readAttribute($each, 'onFulfilled'));
-        $this->assertNull($this->readAttribute($each, 'onRejected'));
-        $this->assertNull($this->readAttribute($each, 'iterable'));
-        $this->assertNull($this->readAttribute($each, 'pending'));
-        $this->assertNull($this->readAttribute($each, 'concurrency'));
+        $this->assertNull(PropertyHelper::get($each, 'onFulfilled'));
+        $this->assertNull(PropertyHelper::get($each, 'onRejected'));
+        $this->assertNull(PropertyHelper::get($each, 'iterable'));
+        $this->assertNull(PropertyHelper::get($each, 'pending'));
+        $this->assertNull(PropertyHelper::get($each, 'concurrency'));
         $this->assertTrue($called);
     }
 
