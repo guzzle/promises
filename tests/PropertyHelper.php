@@ -19,8 +19,7 @@ class PropertyHelper
      */
     public static function get($object, $property)
     {
-        $refl = new \ReflectionClass(get_class($object));
-        $property = $refl->getProperty($property);
+        $property = (new \ReflectionObject($object))->getProperty($property);
         $property->setAccessible(true);
 
         return $property->getValue($object);
