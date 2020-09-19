@@ -3,10 +3,10 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
-use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Promise\EachPromise;
+use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -314,11 +314,9 @@ class EachPromiseTest extends TestCase
 
     private function createSelfResolvingPromise($value)
     {
-        $p = new Promise(function () use (&$p, $value) {
+        return new Promise(function () use (&$p, $value) {
             $p->resolve($value);
         });
-
-        return $p;
     }
 
     public function testMutexPreventsGeneratorRecursion()

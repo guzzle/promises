@@ -21,7 +21,7 @@ class CoroutineTest extends TestCase
      * @dataProvider promiseInterfaceMethodProvider
      *
      * @param string $method
-     * @param array $args
+     * @param array  $args
      */
     public function testShouldProxyPromiseMethodsToResultPromise($method, $args = [])
     {

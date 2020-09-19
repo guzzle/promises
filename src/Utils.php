@@ -166,7 +166,7 @@ final class Utils
 
         if (true === $recursive) {
             $promise = $promise->then(function ($results) use ($recursive, &$promises) {
-                foreach ($promises AS $promise) {
+                foreach ($promises as $promise) {
                     if (Is::pending($promise)) {
                         return self::all($promises, $recursive);
                     }

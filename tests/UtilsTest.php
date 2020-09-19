@@ -2,8 +2,8 @@
 
 namespace GuzzleHttp\Promise\Tests;
 
-use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\AggregateException;
+use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -28,11 +28,10 @@ class UtilsTest extends TestCase
         ], $results);
     }
 
-    /**
-     * @expectedException \GuzzleHttp\Promise\RejectionException
-     */
     public function testUnwrapsPromisesWithNoDefaultAndFailure()
     {
+        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+
         $promises = [new FulfilledPromise('a'), new Promise()];
         P\Utils::unwrap($promises);
     }
@@ -148,23 +147,21 @@ class UtilsTest extends TestCase
         $this->assertSame(['a', 'b'], $d->wait());
     }
 
-    /**
-     * @expectedException \GuzzleHttp\Promise\AggregateException
-     * @expectedExceptionMessage Not enough promises to fulfill count
-     */
     public function testThrowsIfImpossibleToWaitForSomeCount()
     {
+        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
+        $this->expectExceptionMessage('Not enough promises to fulfill count');
+
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $d = P\Utils::some(2, [$a]);
         $d->wait();
     }
 
-    /**
-     * @expectedException \GuzzleHttp\Promise\AggregateException
-     * @expectedExceptionMessage Not enough promises to fulfill count
-     */
     public function testThrowsIfResolvedWithoutCountTotalResults()
     {
+        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
+        $this->expectExceptionMessage('Not enough promises to fulfill count');
+
         $a = new Promise();
         $b = new Promise();
         $d = P\Utils::some(3, [$a, $b]);
@@ -322,14 +319,14 @@ class UtilsTest extends TestCase
     public function rejectsParentExceptionProvider()
     {
         return [
-            [ P\Coroutine::of(function () {
+            [P\Coroutine::of(function () {
                 yield new FulfilledPromise(0);
                 throw new \Exception('a');
-            }) ],
-            [ P\Coroutine::of(function () {
+            })],
+            [P\Coroutine::of(function () {
                 throw new \Exception('a');
                 yield new FulfilledPromise(0);
-            }) ],
+            })],
         ];
     }
 
@@ -534,7 +531,7 @@ class UtilsTest extends TestCase
         $p2 = new Promise(function () use (&$p2) {
             $p2->resolve('hello!');
         });
-        $co = P\Coroutine::of(function() use ($p1, $p2) {
+        $co = P\Coroutine::of(function () use ($p1, $p2) {
             yield $p1;
             yield $p2;
         });
@@ -550,7 +547,7 @@ class UtilsTest extends TestCase
 
         $p1 = new Promise();
         $p2 = new Promise();
-        $co = P\Coroutine::of(function() use ($p1, $p2) {
+        $co = P\Coroutine::of(function () use ($p1, $p2) {
             yield $p1;
             yield $p2;
         });
@@ -572,7 +569,7 @@ class UtilsTest extends TestCase
         $p3 = new Promise();
         $p4 = new Promise();
         $p5 = new Promise();
-        $co = P\Coroutine::of(function() use ($p1, $p2, $p3, $p4, $p5) {
+        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5) {
             try {
                 yield $p1;
             } catch (\Exception $e) {
@@ -606,7 +603,7 @@ class UtilsTest extends TestCase
             $promises[] = new Promise();
         }
 
-        $co = P\Coroutine::of(function() use ($promises) {
+        $co = P\Coroutine::of(function () use ($promises) {
             for ($i = 0; $i < 20; $i += 4) {
                 try {
                     yield $promises[$i];
@@ -672,7 +669,7 @@ class UtilsTest extends TestCase
         $p5 = new Promise(function () use (&$p5) { $p5->resolve('e'); });
         $p6 = new Promise(function () use (&$p6) { $p6->reject('f'); });
 
-        $co = P\Coroutine::of(function() use ($p1, $p2, $p3, $p4, $p5, $p6) {
+        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5, $p6) {
             try {
                 yield $p1;
             } catch (\Exception $e) {

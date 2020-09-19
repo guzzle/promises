@@ -33,21 +33,23 @@ class RejectedPromiseTest extends TestCase
     }
 
     /**
-     * @expectedException \LogicException
      * @exepctedExceptionMessage Cannot resolve a rejected promise
      */
     public function testCannotResolve()
     {
+        $this->expectException(\LogicException::class);
+
         $p = new RejectedPromise('foo');
         $p->resolve('bar');
     }
 
     /**
-     * @expectedException \LogicException
      * @exepctedExceptionMessage Cannot reject a rejected promise
      */
     public function testCannotReject()
     {
+        $this->expectException(\LogicException::class);
+
         $p = new RejectedPromise('foo');
         $p->reject('bar');
     }
@@ -71,11 +73,10 @@ class RejectedPromiseTest extends TestCase
         }
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testCannotResolveWithPromise()
     {
+        $this->expectException(\InvalidArgumentException::class);
+
         new RejectedPromise(new Promise());
     }
 

@@ -46,8 +46,8 @@ class EachPromise implements PromisorInterface
      *   allowed number of outstanding concurrently executing promises,
      *   creating a capped pool of promises. There is no limit by default.
      *
-     * @param mixed    $iterable Promises or values to iterate.
-     * @param array    $config   Configuration options
+     * @param mixed $iterable Promises or values to iterate.
+     * @param array $config   Configuration options
      */
     public function __construct($iterable, array $config = [])
     {
@@ -159,7 +159,10 @@ class EachPromise implements PromisorInterface
             function ($value) use ($idx, $key) {
                 if ($this->onFulfilled) {
                     call_user_func(
-                        $this->onFulfilled, $value, $key, $this->aggregate
+                        $this->onFulfilled,
+                        $value,
+                        $key,
+                        $this->aggregate
                     );
                 }
                 $this->step($idx);
@@ -167,7 +170,10 @@ class EachPromise implements PromisorInterface
             function ($reason) use ($idx, $key) {
                 if ($this->onRejected) {
                     call_user_func(
-                        $this->onRejected, $reason, $key, $this->aggregate
+                        $this->onRejected,
+                        $reason,
+                        $key,
+                        $this->aggregate
                     );
                 }
                 $this->step($idx);

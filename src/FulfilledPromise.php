@@ -16,7 +16,8 @@ class FulfilledPromise implements PromiseInterface
     {
         if (is_object($value) && method_exists($value, 'then')) {
             throw new \InvalidArgumentException(
-                'You cannot create a FulfilledPromise with a promise.');
+                'You cannot create a FulfilledPromise with a promise.'
+            );
         }
 
         $this->value = $value;
