@@ -4,8 +4,6 @@ matrix:
     include:
         - php: hhvm-3.24
           dist: trusty
-        - php: hhvm
-
     fast_finish: true
 
 before_install:
