@@ -10,22 +10,22 @@ class EachPromise implements PromisorInterface
 {
     private $pending = [];
 
-    /** @var \Iterator */
+    /** @var \Iterator|null */
     private $iterable;
 
-    /** @var callable|int */
+    /** @var callable|int|null */
     private $concurrency;
 
-    /** @var callable */
+    /** @var callable|null */
     private $onFulfilled;
 
-    /** @var callable */
+    /** @var callable|null */
     private $onRejected;
 
-    /** @var Promise */
+    /** @var Promise|null */
     private $aggregate;
 
-    /** @var bool */
+    /** @var bool|null */
     private $mutex;
 
     /**
@@ -66,6 +66,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
+    /** @psalm-suppress InvalidNullableReturnType */
     public function promise()
     {
         if ($this->aggregate) {
@@ -74,16 +75,29 @@ class EachPromise implements PromisorInterface
 
         try {
             $this->createPromise();
+            /** @psalm-assert Promise $this->aggregate */
             $this->iterable->rewind();
             if (!$this->checkIfFinished()) {
                 $this->refillPending();
             }
         } catch (\Throwable $e) {
+            /**
+             * @psalm-suppress NullReference
+             * @phpstan-ignore-next-line
+             */
             $this->aggregate->reject($e);
         } catch (\Exception $e) {
+            /**
+             * @psalm-suppress NullReference
+             * @phpstan-ignore-next-line
+             */
             $this->aggregate->reject($e);
         }
 
+        /**
+         * @psalm-suppress NullableReturnStatement
+         * @phpstan-ignore-next-line
+         */
         return $this->aggregate;
     }
 

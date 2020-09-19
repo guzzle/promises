@@ -99,6 +99,7 @@ class Promise implements PromiseInterface
         }
 
         // Reject the promise only if it wasn't rejected in a then callback.
+        /** @psalm-suppress RedundantCondition */
         if ($this->state === self::PENDING) {
             $this->reject(new CancellationException('Promise has been cancelled'));
         }
@@ -178,8 +179,6 @@ class Promise implements PromiseInterface
      * @param int   $index   1 (resolve) or 2 (reject).
      * @param mixed $value   Value to pass to the callback.
      * @param array $handler Array of handler data (promise and callbacks).
-     *
-     * @return array Returns the next group to resolve.
      */
     private static function callHandler($index, $value, array $handler)
     {
@@ -227,6 +226,7 @@ class Promise implements PromiseInterface
 
         Utils::queue()->run();
 
+        /** @psalm-suppress RedundantCondition */
         if ($this->state === self::PENDING) {
             $this->reject('Invoking the wait callback did not resolve the promise');
         }
