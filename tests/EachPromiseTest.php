@@ -314,9 +314,12 @@ class EachPromiseTest extends TestCase
 
     private function createSelfResolvingPromise($value)
     {
-        return new Promise(function () use (&$p, $value) {
+        $p = new Promise(function () use (&$p, $value) {
             $p->resolve($value);
         });
+        $trickCsFixer = true;
+
+        return $p;
     }
 
     public function testMutexPreventsGeneratorRecursion()
