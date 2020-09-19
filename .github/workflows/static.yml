@@ -15,7 +15,7 @@ jobs:
           composer update --no-interaction --prefer-dist --optimize-autoloader
 
       - name: PHPStan
-        uses: docker://oskarstark/phpstan-ga:0.12.23
+        uses: docker://oskarstark/phpstan-ga:0.12.25
         with:
           entrypoint: /composer/vendor/bin/phpstan
           args: analyze --no-progress

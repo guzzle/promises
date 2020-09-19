@@ -299,9 +299,6 @@ function each_limit(
  * @param mixed        $iterable
  * @param int|callable $concurrency
  * @param callable     $onFulfilled
- * @param mixed        $iterable
- * @param int|callable $concurrency
- * @param callable     $onFulfilled
  *
  * @return PromiseInterface
  *
