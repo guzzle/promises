@@ -1,6 +1,6 @@
 <?php
 
-namespace GuzzleHttp\Tests\Promise;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
