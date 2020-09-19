@@ -63,6 +63,8 @@ class RejectedPromise implements PromiseInterface
         if ($unwrap) {
             throw Create::exceptionFor($this->reason);
         }
+
+        return null;
     }
 
     public function getState()
