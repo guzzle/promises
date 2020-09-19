@@ -8,7 +8,6 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Promise\RejectionException;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\Promise
@@ -17,8 +16,7 @@ class PromiseTest extends TestCase
 {
     public function testCannotResolveNonPendingPromise()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('The promise is already fulfilled');
+        $this->setExpectedException(\LogicException::class, 'The promise is already fulfilled');
 
         $p = new Promise();
         $p->resolve('foo');
@@ -36,8 +34,7 @@ class PromiseTest extends TestCase
 
     public function testCannotRejectNonPendingPromise()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot change a fulfilled promise to rejected');
+        $this->setExpectedException(\LogicException::class, 'Cannot change a fulfilled promise to rejected');
 
         $p = new Promise();
         $p->resolve('foo');
@@ -55,8 +52,7 @@ class PromiseTest extends TestCase
 
     public function testCannotRejectResolveWithSameValue()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot change a fulfilled promise to rejected');
+        $this->setExpectedException(\LogicException::class, 'Cannot change a fulfilled promise to rejected');
 
         $p = new Promise();
         $p->resolve('foo');
@@ -71,8 +67,10 @@ class PromiseTest extends TestCase
 
     public function testRejectsAndThrowsWhenWaitFailsToResolve()
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
-        $this->expectExceptionMessage('The promise was rejected with reason: Invoking the wait callback did not resolve the promise');
+        $this->setExpectedException(
+            \GuzzleHttp\Promise\RejectionException::class,
+            'The promise was rejected with reason: Invoking the wait callback did not resolve the promise'
+        );
 
         $p = new Promise(function () {});
         $p->wait();
@@ -80,8 +78,10 @@ class PromiseTest extends TestCase
 
     public function testThrowsWhenUnwrapIsRejectedWithNonException()
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
-        $this->expectExceptionMessage('The promise was rejected with reason: foo');
+        $this->setExpectedException(
+            \GuzzleHttp\Promise\RejectionException::class,
+            'The promise was rejected with reason: foo'
+        );
 
         $p = new Promise(function () use (&$p) { $p->reject('foo'); });
         $p->wait();
@@ -89,8 +89,7 @@ class PromiseTest extends TestCase
 
     public function testThrowsWhenUnwrapIsRejectedWithException()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('foo');
+        $this->setExpectedException(\UnexpectedValueException::class, 'foo');
 
         $e = new \UnexpectedValueException('foo');
         $p = new Promise(function () use (&$p, $e) { $p->reject($e); });
@@ -127,7 +126,7 @@ class PromiseTest extends TestCase
 
     public function testThrowsWhenWaitingOnPromiseWithNoWaitFunction()
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+        $this->setExpectedException(\GuzzleHttp\Promise\RejectionException::class);
 
         $p = new Promise();
         $p->wait();
@@ -193,7 +192,7 @@ class PromiseTest extends TestCase
 
     public function testCancelsPromiseWhenNoCancelFunction()
     {
-        $this->expectException(\GuzzleHttp\Promise\CancellationException::class);
+        $this->setExpectedException(\GuzzleHttp\Promise\CancellationException::class);
 
         $p = new Promise();
         $p->cancel();
@@ -228,14 +227,14 @@ class PromiseTest extends TestCase
             $p3->wait();
             $this->fail();
         } catch (CancellationException $e) {
-            $this->assertContains('cancelled', $e->getMessage());
+            $this->assertTrue(strpos($e->getMessage(), 'cancelled') !== false, "'" . $e->getMessage() . " does not contain 'cancelled'");
         }
 
         try {
             $p4->wait();
             $this->fail();
         } catch (CancellationException $e) {
-            $this->assertContains('cancelled', $e->getMessage());
+            $this->assertTrue(strpos($e->getMessage(), 'cancelled') !== false, "'" . $e->getMessage() . " does not contain 'cancelled'");
         }
 
         $this->assertTrue(P\Is::rejected($p4));
@@ -547,8 +546,7 @@ class PromiseTest extends TestCase
 
     public function testCannotResolveWithSelf()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot fulfill or reject a promise with itself');
+        $this->setExpectedException(\LogicException::class, 'Cannot fulfill or reject a promise with itself');
 
         $p = new Promise();
         $p->resolve($p);
@@ -556,8 +554,7 @@ class PromiseTest extends TestCase
 
     public function testCannotRejectWithSelf()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot fulfill or reject a promise with itself');
+        $this->setExpectedException(\LogicException::class, 'Cannot fulfill or reject a promise with itself');
 
         $p = new Promise();
         $p->reject($p);

@@ -6,7 +6,6 @@ use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\Coroutine;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 class CoroutineTest extends TestCase

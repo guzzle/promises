@@ -6,7 +6,6 @@ use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
-use PHPUnit\Framework\TestCase;
 
 class IsTest extends TestCase
 {

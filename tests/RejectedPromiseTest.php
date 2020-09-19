@@ -5,7 +5,6 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\RejectedPromise
@@ -21,7 +20,7 @@ class RejectedPromiseTest extends TestCase
             $this->fail();
         } catch (\Exception $e) {
             $this->assertTrue(P\Is::rejected($p));
-            $this->assertContains('foo', $e->getMessage());
+            $this->assertTrue(strpos($e->getMessage(), 'foo') !== false, "'" . $e->getMessage() . " does not contain 'foo'");
         }
     }
 
@@ -32,23 +31,17 @@ class RejectedPromiseTest extends TestCase
         $this->assertTrue(P\Is::rejected($p));
     }
 
-    /**
-     * @exepctedExceptionMessage Cannot resolve a rejected promise
-     */
     public function testCannotResolve()
     {
-        $this->expectException(\LogicException::class);
+        $this->setExpectedException(\LogicException::class, 'Cannot resolve a rejected promise');
 
         $p = new RejectedPromise('foo');
         $p->resolve('bar');
     }
 
-    /**
-     * @exepctedExceptionMessage Cannot reject a rejected promise
-     */
     public function testCannotReject()
     {
-        $this->expectException(\LogicException::class);
+        $this->setExpectedException(\LogicException::class, 'Cannot reject a rejected promise');
 
         $p = new RejectedPromise('foo');
         $p->reject('bar');
@@ -75,7 +68,7 @@ class RejectedPromiseTest extends TestCase
 
     public function testCannotResolveWithPromise()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->setExpectedException(\InvalidArgumentException::class);
 
         new RejectedPromise(new Promise());
     }

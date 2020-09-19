@@ -1,11 +1,10 @@
 <?php
 
-namespace GuzzleHttp\Tests\Promise;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\FulfilledPromise
@@ -27,24 +26,16 @@ class FulfilledPromiseTest extends TestCase
         $this->assertSame('foo', $p->wait());
     }
 
-    /**
-     * @exepctedExceptionMessage Cannot resolve a fulfilled promise
-     */
     public function testCannotResolve()
     {
-        $this->expectException(\LogicException::class);
-
+        $this->setExpectedException(\LogicException::class, 'Cannot resolve a fulfilled promise');
         $p = new FulfilledPromise('foo');
         $p->resolve('bar');
     }
 
-    /**
-     * @exepctedExceptionMessage Cannot reject a fulfilled promise
-     */
     public function testCannotReject()
     {
-        $this->expectException(\LogicException::class);
-
+        $this->setExpectedException(\LogicException::class, 'Cannot reject a fulfilled promise');
         $p = new FulfilledPromise('foo');
         $p->reject('bar');
     }
@@ -58,8 +49,7 @@ class FulfilledPromiseTest extends TestCase
 
     public function testCannotResolveWithPromise()
     {
-        $this->expectException(\InvalidArgumentException::class);
-
+        $this->setExpectedException(\InvalidArgumentException::class);
         new FulfilledPromise(new Promise());
     }
 

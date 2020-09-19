@@ -3,7 +3,6 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\RejectionException;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @covers GuzzleHttp\Promise\RejectionException
@@ -23,6 +22,6 @@ class RejectionExceptionTest extends TestCase
     {
         $reason = new Thing2();
         $e = new RejectionException($reason);
-        $this->assertContains("{}", $e->getMessage());
+        $this->assertTrue(strpos($e->getMessage(), '{}') !== false, "'" . $e->getMessage() . " does not contain '{}'");
     }
 }

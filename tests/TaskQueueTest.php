@@ -1,9 +1,8 @@
 <?php
 
-namespace GuzzleHttp\Promise\Test;
+namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\TaskQueue;
-use PHPUnit\Framework\TestCase;
 
 class TaskQueueTest extends TestCase
 {

@@ -10,7 +10,6 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Promise\RejectionException;
 use GuzzleHttp\Promise\TaskQueue;
-use PHPUnit\Framework\TestCase;
 
 class UtilsTest extends TestCase
 {
@@ -30,8 +29,7 @@ class UtilsTest extends TestCase
 
     public function testUnwrapsPromisesWithNoDefaultAndFailure()
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
-
+        $this->setExpectedException(\GuzzleHttp\Promise\RejectionException::class);
         $promises = [new FulfilledPromise('a'), new Promise()];
         P\Utils::unwrap($promises);
     }
@@ -149,9 +147,7 @@ class UtilsTest extends TestCase
 
     public function testThrowsIfImpossibleToWaitForSomeCount()
     {
-        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
-        $this->expectExceptionMessage('Not enough promises to fulfill count');
-
+        $this->setExpectedException(\GuzzleHttp\Promise\AggregateException::class, 'Not enough promises to fulfill count');
         $a = new Promise(function () use (&$a) { $a->resolve('a'); });
         $d = P\Utils::some(2, [$a]);
         $d->wait();
@@ -159,9 +155,7 @@ class UtilsTest extends TestCase
 
     public function testThrowsIfResolvedWithoutCountTotalResults()
     {
-        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
-        $this->expectExceptionMessage('Not enough promises to fulfill count');
-
+        $this->setExpectedException(\GuzzleHttp\Promise\AggregateException::class, 'Not enough promises to fulfill count');
         $a = new Promise();
         $b = new Promise();
         $d = P\Utils::some(3, [$a, $b]);
@@ -383,7 +377,7 @@ class UtilsTest extends TestCase
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
-        $this->assertContains('foo', $result->getMessage());
+        $this->assertTrue(strpos($result->getMessage(), 'foo') !== false, "'" . $result->getMessage() . " does not contain 'foo'");
     }
 
     public function testCanCatchAndYieldOtherException()
@@ -403,7 +397,7 @@ class UtilsTest extends TestCase
         $promise->otherwise(function ($value) use (&$result) { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
-        $this->assertContains('foo', $result->getMessage());
+        $this->assertTrue(strpos($result->getMessage(), 'foo') !== false, "'" . $result->getMessage() . " does not contain 'foo'");
     }
 
     public function createLotsOfSynchronousPromise()

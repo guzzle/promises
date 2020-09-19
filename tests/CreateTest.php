@@ -7,7 +7,6 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
-use PHPUnit\Framework\TestCase;
 
 class CreateTest extends TestCase
 {
