@@ -164,7 +164,7 @@ final class Utils
             return $results;
         });
 
-        if ($recursive) {
+        if (true === $recursive) {
             $promise = $promise->then(function ($results) use ($recursive, &$promises) {
                 foreach ($promises AS $promise) {
                     if (Is::pending($promise)) {
