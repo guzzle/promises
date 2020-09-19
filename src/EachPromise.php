@@ -66,6 +66,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
+    /** @psalm-suppress InvalidNullableReturnType */
     public function promise()
     {
         if ($this->aggregate) {
@@ -74,19 +75,29 @@ class EachPromise implements PromisorInterface
 
         try {
             $this->createPromise();
+            /** @psalm-assert Promise $this->aggregate */
             $this->iterable->rewind();
             if (!$this->checkIfFinished()) {
                 $this->refillPending();
             }
         } catch (\Throwable $e) {
-            // @phpstan-ignore-next-line
+            /**
+             * @psalm-suppress NullReference
+             * @phpstan-ignore-next-line
+             */
             $this->aggregate->reject($e);
         } catch (\Exception $e) {
-            // @phpstan-ignore-next-line
+            /**
+             * @psalm-suppress NullReference
+             * @phpstan-ignore-next-line
+             */
             $this->aggregate->reject($e);
         }
 
-        // @phpstan-ignore-next-line
+        /**
+         * @psalm-suppress NullableReturnStatement
+         * @phpstan-ignore-next-line
+         */
         return $this->aggregate;
     }
 
