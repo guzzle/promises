@@ -145,7 +145,7 @@ function inspect_all($promises)
  * the promises were provided). An exception is thrown if any of the promises
  * are rejected.
  *
- * @param mixed $promises Iterable of PromiseInterface objects to wait on.
+ * @param iterable<PromiseInterface> $promises Iterable of PromiseInterface objects to wait on.
  *
  * @return array
  *
