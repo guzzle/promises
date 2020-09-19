@@ -1,10 +1,11 @@
 # CHANGELOG
 
 
-## Upcoming
+## 1.4.0 - 2020-09-30
 
 ### Added
 
+- Support for PHP 8
 - Optional `$recursive` flag to `all`
 - Replaced functions by static methods
 
