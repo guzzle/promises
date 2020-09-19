@@ -3,10 +3,10 @@
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
-use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Promise\EachPromise;
+use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -317,6 +317,7 @@ class EachPromiseTest extends TestCase
         $p = new Promise(function () use (&$p, $value) {
             $p->resolve($value);
         });
+        $trickCsFixer = true;
 
         return $p;
     }

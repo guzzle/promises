@@ -39,6 +39,7 @@ use Throwable;
  * @param callable $generatorFn Generator function to wrap into a promise.
  *
  * @return Promise
+ *
  * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 final class Coroutine implements PromiseInterface

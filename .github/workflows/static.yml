@@ -1,0 +1,44 @@
+on: [push, pull_request]
+name: Static analysis
+
+jobs:
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download dependencies
+        run: |
+          composer update --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: PHPStan
+        uses: docker://oskarstark/phpstan-ga:0.12.23
+        with:
+          entrypoint: /composer/vendor/bin/phpstan
+          args: analyze --no-progress
+
+  php-cs-fixer:
+    name: PHP-CS-Fixer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: PHP-CS-Fixer
+        uses: OskarStark/php-cs-fixer-ga@2.16.3.1
+        with:
+          args: --dry-run --diff-format udiff
+
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Psalm
+        uses: docker://vimeo/psalm-github-actions

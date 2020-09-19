@@ -36,12 +36,10 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
 
     public function wait($unwrap = true, $defaultResolution = null)
     {
-
     }
 
     public function cancel()
     {
-
     }
 
     public function getState()

@@ -16,7 +16,8 @@ class RejectedPromise implements PromiseInterface
     {
         if (is_object($reason) && method_exists($reason, 'then')) {
             throw new \InvalidArgumentException(
-                'You cannot create a RejectedPromise with a promise.');
+                'You cannot create a RejectedPromise with a promise.'
+            );
         }
 
         $this->reason = $reason;

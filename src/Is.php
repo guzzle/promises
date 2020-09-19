@@ -7,8 +7,6 @@ final class Is
     /**
      * Returns true if a promise is pending.
      *
-     * @param PromiseInterface $promise
-     *
      * @return bool
      */
     public static function pending(PromiseInterface $promise)
@@ -18,8 +16,6 @@ final class Is
 
     /**
      * Returns true if a promise is fulfilled or rejected.
-     *
-     * @param PromiseInterface $promise
      *
      * @return bool
      */
@@ -31,8 +27,6 @@ final class Is
     /**
      * Returns true if a promise is fulfilled.
      *
-     * @param PromiseInterface $promise
-     *
      * @return bool
      */
     public static function fulfilled(PromiseInterface $promise)
@@ -42,8 +36,6 @@ final class Is
 
     /**
      * Returns true if a promise is rejected.
-     *
-     * @param PromiseInterface $promise
      *
      * @return bool
      */

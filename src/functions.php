@@ -299,7 +299,6 @@ function each_limit(
  * @param mixed        $iterable
  * @param int|callable $concurrency
  * @param callable     $onFulfilled
- *
  * @param mixed        $iterable
  * @param int|callable $concurrency
  * @param callable     $onFulfilled
@@ -319,8 +318,6 @@ function each_limit_all(
 /**
  * Returns true if a promise is fulfilled.
  *
- * @param PromiseInterface $promise
- *
  * @return bool
  *
  * @deprecated is_fulfilled will be removed in guzzlehttp/promises:2.0. Use Is::fulfilled instead.
@@ -333,8 +330,6 @@ function is_fulfilled(PromiseInterface $promise)
 /**
  * Returns true if a promise is rejected.
  *
- * @param PromiseInterface $promise
- *
  * @return bool
  *
  * @deprecated is_rejected will be removed in guzzlehttp/promises:2.0. Use Is::rejected instead.
@@ -346,8 +341,6 @@ function is_rejected(PromiseInterface $promise)
 
 /**
  * Returns true if a promise is fulfilled or rejected.
- *
- * @param PromiseInterface $promise
  *
  * @return bool
  *
@@ -362,8 +355,6 @@ function is_settled(PromiseInterface $promise)
  * Create a new coroutine.
  *
  * @see Coroutine
- *
- * @param callable $generatorFn
  *
  * @return PromiseInterface
  *
