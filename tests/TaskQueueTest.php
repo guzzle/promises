@@ -1,4 +1,5 @@
 <?php
+
 namespace GuzzleHttp\Promise\Test;
 
 use GuzzleHttp\Promise\TaskQueue;
@@ -27,6 +28,6 @@ class TaskQueueTest extends TestCase
         $tq->add(function () use (&$called) { $called[] = 'b'; });
         $tq->add(function () use (&$called) { $called[] = 'c'; });
         $tq->run();
-        $this->assertEquals(['a', 'b', 'c'], $called);
+        $this->assertSame(['a', 'b', 'c'], $called);
     }
 }

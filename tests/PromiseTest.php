@@ -1,8 +1,9 @@
 <?php
+
 namespace GuzzleHttp\Promise\Tests;
 
-use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise as P;
+use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -23,7 +24,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $p->resolve('bar');
-        $this->assertEquals('foo', $p->wait());
+        $this->assertSame('foo', $p->wait());
     }
 
     public function testCanResolveWithSameValue()
@@ -43,7 +44,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $p->reject('bar');
-        $this->assertEquals('foo', $p->wait());
+        $this->assertSame('foo', $p->wait());
     }
 
     public function testCanRejectWithSameValue()
@@ -51,7 +52,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->reject('foo');
         $p->reject('foo');
-        $this->assertSame('rejected', $p->getState());
+        $this->assertTrue(P\Is::rejected($p));
     }
 
     /**
@@ -68,7 +69,7 @@ class PromiseTest extends TestCase
     public function testInvokesWaitFunction()
     {
         $p = new Promise(function () use (&$p) { $p->resolve('10'); });
-        $this->assertEquals('10', $p->wait());
+        $this->assertSame('10', $p->wait());
     }
 
     /**
@@ -105,9 +106,9 @@ class PromiseTest extends TestCase
     public function testDoesNotUnwrapExceptionsWhenDisabled()
     {
         $p = new Promise(function () use (&$p) { $p->reject('foo'); });
-        $this->assertEquals('pending', $p->getState());
+        $this->assertTrue(P\Is::pending($p));
         $p->wait(false);
-        $this->assertEquals('rejected', $p->getState());
+        $this->assertTrue(P\Is::rejected($p));
     }
 
     public function testRejectsSelfWhenWaitThrows()
@@ -118,7 +119,7 @@ class PromiseTest extends TestCase
             $p->wait();
             $this->fail();
         } catch (\UnexpectedValueException $e) {
-            $this->assertEquals('rejected', $p->getState());
+            $this->assertTrue(P\Is::rejected($p));
         }
     }
 
@@ -150,7 +151,7 @@ class PromiseTest extends TestCase
             $p->wait();
             $this->fail();
         } catch (\Exception $e) {
-            $this->assertEquals('Bar?', $e->getMessage());
+            $this->assertSame('Bar?', $e->getMessage());
         }
     }
 
@@ -165,7 +166,7 @@ class PromiseTest extends TestCase
             $p2->wait();
             $this->fail('Should have thrown');
         } catch (RejectionException $e) {
-            $this->assertEquals(['Foo!'], $e->getReason());
+            $this->assertSame(['Foo!'], $e->getReason());
         }
     }
 
@@ -174,7 +175,7 @@ class PromiseTest extends TestCase
         $p3 = new Promise(function () use (&$p3) { $p3->resolve('Whoop'); });
         $p2 = new Promise(function () use (&$p2, $p3) { $p2->reject($p3); });
         $p = new Promise(function () use (&$p, $p2) { $p->reject($p2); });
-        $this->assertEquals('Whoop', $p->wait());
+        $this->assertSame('Whoop', $p->wait());
     }
 
     public function testWaitsOnAPromiseChainEvenWhenNotUnwrapped()
@@ -186,7 +187,7 @@ class PromiseTest extends TestCase
             $p->resolve($p2);
         });
         $p->wait(false);
-        $this->assertSame(Promise::REJECTED, $p2->getState());
+        $this->assertTrue(P\Is::rejected($p2));
     }
 
     public function testCannotCancelNonPending()
@@ -194,7 +195,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $p->cancel();
-        $this->assertEquals('fulfilled', $p->getState());
+        $this->assertTrue(P\Is::fulfilled($p));
     }
 
     /**
@@ -204,7 +205,7 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $p->cancel();
-        $this->assertEquals('rejected', $p->getState());
+        $this->assertTrue(P\Is::rejected($p));
         $p->wait();
     }
 
@@ -213,7 +214,7 @@ class PromiseTest extends TestCase
         $called = false;
         $p = new Promise(null, function () use (&$called) { $called = true; });
         $p->cancel();
-        $this->assertEquals('rejected', $p->getState());
+        $this->assertTrue(P\Is::rejected($p));
         $this->assertTrue($called);
     }
 
@@ -225,10 +226,10 @@ class PromiseTest extends TestCase
         $p3 = $p2->then(function () {});
         $p4 = $p3->then(function () {});
         $p3->cancel();
-        $this->assertEquals('rejected', $p1->getState());
-        $this->assertEquals('rejected', $p2->getState());
-        $this->assertEquals('rejected', $p3->getState());
-        $this->assertEquals('pending', $p4->getState());
+        $this->assertTrue(P\Is::rejected($p1));
+        $this->assertTrue(P\Is::rejected($p2));
+        $this->assertTrue(P\Is::rejected($p3));
+        $this->assertTrue(P\Is::pending($p4));
         $this->assertTrue($called);
 
         try {
@@ -245,7 +246,7 @@ class PromiseTest extends TestCase
             $this->assertContains('cancelled', $e->getMessage());
         }
 
-        $this->assertEquals('rejected', $p4->getState());
+        $this->assertTrue(P\Is::rejected($p4));
     }
 
     public function testCancelsChildPromises()
@@ -257,10 +258,11 @@ class PromiseTest extends TestCase
         $p4 = $p2->then(function () use ($p3) { return $p3; });
         $p5 = $p4->then(function () { $this->fail(); });
         $p4->cancel();
-        $this->assertEquals('pending', $p1->getState());
-        $this->assertEquals('rejected', $p2->getState());
-        $this->assertEquals('rejected', $p4->getState());
-        $this->assertEquals('pending', $p5->getState());
+        $this->assertTrue(P\Is::pending($p1));
+        $this->assertTrue(P\Is::rejected($p2));
+        $this->assertTrue(P\Is::pending($p3));
+        $this->assertTrue(P\Is::rejected($p4));
+        $this->assertTrue(P\Is::pending($p5));
         $this->assertFalse($called1);
         $this->assertTrue($called2);
         $this->assertFalse($called3);
@@ -274,13 +276,13 @@ class PromiseTest extends TestCase
             throw new \Exception('e');
         });
         $p->cancel();
-        $this->assertEquals('rejected', $p->getState());
+        $this->assertTrue(P\Is::rejected($p));
         $this->assertTrue($called);
         try {
             $p->wait();
             $this->fail();
         } catch (\Exception $e) {
-            $this->assertEquals('e', $e->getMessage());
+            $this->assertSame('e', $e->getMessage());
         }
     }
 
@@ -291,9 +293,9 @@ class PromiseTest extends TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->resolve('foo');
-        P\queue()->run();
+        P\Utils::queue()->run();
 
-        $this->assertEquals('foo', $carry);
+        $this->assertSame('foo', $carry);
     }
 
     public function testCreatesPromiseWhenFulfilledBeforeThen()
@@ -304,8 +306,8 @@ class PromiseTest extends TestCase
         $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        \GuzzleHttp\Promise\queue()->run();
-        $this->assertEquals('foo', $carry);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $carry);
     }
 
     public function testCreatesPromiseWhenFulfilledWithNoCallback()
@@ -324,8 +326,8 @@ class PromiseTest extends TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $p->reject('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $carry);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $carry);
     }
 
     public function testCreatesPromiseWhenRejectedBeforeThen()
@@ -336,8 +338,8 @@ class PromiseTest extends TestCase
         $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
-        P\queue()->run();
-        $this->assertEquals('foo', $carry);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $carry);
     }
 
     public function testCreatesPromiseWhenRejectedWithNoCallback()
@@ -355,7 +357,7 @@ class PromiseTest extends TestCase
         $p2 = $p
             ->then(function ($v) { return $v . '-1-'; })
             ->then(function ($v) { return $v . '2'; });
-        $this->assertEquals('a-1-2', $p2->wait());
+        $this->assertSame('a-1-2', $p2->wait());
     }
 
     public function testStacksThenWaitFunctions()
@@ -366,7 +368,7 @@ class PromiseTest extends TestCase
         $p4 = $p1
             ->then(function () use ($p2) { return $p2; })
             ->then(function () use ($p3) { return $p3; });
-        $this->assertEquals('c', $p4->wait());
+        $this->assertSame('c', $p4->wait());
     }
 
     public function testForwardsFulfilledDownChainBetweenGaps()
@@ -377,9 +379,9 @@ class PromiseTest extends TestCase
             ->then(function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->resolve('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $r);
-        $this->assertEquals('foo2', $r2);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $r);
+        $this->assertSame('foo2', $r2);
     }
 
     public function testForwardsRejectedPromisesDownChainBetweenGaps()
@@ -390,9 +392,9 @@ class PromiseTest extends TestCase
             ->then(null, function ($v) use (&$r) { $r = $v; return $v . '2'; })
             ->then(function ($v) use (&$r2) { $r2 = $v; });
         $p->reject('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $r);
-        $this->assertEquals('foo2', $r2);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $r);
+        $this->assertSame('foo2', $r2);
     }
 
     public function testForwardsThrownPromisesDownChainBetweenGaps()
@@ -410,8 +412,8 @@ class PromiseTest extends TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $r);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $r);
         $this->assertSame($e, $r2);
     }
 
@@ -430,13 +432,13 @@ class PromiseTest extends TestCase
                 function ($v) use (&$r2) { $r2 = $v; }
             );
         $p->reject('foo');
-        P\queue()->run();
-        $this->assertEquals('foo', $r);
-        $this->assertEquals('bar', $r2);
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $r);
+        $this->assertSame('bar', $r2);
         try {
             $p->wait();
         } catch (RejectionException $e) {
-            $this->assertEquals('foo', $e->getReason());
+            $this->assertSame('foo', $e->getReason());
         }
     }
 
@@ -450,8 +452,8 @@ class PromiseTest extends TestCase
             ->then(function ($value) use (&$resolved) { $resolved = $value; });
         $p->resolve('a');
         $p2->resolve('b');
-        P\queue()->run();
-        $this->assertEquals('b', $resolved);
+        P\Utils::queue()->run();
+        $this->assertSame('b', $resolved);
     }
 
     public function testRemovesReferenceFromChildWhenParentWaitedUpon()
@@ -465,10 +467,10 @@ class PromiseTest extends TestCase
                 return $p2;
             })
             ->then(function ($v) { return $v . '.'; });
-        $this->assertEquals('a', $p->wait());
-        $this->assertEquals('b', $p2->wait());
-        $this->assertEquals('b.', $pb->wait());
-        $this->assertEquals('a', $r);
+        $this->assertSame('a', $p->wait());
+        $this->assertSame('b', $p2->wait());
+        $this->assertSame('b.', $pb->wait());
+        $this->assertSame('a', $r);
     }
 
     public function testForwardsHandlersWhenFulfilledPromiseIsReturned()
@@ -484,8 +486,8 @@ class PromiseTest extends TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\queue()->run();
-        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testForwardsHandlersWhenRejectedPromiseIsReturned()
@@ -499,8 +501,8 @@ class PromiseTest extends TestCase
             ->then(null, function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->reject('a');
         $p->then(null, function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\queue()->run();
-        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testDoesNotForwardRejectedPromise()
@@ -514,8 +516,8 @@ class PromiseTest extends TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\queue()->run();
-        $this->assertEquals(['B:a', 'D:a'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['B:a', 'D:a'], $res);
     }
 
     public function testRecursivelyForwardsWhenOnlyThennable()
@@ -529,8 +531,8 @@ class PromiseTest extends TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\queue()->run();
-        $this->assertEquals(['A:foo', 'B', 'D:a', 'C:foo'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
 
     public function testRecursivelyForwardsWhenNotInstanceOfPromise()
@@ -543,11 +545,11 @@ class PromiseTest extends TestCase
             ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
-        P\queue()->run();
-        $this->assertEquals(['B', 'D:a'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['B', 'D:a'], $res);
         $p2->resolve('foo');
-        P\queue()->run();
-        $this->assertEquals(['B', 'D:a', 'A:foo', 'C:foo'], $res);
+        P\Utils::queue()->run();
+        $this->assertSame(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
 
     /**
@@ -582,7 +584,7 @@ class PromiseTest extends TestCase
             $parent->resolve($prev);
         });
 
-        $this->assertEquals(99, $parent->wait());
+        $this->assertSame(99, $parent->wait());
     }
 
     public function testOtherwiseIsSugarForRejections()
@@ -590,7 +592,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->reject('foo');
         $p->otherwise(function ($v) use (&$c) { $c = $v; });
-        P\queue()->run();
-        $this->assertEquals($c, 'foo');
+        P\Utils::queue()->run();
+        $this->assertSame($c, 'foo');
     }
 }
