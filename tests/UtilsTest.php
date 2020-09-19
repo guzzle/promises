@@ -135,7 +135,7 @@ class UtilsTest extends TestCase
         });
         P\Utils::queue()->run();
         $this->assertInstanceOf(AggregateException::class, $called);
-        $this->assertStringContainsString('bad', $called->getReason());
+        $this->assertContains('bad', $called->getReason());
     }
 
     public function testCanWaitUntilSomeCountIsSatisfied()

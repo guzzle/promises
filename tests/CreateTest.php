@@ -38,7 +38,7 @@ class CreateTest extends TestCase
     {
         $p = P\Create::rejectionFor('fail');
         $this->assertInstanceOf(RejectedPromise::class, $p);
-        $this->assertSame('fail', $this->readAttribute($p, 'reason'));
+        $this->assertSame('fail', PropertyHelper::get($p, 'reason'));
     }
 
     public function testReturnsPromisesAsIsInRejectionFor()
