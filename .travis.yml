@@ -12,8 +12,8 @@ before_install:
     - if [[ "$TRAVIS_PHP_VERSION" != "hhvm-3.24" ]]; then echo "xdebug.overload_var_dump = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini; fi
 
 install:
-    - composer update --prefer-dist
-    - ./vendor/bin/simple-phpunit install
+    - travis_retry composer update --prefer-dist
+    - travis_retry ./vendor/bin/simple-phpunit install
 
 script:
     - ./vendor/bin/simple-phpunit
