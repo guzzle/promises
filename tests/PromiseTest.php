@@ -586,4 +586,38 @@ class PromiseTest extends TestCase
         P\Utils::queue()->run();
         $this->assertSame($c, 'foo');
     }
+
+    public function testRepeatedWaitFulfilled()
+    {
+        $promise = new Promise(function () use (&$promise) {
+            $promise->resolve('foo');
+        });
+
+        $this->assertSame('foo', $promise->wait());
+        $this->assertSame('foo', $promise->wait());
+    }
+
+    public function testRepeatedWaitRejected()
+    {
+        $promise = new Promise(function () use (&$promise) {
+            $promise->reject(new \RuntimeException('foo'));
+        });
+
+        $exceptionCount = 0;
+        try {
+            $promise->wait();
+        } catch (\Exception $e) {
+            $this->assertSame('foo', $e->getMessage());
+            $exceptionCount++;
+        }
+
+        try {
+            $promise->wait();
+        } catch (\Exception $e) {
+            $this->assertSame('foo', $e->getMessage());
+            $exceptionCount++;
+        }
+
+        $this->assertSame(2, $exceptionCount);
+    }
 }
