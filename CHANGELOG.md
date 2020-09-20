@@ -14,6 +14,7 @@
 - Fix empty `each` processing
 - Fix promise handling for Iterators of non-unique keys
 - Fixed `method_exists` crashes on PHP 8
+- Memory leak on exceptions
 
 
 ## 1.3.1 - 2016-12-20
