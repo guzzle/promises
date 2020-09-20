@@ -1,13 +1,15 @@
 language: php
 
+dist: trusty
+
 matrix:
     include:
+        - php: 5.5.9
         - php: hhvm-3.24
-          dist: trusty
     fast_finish: true
 
 before_install:
-    - echo "xdebug.overload_var_dump = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+    - if [[ "$TRAVIS_PHP_VERSION" != "hhvm-3.24" ]]; then echo "xdebug.overload_var_dump = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini; fi
 
 install:
     - composer update --prefer-dist
