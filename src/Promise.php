@@ -193,7 +193,15 @@ class Promise implements PromiseInterface
 
         try {
             if (isset($handler[$index])) {
-                $promise->resolve($handler[$index]($value));
+                /*
+                 * If $f throws an exception, then $handler will be in the exception
+                 * stack trace. Since $handler contains a reference to the callable
+                 * itself we get a circular reference. We clear the $handler
+                 * here to avoid that memory leak.
+                 */
+                $f = $handler[$index];
+                unset($handler);
+                $promise->resolve($f($value));
             } elseif ($index === 1) {
                 // Forward resolution values as-is.
                 $promise->resolve($value);
