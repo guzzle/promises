@@ -196,7 +196,7 @@ class Promise implements PromiseInterface
                 /*
                  * If $f throws an exception, then $handler will be in the exception
                  * stack trace. Since $handler contains a reference to the callable
-                 * itself we get a circular reference. We clear clear the $handler
+                 * itself we get a circular reference. We clear the $handler
                  * here to avoid that memory leak.
                  */
                 $f = $handler[$index];
