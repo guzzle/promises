@@ -1,10 +1,11 @@
 # CHANGELOG
 
 
-## Upcoming
+## 1.4.0 - 2020-09-30
 
 ### Added
 
+- Support for PHP 8
 - Optional `$recursive` flag to `all`
 - Replaced functions by static methods
 
@@ -13,6 +14,7 @@
 - Fix empty `each` processing
 - Fix promise handling for Iterators of non-unique keys
 - Fixed `method_exists` crashes on PHP 8
+- Memory leak on exceptions
 
 
 ## 1.3.1 - 2016-12-20
