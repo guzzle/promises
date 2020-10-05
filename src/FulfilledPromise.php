@@ -57,6 +57,8 @@ class FulfilledPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
+        Utils::queue()->run();
+
         return $unwrap ? $this->value : null;
     }
 

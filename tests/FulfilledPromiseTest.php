@@ -81,6 +81,17 @@ class FulfilledPromiseTest extends TestCase
         $this->assertSame('a', $r);
     }
 
+    public function testRunsQueueOnWait()
+    {
+        $p = new FulfilledPromise('a');
+        $r = null;
+        $f = function ($d) use (&$r) { $r = $d; };
+        $p->then($f);
+        $this->assertNull($r);
+        $p->wait();
+        $this->assertSame('a', $r);
+    }
+
     public function testReturnsNewRejectedWhenOnFulfilledFails()
     {
         $p = new FulfilledPromise('a');
