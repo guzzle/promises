@@ -123,6 +123,7 @@ class EachPromise implements PromisorInterface
         $clearFn = function () {
             $this->iterable = $this->concurrency = $this->pending = null;
             $this->onFulfilled = $this->onRejected = null;
+            $this->nextPendingIndex = 0;
         };
 
         $this->aggregate->then($clearFn, $clearFn);
