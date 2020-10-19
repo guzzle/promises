@@ -385,4 +385,25 @@ class EachPromiseTest extends TestCase
         $each->promise()->wait();
         $this->assertSame(4, $called);
     }
+
+    public function testIsWaitableWhenLimited()
+    {
+        $promises = [
+            $this->createSelfResolvingPromise('a'),
+            $this->createSelfResolvingPromise('c'),
+            $this->createSelfResolvingPromise('b'),
+            $this->createSelfResolvingPromise('d')
+        ];
+        $called = [];
+        $each = new EachPromise($promises, [
+            'concurrency' => 2,
+            'fulfilled' => function ($value) use (&$called) {
+                $called[] = $value;
+            }
+        ]);
+        $p = $each->promise();
+        $this->assertNull($p->wait());
+        $this->assertSame(['a', 'c', 'b', 'd'], $called);
+        $this->assertTrue(P\Is::fulfilled($p));
+    }
 }
