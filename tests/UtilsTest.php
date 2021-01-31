@@ -710,4 +710,22 @@ class UtilsTest extends TestCase
         $this->assertInstanceOf(\OutOfBoundsException::class, $reason);
         $this->assertInstanceOf(RejectionException::class, $reason->getPrevious());
     }
+
+    public function testCanManuallySettleTaskQueueGeneratedPromises()
+    {
+        $p1 = P\Utils::task(function () { return 'a'; });
+        $p2 = P\Utils::task(function () { return 'b'; });
+        $p3 = P\Utils::task(function () { return 'c'; });
+
+        $p1->cancel();
+        $p2->resolve('b2');
+
+        $results = P\Utils::inspectAll([$p1, $p2, $p3]);
+
+        $this->assertSame([
+            ['state' => 'rejected', 'reason' => 'Promise has been cancelled'],
+            ['state' => 'fulfilled', 'value' => 'b2'],
+            ['state' => 'fulfilled', 'value' => 'c']
+        ], $results);
+    }
 }
