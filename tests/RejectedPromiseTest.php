@@ -97,6 +97,17 @@ class RejectedPromiseTest extends TestCase
         $this->assertSame('a', $r);
     }
 
+    public function testInvokesOnRejectedOnWait()
+    {
+        $p = new RejectedPromise('a');
+        $r = null;
+        $f = function ($reason) use (&$r) { $r = $reason; };
+        $p->then(null, $f);
+        $this->assertNull($r);
+        $p->wait(false);
+        $this->assertSame('a', $r);
+    }
+
     public function testReturnsNewRejectedWhenOnRejectedFails()
     {
         $p = new RejectedPromise('a');
@@ -145,5 +156,6 @@ class RejectedPromiseTest extends TestCase
         $t1 = $fp->then(null, function ($v) { return $v . ' b'; });
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
+        P\Utils::queue()->run();
     }
 }

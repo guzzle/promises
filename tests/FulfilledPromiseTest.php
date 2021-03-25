@@ -81,6 +81,17 @@ class FulfilledPromiseTest extends TestCase
         $this->assertSame('a', $r);
     }
 
+    public function testInvokesOnFulfilledOnWait()
+    {
+        $p = new FulfilledPromise('a');
+        $r = null;
+        $f = function ($d) use (&$r) { $r = $d; };
+        $p->then($f);
+        $this->assertNull($r);
+        $p->wait();
+        $this->assertSame('a', $r);
+    }
+
     public function testReturnsNewRejectedWhenOnFulfilledFails()
     {
         $p = new FulfilledPromise('a');
@@ -109,5 +120,6 @@ class FulfilledPromiseTest extends TestCase
         $t1 = $fp->then(function ($v) { return $v . ' b'; });
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
+        P\Utils::queue()->run();
     }
 }
