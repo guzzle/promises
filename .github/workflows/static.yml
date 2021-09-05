@@ -28,10 +28,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: PHP-CS-Fixer
-        uses: OskarStark/php-cs-fixer-ga@2.16.3.1
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          args: --dry-run --diff-format udiff
+          php-version: '7.4'
+          coverage: none
+          extensions: mbstring
+
+      - name: Download dependencies
+        run: composer update --no-interaction --no-progress
+
+      - name: Download PHP CS Fixer
+        run: composer require "friendsofphp/php-cs-fixer:2.18.4"
+
+      - name: Execute PHP CS Fixer
+        run: vendor/bin/php-cs-fixer fix --diff-format udiff --dry-run
 
   psalm:
     name: Psalm
