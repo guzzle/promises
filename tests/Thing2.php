@@ -4,7 +4,7 @@ namespace GuzzleHttp\Promise\Tests;
 
 class Thing2 implements \JsonSerializable
 {
-	#[\ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return '{}';
