@@ -12,7 +12,7 @@ jobs:
 
       - name: Download dependencies
         run: |
-          composer update --no-interaction --prefer-dist --optimize-autoloader
+          composer update --no-interaction --optimize-autoloader
 
       - name: PHPStan
         uses: docker://oskarstark/phpstan-ga:0.12.25
