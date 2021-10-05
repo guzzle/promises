@@ -39,10 +39,10 @@ jobs:
         run: composer update --no-interaction --no-progress
 
       - name: Download PHP CS Fixer
-        run: composer require "friendsofphp/php-cs-fixer:2.18.4"
+        run: composer require "friendsofphp/php-cs-fixer:3.2.1"
 
       - name: Execute PHP CS Fixer
-        run: vendor/bin/php-cs-fixer fix --diff-format udiff --dry-run
+        run: vendor/bin/php-cs-fixer fix --diff --dry-run
 
   psalm:
     name: Psalm
