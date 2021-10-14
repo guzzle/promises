@@ -29,6 +29,27 @@ class EachPromiseTest extends TestCase
         $this->assertTrue(P\Is::fulfilled($p));
     }
 
+    public function testResolvesInCaseOfAnEmptyListAndInvokesFulfilled()
+    {
+        $promises = [];
+        $each = new EachPromise($promises);
+        $p = $each->promise();
+        $onFulfilledCalled = false;
+        $onRejectedCalled = false;
+        $p->then(
+            function () use (&$onFulfilledCalled) {
+                $onFulfilledCalled = true;
+            },
+            function () use (&$onRejectedCalled) {
+                $onRejectedCalled = true;
+            }
+        );
+        $this->assertNull($p->wait());
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertTrue($onFulfilledCalled);
+        $this->assertFalse($onRejectedCalled);
+    }
+
     public function testInvokesAllPromises()
     {
         $promises = [new Promise(), new Promise(), new Promise()];
