@@ -12,12 +12,6 @@ class FulfilledPromise implements PromiseInterface
 {
     private $value;
 
-    /** @var Promise|null */
-    private $promise;
-
-    /** @var callable|null */
-    private $onFulfilled;
-
     public function __construct($value)
     {
         if (is_object($value) && method_exists($value, 'then')) {
@@ -38,14 +32,18 @@ class FulfilledPromise implements PromiseInterface
             return $this;
         }
 
-        $this->onFulfilled = $onFulfilled;
-
         $queue = Utils::queue();
-        $p = $this->promise = new Promise([$queue, 'run']);
+        $p = new Promise([$queue, 'run']);
         $value = $this->value;
         $queue->add(static function () use ($p, $value, $onFulfilled) {
             if (Is::pending($p)) {
-                self::callHandler($p, $value, $onFulfilled);
+                try {
+                    $p->resolve($onFulfilled($value));
+                } catch (\Throwable $e) {
+                    $p->reject($e);
+                } catch (\Exception $e) {
+                    $p->reject($e);
+                }
             }
         });
 
@@ -59,11 +57,6 @@ class FulfilledPromise implements PromiseInterface
 
     public function wait($unwrap = true, $defaultDelivery = null)
     {
-        // Don't run the queue to avoid deadlocks, instead directly resolve the promise.
-        if ($this->promise && Is::pending($this->promise)) {
-            self::callHandler($this->promise, $this->value, $this->onFulfilled);
-        }
-
         return $unwrap ? $this->value : null;
     }
 
@@ -87,16 +80,5 @@ class FulfilledPromise implements PromiseInterface
     public function cancel()
     {
         // pass
-    }
-
-    private static function callHandler(Promise $promise, $value, callable $handler)
-    {
-        try {
-            $promise->resolve($handler($value));
-        } catch (\Throwable $e) {
-            $promise->reject($e);
-        } catch (\Exception $e) {
-            $promise->reject($e);
-        }
     }
 }
