@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.5.1 - 2021-10-22
+
+### Fixed
+
+- Revert "Call handler when waiting on fulfilled/rejected Promise"
+- Fix pool memory leak when empty array of promises provided
+
 ## 1.5.0 - 2021-10-07
 
 ### Changed
