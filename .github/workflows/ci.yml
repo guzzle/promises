@@ -4,11 +4,11 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       max-parallel: 10
       matrix:
-        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4']
+        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
 
     steps:
       - name: Set up PHP
@@ -19,48 +19,28 @@ jobs:
           tools: flex
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Mimic PHP 8.1
+        run: composer config platform.php 8.1.999
+        if: matrix.php > 8.1
 
       - name: Download dependencies
         run: composer update --no-interaction --optimize-autoloader --prefer-stable
 
-      - name: Run tests
+      - name: Run PHP < 8 tests
         run: ./vendor/bin/simple-phpunit
+        if: matrix.php < 8
 
-  build8:
-    name: Build PHP 8
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 10
-      matrix:
-        php: ['8.0', '8.1']
-
-    steps:
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          coverage: none
-          tools: flex
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Mimic PHP 8.0
-        run: composer config platform.php 8.0.999
-        if: matrix.php > 8
-
-      - name: Download dependencies
-        run: composer update --no-interaction --optimize-autoloader --prefer-stable
-
-      - name: Run tests
+      - name: Run PHP >= 8 tests
         run: ./vendor/bin/simple-phpunit
         env:
           SYMFONY_PHPUNIT_VERSION: 9.5
+        if: matrix.php >= 8
 
   lowest:
     name: Lowest deps
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -69,7 +49,7 @@ jobs:
           coverage: pcov
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download dependencies
         run: composer update --no-interaction --optimize-autoloader --prefer-stable --prefer-lowest
