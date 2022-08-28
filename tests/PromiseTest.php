@@ -65,7 +65,9 @@ class PromiseTest extends TestCase
 
     public function testInvokesWaitFunction()
     {
-        $p = new Promise(function () use (&$p) { $p->resolve('10'); });
+        $p = new Promise(function () use (&$p) {
+            $p->resolve('10');
+        });
         $this->assertSame('10', $p->wait());
     }
 
@@ -83,7 +85,9 @@ class PromiseTest extends TestCase
         $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
         $this->expectExceptionMessage('The promise was rejected with reason: foo');
 
-        $p = new Promise(function () use (&$p) { $p->reject('foo'); });
+        $p = new Promise(function () use (&$p) {
+            $p->reject('foo');
+        });
         $p->wait();
     }
 
@@ -93,13 +97,17 @@ class PromiseTest extends TestCase
         $this->expectExceptionMessage('foo');
 
         $e = new \UnexpectedValueException('foo');
-        $p = new Promise(function () use (&$p, $e) { $p->reject($e); });
+        $p = new Promise(function () use (&$p, $e) {
+            $p->reject($e);
+        });
         $p->wait();
     }
 
     public function testDoesNotUnwrapExceptionsWhenDisabled()
     {
-        $p = new Promise(function () use (&$p) { $p->reject('foo'); });
+        $p = new Promise(function () use (&$p) {
+            $p->reject('foo');
+        });
         $this->assertTrue(P\Is::pending($p));
         $p->wait(false);
         $this->assertTrue(P\Is::rejected($p));
@@ -108,7 +116,9 @@ class PromiseTest extends TestCase
     public function testRejectsSelfWhenWaitThrows()
     {
         $e = new \UnexpectedValueException('foo');
-        $p = new Promise(function () use ($e) { throw $e; });
+        $p = new Promise(function () use ($e) {
+            throw $e;
+        });
         try {
             $p->wait();
             $this->fail();
@@ -119,9 +129,15 @@ class PromiseTest extends TestCase
 
     public function testWaitsOnNestedPromises()
     {
-        $p = new Promise(function () use (&$p) { $p->resolve('_'); });
-        $p2 = new Promise(function () use (&$p2) { $p2->resolve('foo'); });
-        $p3 = $p->then(function () use ($p2) { return $p2; });
+        $p = new Promise(function () use (&$p) {
+            $p->resolve('_');
+        });
+        $p2 = new Promise(function () use (&$p2) {
+            $p2->resolve('foo');
+        });
+        $p3 = $p->then(function () use ($p2) {
+            return $p2;
+        });
         $this->assertSame('foo', $p3->wait());
     }
 
@@ -150,7 +166,9 @@ class PromiseTest extends TestCase
 
     public function testGetsActualWaitValueFromThen()
     {
-        $p = new Promise(function () use (&$p) { $p->reject('Foo!'); });
+        $p = new Promise(function () use (&$p) {
+            $p->reject('Foo!');
+        });
         $p2 = $p->then(null, function ($reason) {
             return new RejectedPromise([$reason]);
         });
@@ -165,9 +183,15 @@ class PromiseTest extends TestCase
 
     public function testWaitBehaviorIsBasedOnLastPromiseInChain()
     {
-        $p3 = new Promise(function () use (&$p3) { $p3->resolve('Whoop'); });
-        $p2 = new Promise(function () use (&$p2, $p3) { $p2->reject($p3); });
-        $p = new Promise(function () use (&$p, $p2) { $p->reject($p2); });
+        $p3 = new Promise(function () use (&$p3) {
+            $p3->resolve('Whoop');
+        });
+        $p2 = new Promise(function () use (&$p2, $p3) {
+            $p2->reject($p3);
+        });
+        $p = new Promise(function () use (&$p, $p2) {
+            $p->reject($p2);
+        });
         $this->assertSame('Whoop', $p->wait());
     }
 
@@ -204,7 +228,9 @@ class PromiseTest extends TestCase
     public function testCancelsPromiseWithCancelFunction()
     {
         $called = false;
-        $p = new Promise(null, function () use (&$called) { $called = true; });
+        $p = new Promise(null, function () use (&$called) {
+            $called = true;
+        });
         $p->cancel();
         $this->assertTrue(P\Is::rejected($p));
         $this->assertTrue($called);
@@ -213,7 +239,9 @@ class PromiseTest extends TestCase
     public function testCancelsUppermostPendingPromise()
     {
         $called = false;
-        $p1 = new Promise(null, function () use (&$called) { $called = true; });
+        $p1 = new Promise(null, function () use (&$called) {
+            $called = true;
+        });
         $p2 = $p1->then(function () {});
         $p3 = $p2->then(function () {});
         $p4 = $p3->then(function () {});
@@ -244,11 +272,21 @@ class PromiseTest extends TestCase
     public function testCancelsChildPromises()
     {
         $called1 = $called2 = $called3 = false;
-        $p1 = new Promise(null, function () use (&$called1) { $called1 = true; });
-        $p2 = new Promise(null, function () use (&$called2) { $called2 = true; });
-        $p3 = new Promise(null, function () use (&$called3) { $called3 = true; });
-        $p4 = $p2->then(function () use ($p3) { return $p3; });
-        $p5 = $p4->then(function () { $this->fail(); });
+        $p1 = new Promise(null, function () use (&$called1) {
+            $called1 = true;
+        });
+        $p2 = new Promise(null, function () use (&$called2) {
+            $called2 = true;
+        });
+        $p3 = new Promise(null, function () use (&$called3) {
+            $called3 = true;
+        });
+        $p4 = $p2->then(function () use ($p3) {
+            return $p3;
+        });
+        $p5 = $p4->then(function () {
+            $this->fail();
+        });
         $p4->cancel();
         $this->assertTrue(P\Is::pending($p1));
         $this->assertTrue(P\Is::rejected($p2));
@@ -282,7 +320,9 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $carry = null;
-        $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
+        $p2 = $p->then(function ($v) use (&$carry) {
+            $carry = $v;
+        });
         $this->assertNotSame($p, $p2);
         $p->resolve('foo');
         P\Utils::queue()->run();
@@ -295,7 +335,9 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $carry = null;
-        $p2 = $p->then(function ($v) use (&$carry) { $carry = $v; });
+        $p2 = $p->then(function ($v) use (&$carry) {
+            $carry = $v;
+        });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
         P\Utils::queue()->run();
@@ -315,7 +357,9 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $carry = null;
-        $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
+        $p2 = $p->then(null, function ($v) use (&$carry) {
+            $carry = $v;
+        });
         $this->assertNotSame($p, $p2);
         $p->reject('foo');
         P\Utils::queue()->run();
@@ -327,7 +371,9 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->reject('foo');
         $carry = null;
-        $p2 = $p->then(null, function ($v) use (&$carry) { $carry = $v; });
+        $p2 = $p->then(null, function ($v) use (&$carry) {
+            $carry = $v;
+        });
         $this->assertNotSame($p, $p2);
         $this->assertNull($carry);
         P\Utils::queue()->run();
@@ -345,21 +391,37 @@ class PromiseTest extends TestCase
 
     public function testInvokesWaitFnsForThens()
     {
-        $p = new Promise(function () use (&$p) { $p->resolve('a'); });
+        $p = new Promise(function () use (&$p) {
+            $p->resolve('a');
+        });
         $p2 = $p
-            ->then(function ($v) { return $v . '-1-'; })
-            ->then(function ($v) { return $v . '2'; });
+            ->then(function ($v) {
+                return $v . '-1-';
+            })
+            ->then(function ($v) {
+                return $v . '2';
+            });
         $this->assertSame('a-1-2', $p2->wait());
     }
 
     public function testStacksThenWaitFunctions()
     {
-        $p1 = new Promise(function () use (&$p1) { $p1->resolve('a'); });
-        $p2 = new Promise(function () use (&$p2) { $p2->resolve('b'); });
-        $p3 = new Promise(function () use (&$p3) { $p3->resolve('c'); });
+        $p1 = new Promise(function () use (&$p1) {
+            $p1->resolve('a');
+        });
+        $p2 = new Promise(function () use (&$p2) {
+            $p2->resolve('b');
+        });
+        $p3 = new Promise(function () use (&$p3) {
+            $p3->resolve('c');
+        });
         $p4 = $p1
-            ->then(function () use ($p2) { return $p2; })
-            ->then(function () use ($p3) { return $p3; });
+            ->then(function () use ($p2) {
+                return $p2;
+            })
+            ->then(function () use ($p3) {
+                return $p3;
+            });
         $this->assertSame('c', $p4->wait());
     }
 
@@ -368,8 +430,13 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(function ($v) use (&$r) { $r = $v; return $v . '2'; })
-            ->then(function ($v) use (&$r2) { $r2 = $v; });
+            ->then(function ($v) use (&$r) {
+                $r = $v;
+                return $v . '2';
+            })
+            ->then(function ($v) use (&$r2) {
+                $r2 = $v;
+            });
         $p->resolve('foo');
         P\Utils::queue()->run();
         $this->assertSame('foo', $r);
@@ -381,8 +448,13 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(null, function ($v) use (&$r) { $r = $v; return $v . '2'; })
-            ->then(function ($v) use (&$r2) { $r2 = $v; });
+            ->then(null, function ($v) use (&$r) {
+                $r = $v;
+                return $v . '2';
+            })
+            ->then(function ($v) use (&$r2) {
+                $r2 = $v;
+            });
         $p->reject('foo');
         P\Utils::queue()->run();
         $this->assertSame('foo', $r);
@@ -401,7 +473,9 @@ class PromiseTest extends TestCase
             })
             ->then(
                 null,
-                function ($v) use (&$r2) { $r2 = $v; }
+                function ($v) use (&$r2) {
+                    $r2 = $v;
+                }
             );
         $p->reject('foo');
         P\Utils::queue()->run();
@@ -421,7 +495,9 @@ class PromiseTest extends TestCase
             })
             ->then(
                 null,
-                function ($v) use (&$r2) { $r2 = $v; }
+                function ($v) use (&$r2) {
+                    $r2 = $v;
+                }
             );
         $p->reject('foo');
         P\Utils::queue()->run();
@@ -440,8 +516,12 @@ class PromiseTest extends TestCase
         $p2 = new Promise();
         $resolved = null;
         $p
-            ->then(function ($v) use ($p2) { return $p2; })
-            ->then(function ($value) use (&$resolved) { $resolved = $value; });
+            ->then(function ($v) use ($p2) {
+                return $p2;
+            })
+            ->then(function ($value) use (&$resolved) {
+                $resolved = $value;
+            });
         $p->resolve('a');
         $p2->resolve('b');
         P\Utils::queue()->run();
@@ -451,15 +531,21 @@ class PromiseTest extends TestCase
     public function testRemovesReferenceFromChildWhenParentWaitedUpon()
     {
         $r = null;
-        $p = new Promise(function () use (&$p) { $p->resolve('a'); });
-        $p2 = new Promise(function () use (&$p2) { $p2->resolve('b'); });
+        $p = new Promise(function () use (&$p) {
+            $p->resolve('a');
+        });
+        $p2 = new Promise(function () use (&$p2) {
+            $p2->resolve('b');
+        });
         $pb = $p->then(
             function ($v) use ($p2, &$r) {
                 $r = $v;
                 return $p2;
             }
         )
-            ->then(function ($v) { return $v . '.'; });
+            ->then(function ($v) {
+                return $v . '.';
+            });
         $this->assertSame('a', $p->wait());
         $this->assertSame('b', $p2->wait());
         $this->assertSame('b.', $pb->wait());
@@ -472,13 +558,22 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->resolve('foo');
-        $p2->then(function ($v) use (&$res) { $res[] = 'A:' . $v; });
+        $p2->then(function ($v) use (&$res) {
+            $res[] = 'A:' . $v;
+        });
         // $res is A:foo
         $p
-            ->then(function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
-            ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
+            ->then(function () use ($p2, &$res) {
+                $res[] = 'B';
+                return $p2;
+            })
+            ->then(function ($v) use (&$res) {
+                $res[] = 'C:' . $v;
+            });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        $p->then(function ($v) use (&$res) {
+            $res[] = 'D:' . $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
@@ -489,11 +584,20 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->reject('foo');
-        $p2->then(null, function ($v) use (&$res) { $res[] = 'A:' . $v; });
-        $p->then(null, function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
-            ->then(null, function ($v) use (&$res) { $res[] = 'C:' . $v; });
+        $p2->then(null, function ($v) use (&$res) {
+            $res[] = 'A:' . $v;
+        });
+        $p->then(null, function () use ($p2, &$res) {
+            $res[] = 'B';
+            return $p2;
+        })
+            ->then(null, function ($v) use (&$res) {
+                $res[] = 'C:' . $v;
+            });
         $p->reject('a');
-        $p->then(null, function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        $p->then(null, function ($v) use (&$res) {
+            $res[] = 'D:' . $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
@@ -504,11 +608,21 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->cancel();
-        $p2->then(function ($v) use (&$res) { $res[] = "B:$v"; return $v; });
-        $p->then(function ($v) use ($p2, &$res) { $res[] = "B:$v"; return $p2; })
-            ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
+        $p2->then(function ($v) use (&$res) {
+            $res[] = "B:$v";
+            return $v;
+        });
+        $p->then(function ($v) use ($p2, &$res) {
+            $res[] = "B:$v";
+            return $p2;
+        })
+            ->then(function ($v) use (&$res) {
+                $res[] = 'C:' . $v;
+            });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        $p->then(function ($v) use (&$res) {
+            $res[] = 'D:' . $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame(['B:a', 'D:a'], $res);
     }
@@ -519,11 +633,20 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Thennable();
         $p2->resolve('foo');
-        $p2->then(function ($v) use (&$res) { $res[] = 'A:' . $v; });
-        $p->then(function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
-            ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
+        $p2->then(function ($v) use (&$res) {
+            $res[] = 'A:' . $v;
+        });
+        $p->then(function () use ($p2, &$res) {
+            $res[] = 'B';
+            return $p2;
+        })
+            ->then(function ($v) use (&$res) {
+                $res[] = 'C:' . $v;
+            });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        $p->then(function ($v) use (&$res) {
+            $res[] = 'D:' . $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
     }
@@ -533,11 +656,20 @@ class PromiseTest extends TestCase
         $res = [];
         $p = new Promise();
         $p2 = new NotPromiseInstance();
-        $p2->then(function ($v) use (&$res) { $res[] = 'A:' . $v; });
-        $p->then(function () use ($p2, &$res) { $res[] = 'B'; return $p2; })
-            ->then(function ($v) use (&$res) { $res[] = 'C:' . $v; });
+        $p2->then(function ($v) use (&$res) {
+            $res[] = 'A:' . $v;
+        });
+        $p->then(function () use ($p2, &$res) {
+            $res[] = 'B';
+            return $p2;
+        })
+            ->then(function ($v) use (&$res) {
+                $res[] = 'C:' . $v;
+            });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res) { $res[] = 'D:' . $v; });
+        $p->then(function ($v) use (&$res) {
+            $res[] = 'D:' . $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame(['B', 'D:a'], $res);
         $p2->resolve('foo');
@@ -565,10 +697,14 @@ class PromiseTest extends TestCase
 
     public function testDoesNotBlowStackWhenWaitingOnNestedThens()
     {
-        $inner = new Promise(function () use (&$inner) { $inner->resolve(0); });
+        $inner = new Promise(function () use (&$inner) {
+            $inner->resolve(0);
+        });
         $prev = $inner;
         for ($i = 1; $i < 100; $i++) {
-            $prev = $prev->then(function ($i) { return $i + 1; });
+            $prev = $prev->then(function ($i) {
+                return $i + 1;
+            });
         }
 
         $parent = new Promise(function () use (&$parent, $prev) {
@@ -582,7 +718,9 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $p->reject('foo');
-        $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        $p->otherwise(function ($v) use (&$c) {
+            $c = $v;
+        });
         P\Utils::queue()->run();
         $this->assertSame($c, 'foo');
     }
