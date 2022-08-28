@@ -564,7 +564,8 @@ class PromiseTest extends TestCase
         // $res is A:foo
         $p
             ->then(function () use ($p2, &$res) {
-                $res[] = 'B'; return $p2;
+                $res[] = 'B';
+                return $p2;
             })
             ->then(function ($v) use (&$res) {
                 $res[] = 'C:' . $v;
@@ -587,7 +588,8 @@ class PromiseTest extends TestCase
             $res[] = 'A:' . $v;
         });
         $p->then(null, function () use ($p2, &$res) {
-            $res[] = 'B'; return $p2;
+            $res[] = 'B';
+            return $p2;
         })
             ->then(null, function ($v) use (&$res) {
                 $res[] = 'C:' . $v;
@@ -607,10 +609,12 @@ class PromiseTest extends TestCase
         $p2 = new Promise();
         $p2->cancel();
         $p2->then(function ($v) use (&$res) {
-            $res[] = "B:$v"; return $v;
+            $res[] = "B:$v";
+            return $v;
         });
         $p->then(function ($v) use ($p2, &$res) {
-            $res[] = "B:$v"; return $p2;
+            $res[] = "B:$v";
+            return $p2;
         })
             ->then(function ($v) use (&$res) {
                 $res[] = 'C:' . $v;
@@ -633,11 +637,12 @@ class PromiseTest extends TestCase
             $res[] = 'A:' . $v;
         });
         $p->then(function () use ($p2, &$res) {
-            $res[] = 'B'; return $p2;
+            $res[] = 'B';
+            return $p2;
         })
             ->then(function ($v) use (&$res) {
                 $res[] = 'C:' . $v;
-        });
+            });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) {
             $res[] = 'D:' . $v;
@@ -655,7 +660,8 @@ class PromiseTest extends TestCase
             $res[] = 'A:' . $v;
         });
         $p->then(function () use ($p2, &$res) {
-            $res[] = 'B'; return $p2;
+            $res[] = 'B';
+            return $p2;
         })
             ->then(function ($v) use (&$res) {
                 $res[] = 'C:' . $v;
