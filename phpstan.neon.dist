@@ -5,6 +5,3 @@ parameters:
     level: 5
     paths:
         - src
-
-    ignoreErrors:
-        - "#^Dead catch - Exception is already caught by Throwable above\\.$#"
