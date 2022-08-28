@@ -15,7 +15,7 @@ jobs:
           composer update --no-interaction --optimize-autoloader
 
       - name: PHPStan
-        uses: docker://oskarstark/phpstan-ga:0.12.25
+        uses: docker://oskarstark/phpstan-ga:1.6.0
         with:
           entrypoint: /composer/vendor/bin/phpstan
           args: analyze --no-progress
@@ -39,7 +39,7 @@ jobs:
         run: composer update --no-interaction --no-progress
 
       - name: Download PHP CS Fixer
-        run: composer require "friendsofphp/php-cs-fixer:3.2.1"
+        run: composer require "friendsofphp/php-cs-fixer:3.10.0"
 
       - name: Execute PHP CS Fixer
         run: vendor/bin/php-cs-fixer fix --diff --dry-run
