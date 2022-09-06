@@ -84,11 +84,12 @@ final class Utils
             ];
         } catch (RejectionException $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
-        } catch (\Throwable $e) {
-            return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
         } catch (\Exception $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
+        } catch (\Throwable $e) {
+            return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
         }
+
     }
 
     /**
