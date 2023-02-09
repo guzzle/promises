@@ -28,7 +28,7 @@ class FulfilledPromiseTest extends TestCase
     }
 
     /**
-     * @exepctedExceptionMessage Cannot resolve a fulfilled promise
+     * @expectedExceptionMessage Cannot resolve a fulfilled promise
      */
     public function testCannotResolve()
     {
@@ -39,7 +39,7 @@ class FulfilledPromiseTest extends TestCase
     }
 
     /**
-     * @exepctedExceptionMessage Cannot reject a fulfilled promise
+     * @expectedExceptionMessage Cannot reject a fulfilled promise
      */
     public function testCannotReject()
     {
