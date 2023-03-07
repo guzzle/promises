@@ -6,19 +6,28 @@ namespace GuzzleHttp\Promise;
  * Promises/A+ implementation that avoids recursion when possible.
  *
  * @link https://promisesaplus.com/
+ *
+ * @template ValueType
+ * @template ReasonType
+ * @implements PromiseInterface<ValueType, ReasonType>
  */
 class Promise implements PromiseInterface
 {
     private $state = self::PENDING;
+    /** @var ($state is self::FULFILLED ? ValueType : ReasonType) */
     private $result;
+    /** @var ?callable(): void */
     private $cancelFn;
+    /** @var ?callable(): void */
     private $waitFn;
+    /** @var ?array<Promise<mixed, mixed>>: void */
     private $waitList;
+    /** @var ?array<array{}> */
     private $handlers = [];
 
     /**
-     * @param callable $waitFn   Fn that when invoked resolves the promise.
-     * @param callable $cancelFn Fn that when invoked cancels the promise.
+     * @param ?callable(): void $waitFn   Fn that when invoked resolves the promise.
+     * @param ?callable(): void $cancelFn Fn that when invoked cancels the promise.
      */
     public function __construct(
         callable $waitFn = null,

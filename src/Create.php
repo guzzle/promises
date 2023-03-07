@@ -7,9 +7,12 @@ final class Create
     /**
      * Creates a promise for a value if the value is not a promise.
      *
-     * @param mixed $value Promise or value.
+     * @template ValueType
+     * @template ReasonType
      *
-     * @return PromiseInterface
+     * @param ValueType|PromiseInterface<ValueType, ReasonType> $value Promise, a promise-like object (TODO: duck typing, not expressable as type) or value.
+     *
+     * @return PromiseInterface<ValueType, ReasonType>
      */
     public static function promiseFor($value)
     {
@@ -33,9 +36,12 @@ final class Create
      * Creates a rejected promise for a reason if the reason is not a promise.
      * If the provided reason is a promise, then it is returned as-is.
      *
-     * @param mixed $reason Promise or reason.
+     * @template ValueType
+     * @template ReasonType
      *
-     * @return PromiseInterface
+     * @param ReasonType|PromiseInterface<ValueType, ReasonType> $reason Promise or reason.
+     *
+     * @return PromiseInterface<ValueType, ReasonType>
      */
     public static function rejectionFor($reason)
     {

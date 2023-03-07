@@ -7,6 +7,10 @@ namespace GuzzleHttp\Promise;
  *
  * Thenning off of this promise will invoke the onRejected callback
  * immediately and ignore other callbacks.
+ *
+ * @template ValueType
+ * @template ReasonType
+ * @implements PromiseInterface<ValueType, ReasonType>
  */
 class RejectedPromise implements PromiseInterface
 {
