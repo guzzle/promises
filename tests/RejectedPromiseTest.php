@@ -44,7 +44,7 @@ class RejectedPromiseTest extends TestCase
     }
 
     /**
-     * @exepctedExceptionMessage Cannot reject a rejected promise
+     * @expectedExceptionMessage Cannot reject a rejected promise
      */
     public function testCannotReject()
     {
