@@ -1,5 +1,12 @@
-on: [push, pull_request]
 name: Static analysis
+
+on:
+  push:
+    branches:
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   phpstan:
