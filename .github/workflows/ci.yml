@@ -1,5 +1,12 @@
-name: Tests
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches:
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
