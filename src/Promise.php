@@ -35,7 +35,7 @@ class Promise implements PromiseInterface
     public function then(
         callable $onFulfilled = null,
         callable $onRejected = null
-    ) {
+    ): PromiseInterface {
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
@@ -59,12 +59,12 @@ class Promise implements PromiseInterface
         return $onRejected ? $rejection->then(null, $onRejected) : $rejection;
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then(null, $onRejected);
     }
 
-    public function wait($unwrap = true)
+    public function wait(bool $unwrap = true)
     {
         $this->waitIfPending();
 
@@ -80,7 +80,7 @@ class Promise implements PromiseInterface
         }
     }
 
-    public function getState()
+    public function getState(): string
     {
         return $this->state;
     }
@@ -120,7 +120,7 @@ class Promise implements PromiseInterface
         $this->settle(self::REJECTED, $reason);
     }
 
-    private function settle($state, $value): void
+    private function settle(string $state, $value): void
     {
         if ($this->state !== self::PENDING) {
             // Ignore calls with the same resolution.
@@ -185,7 +185,7 @@ class Promise implements PromiseInterface
      * @param mixed $value   Value to pass to the callback.
      * @param array $handler Array of handler data (promise and callbacks).
      */
-    private static function callHandler($index, $value, array $handler): void
+    private static function callHandler(int $index, $value, array $handler): void
     {
         /** @var PromiseInterface $promise */
         $promise = $handler[0];

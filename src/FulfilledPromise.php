@@ -16,6 +16,9 @@ class FulfilledPromise implements PromiseInterface
 {
     private $value;
 
+    /**
+     * @param mixed $value
+     */
     public function __construct($value)
     {
         if (is_object($value) && method_exists($value, 'then')) {
@@ -30,7 +33,7 @@ class FulfilledPromise implements PromiseInterface
     public function then(
         callable $onFulfilled = null,
         callable $onRejected = null
-    ) {
+    ): PromiseInterface {
         // Return itself if there is no onFulfilled function.
         if (!$onFulfilled) {
             return $this;
@@ -52,17 +55,17 @@ class FulfilledPromise implements PromiseInterface
         return $p;
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then(null, $onRejected);
     }
 
-    public function wait($unwrap = true, $defaultDelivery = null)
+    public function wait(bool $unwrap = true)
     {
         return $unwrap ? $this->value : null;
     }
 
-    public function getState()
+    public function getState(): string
     {
         return self::FULFILLED;
     }

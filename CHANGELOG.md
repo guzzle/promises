@@ -3,14 +3,18 @@
 
 ## 2.0.0 - TBC
 
+### Added
+
+- Added PHP 7 type hints
+
 ### Changed
 
 - All previously non-final non-exception classes have been marked as soft-final
 
 ### Removed
 
-- Removed deprecated global functions
-- Removed support for PHP <7.2.5
+- Dropped PHP < 7.2 support
+- All functions in the `GuzzleHttp\Promise` namespace
 
 
 ## 1.5.3 - 2023-05-21

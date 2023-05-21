@@ -16,6 +16,9 @@ class RejectedPromise implements PromiseInterface
 {
     private $reason;
 
+    /**
+     * @param mixed $reason
+     */
     public function __construct($reason)
     {
         if (is_object($reason) && method_exists($reason, 'then')) {
@@ -30,7 +33,7 @@ class RejectedPromise implements PromiseInterface
     public function then(
         callable $onFulfilled = null,
         callable $onRejected = null
-    ) {
+    ): PromiseInterface {
         // If there's no onRejected callback then just return self.
         if (!$onRejected) {
             return $this;
@@ -54,12 +57,12 @@ class RejectedPromise implements PromiseInterface
         return $p;
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then(null, $onRejected);
     }
 
-    public function wait($unwrap = true, $defaultDelivery = null)
+    public function wait(bool $unwrap = true)
     {
         if ($unwrap) {
             throw Create::exceptionFor($this->reason);
@@ -68,7 +71,7 @@ class RejectedPromise implements PromiseInterface
         return null;
     }
 
-    public function getState()
+    public function getState(): string
     {
         return self::REJECTED;
     }

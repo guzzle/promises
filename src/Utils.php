@@ -19,11 +19,9 @@ final class Utils
      * }
      * </code>
      *
-     * @param TaskQueueInterface $assign Optionally specify a new queue instance.
-     *
-     * @return TaskQueueInterface
+     * @param TaskQueueInterface|null $assign Optionally specify a new queue instance.
      */
-    public static function queue(TaskQueueInterface $assign = null)
+    public static function queue(TaskQueueInterface $assign = null): TaskQueueInterface
     {
         static $queue;
 
@@ -41,10 +39,8 @@ final class Utils
      * returns a promise that is fulfilled or rejected with the result.
      *
      * @param callable $task Task function to run.
-     *
-     * @return PromiseInterface
      */
-    public static function task(callable $task)
+    public static function task(callable $task): PromiseInterface
     {
         $queue = self::queue();
         $promise = new Promise([$queue, 'run']);
@@ -72,10 +68,8 @@ final class Utils
      * key mapping to the rejection reason of the promise.
      *
      * @param PromiseInterface $promise Promise or value.
-     *
-     * @return array
      */
-    public static function inspect(PromiseInterface $promise)
+    public static function inspect(PromiseInterface $promise): array
     {
         try {
             return [
@@ -98,10 +92,8 @@ final class Utils
      * @see inspect for the inspection state array format.
      *
      * @param PromiseInterface[] $promises Traversable of promises to wait upon.
-     *
-     * @return array
      */
-    public static function inspectAll($promises)
+    public static function inspectAll($promises): array
     {
         $results = [];
         foreach ($promises as $key => $promise) {
@@ -120,12 +112,9 @@ final class Utils
      *
      * @param iterable<PromiseInterface> $promises Iterable of PromiseInterface objects to wait on.
      *
-     * @return array
-     *
-     * @throws \Exception on error
-     * @throws \Throwable on error in PHP >=7
+     * @throws \Throwable on error
      */
-    public static function unwrap($promises)
+    public static function unwrap($promises): array
     {
         $results = [];
         foreach ($promises as $key => $promise) {
@@ -145,10 +134,8 @@ final class Utils
      *
      * @param mixed $promises  Promises or values.
      * @param bool  $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
-     *
-     * @return PromiseInterface
      */
-    public static function all($promises, $recursive = false)
+    public static function all($promises, bool $recursive = false): PromiseInterface
     {
         $results = [];
         $promise = Each::of(
@@ -193,10 +180,8 @@ final class Utils
      *
      * @param int   $count    Total number of promises.
      * @param mixed $promises Promises or values.
-     *
-     * @return PromiseInterface
      */
-    public static function some($count, $promises)
+    public static function some(int $count, $promises): PromiseInterface
     {
         $results = [];
         $rejections = [];
@@ -235,10 +220,8 @@ final class Utils
      * fulfillment value is not an array of 1 but the value directly.
      *
      * @param mixed $promises Promises or values.
-     *
-     * @return PromiseInterface
      */
-    public static function any($promises)
+    public static function any($promises): PromiseInterface
     {
         return self::some(1, $promises)->then(function ($values) {
             return $values[0];
@@ -254,10 +237,8 @@ final class Utils
      * @see inspect for the inspection state array format.
      *
      * @param mixed $promises Promises or values.
-     *
-     * @return PromiseInterface
      */
-    public static function settle($promises)
+    public static function settle($promises): PromiseInterface
     {
         $results = [];
 

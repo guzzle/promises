@@ -77,10 +77,8 @@ final class Coroutine implements PromiseInterface
 
     /**
      * Create a new coroutine.
-     *
-     * @return self
      */
-    public static function of(callable $generatorFn)
+    public static function of(callable $generatorFn): self
     {
         return new self($generatorFn);
     }
@@ -88,21 +86,21 @@ final class Coroutine implements PromiseInterface
     public function then(
         callable $onFulfilled = null,
         callable $onRejected = null
-    ) {
+    ): PromiseInterface {
         return $this->result->then($onFulfilled, $onRejected);
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->result->otherwise($onRejected);
     }
 
-    public function wait($unwrap = true)
+    public function wait(bool $unwrap = true)
     {
         return $this->result->wait($unwrap);
     }
 
-    public function getState()
+    public function getState(): string
     {
         return $this->result->getState();
     }

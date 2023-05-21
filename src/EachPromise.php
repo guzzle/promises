@@ -73,7 +73,7 @@ class EachPromise implements PromisorInterface
     }
 
     /** @psalm-suppress InvalidNullableReturnType */
-    public function promise()
+    public function promise(): PromiseInterface
     {
         if ($this->aggregate) {
             return $this->aggregate;
@@ -154,7 +154,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
-    private function addPending()
+    private function addPending(): bool
     {
         if (!$this->iterable || !$this->iterable->valid()) {
             return false;
@@ -195,7 +195,7 @@ class EachPromise implements PromisorInterface
         return true;
     }
 
-    private function advanceIterator()
+    private function advanceIterator(): bool
     {
         // Place a lock on the iterator so that we ensure to not recurse,
         // preventing fatal generator errors.
@@ -218,7 +218,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
-    private function step($idx): void
+    private function step(int $idx): void
     {
         // If the promise was already resolved, then ignore this step.
         if (Is::settled($this->aggregate)) {
@@ -236,7 +236,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
-    private function checkIfFinished()
+    private function checkIfFinished(): bool
     {
         if (!$this->pending && !$this->iterable->valid()) {
             // Resolve the promise if there's nothing left to do.

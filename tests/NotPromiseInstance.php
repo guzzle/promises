@@ -16,12 +16,12 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
         $this->nextPromise = new Promise();
     }
 
-    public function then(callable $res = null, callable $rej = null)
+    public function then(callable $res = null, callable $rej = null): PromiseInterface
     {
         return $this->nextPromise->then($res, $rej);
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then($onRejected);
     }
@@ -36,7 +36,7 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
         $this->nextPromise->reject($reason);
     }
 
-    public function wait($unwrap = true, $defaultResolution = null): void
+    public function wait(bool $unwrap = true, bool $defaultResolution = null): void
     {
     }
 
@@ -44,7 +44,7 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
     {
     }
 
-    public function getState()
+    public function getState(): string
     {
         return $this->nextPromise->getState();
     }

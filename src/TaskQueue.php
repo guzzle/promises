@@ -20,7 +20,7 @@ class TaskQueue implements TaskQueueInterface
     private $enableShutdown = true;
     private $queue = [];
 
-    public function __construct($withShutdown = true)
+    public function __construct(bool $withShutdown = true)
     {
         if ($withShutdown) {
             register_shutdown_function(function (): void {
@@ -35,7 +35,7 @@ class TaskQueue implements TaskQueueInterface
         }
     }
 
-    public function isEmpty()
+    public function isEmpty(): bool
     {
         return !$this->queue;
     }
