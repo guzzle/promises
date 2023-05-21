@@ -9,4 +9,5 @@
 /phpunit.xml.dist       export-ignore
 /psalm.xml              export-ignore
 /tests/                 export-ignore
+/vendor-bin/            export-ignore
 /Makefile               export-ignore
