@@ -29,6 +29,21 @@ for a general introduction to promises.
   `GuzzleHttp\Promise\Coroutine::of()`.
 
 
+## Installation
+
+```shell
+composer require guzzlehttp/promises
+```
+
+
+## Version Guidance
+
+| Version | Status                 | PHP Version  |
+|---------|------------------------|--------------|
+| 1.x     | Bug and security fixes | >=5.5,<8.3   |
+| 2.x     | Latest                 | >=7.2.5,<8.3 |
+
+
 ## Quick Start
 
 A *promise* represents the eventual result of an asynchronous operation. The
