@@ -1,10 +1,20 @@
 # CHANGELOG
 
+
+## 2.0.0 - TBC
+
+### Removed
+
+- Removed deprecated global functions
+- Removed support for PHP <7.2.5
+
+
 ## 1.5.3 - 2023-05-21
 
 ### Changed
 
 - Removed remaining usage of deprecated functions
+
 
 ## 1.5.2 - 2022-08-07
 
@@ -12,12 +22,14 @@
 
 - Officially support PHP 8.2
 
+
 ## 1.5.1 - 2021-10-22
 
 ### Fixed
 
 - Revert "Call handler when waiting on fulfilled/rejected Promise"
 - Fix pool memory leak when empty array of promises provided
+
 
 ## 1.5.0 - 2021-10-07
 
@@ -30,11 +42,13 @@
 
 - Fix manually settle promises generated with `Utils::task`
 
+
 ## 1.4.1 - 2021-02-18
 
 ### Fixed
 
 - Fixed `each_limit` skipping promises and failing
+
 
 ## 1.4.0 - 2020-09-30
 
