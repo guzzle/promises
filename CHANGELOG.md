@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.5.3 - 2023-05-21
+
+### Changed
+
+- Removed remaining usage of deprecated functions
+
 ## 1.5.2 - 2022-08-07
 
 ### Changed
