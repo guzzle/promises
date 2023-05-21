@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -94,10 +96,10 @@ class EachPromise implements PromisorInterface
         return $this->aggregate;
     }
 
-    private function createPromise()
+    private function createPromise(): void
     {
         $this->mutex = false;
-        $this->aggregate = new Promise(function () {
+        $this->aggregate = new Promise(function (): void {
             if ($this->checkIfFinished()) {
                 return;
             }
@@ -114,7 +116,7 @@ class EachPromise implements PromisorInterface
         });
 
         // Clear the references when the promise is resolved.
-        $clearFn = function () {
+        $clearFn = function (): void {
             $this->iterable = $this->concurrency = $this->pending = null;
             $this->onFulfilled = $this->onRejected = null;
             $this->nextPendingIndex = 0;
@@ -123,7 +125,7 @@ class EachPromise implements PromisorInterface
         $this->aggregate->then($clearFn, $clearFn);
     }
 
-    private function refillPending()
+    private function refillPending(): void
     {
         if (!$this->concurrency) {
             // Add all pending promises.
@@ -168,7 +170,7 @@ class EachPromise implements PromisorInterface
         $idx = $this->nextPendingIndex++;
 
         $this->pending[$idx] = $promise->then(
-            function ($value) use ($idx, $key) {
+            function ($value) use ($idx, $key): void {
                 if ($this->onFulfilled) {
                     call_user_func(
                         $this->onFulfilled,
@@ -179,7 +181,7 @@ class EachPromise implements PromisorInterface
                 }
                 $this->step($idx);
             },
-            function ($reason) use ($idx, $key) {
+            function ($reason) use ($idx, $key): void {
                 if ($this->onRejected) {
                     call_user_func(
                         $this->onRejected,
@@ -223,7 +225,7 @@ class EachPromise implements PromisorInterface
         }
     }
 
-    private function step($idx)
+    private function step($idx): void
     {
         // If the promise was already resolved, then ignore this step.
         if (Is::settled($this->aggregate)) {

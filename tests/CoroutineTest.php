@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
@@ -11,7 +13,7 @@ use ReflectionClass;
 
 class CoroutineTest extends TestCase
 {
-    public function testReturnsCoroutine()
+    public function testReturnsCoroutine(): void
     {
         $fn = function () { yield 'foo'; };
         $this->assertInstanceOf(P\Coroutine::class, P\Coroutine::of($fn));
@@ -23,7 +25,7 @@ class CoroutineTest extends TestCase
      * @param string $method
      * @param array  $args
      */
-    public function testShouldProxyPromiseMethodsToResultPromise($method, $args = [])
+    public function testShouldProxyPromiseMethodsToResultPromise($method, $args = []): void
     {
         $coroutine = new Coroutine(function () { yield 0; });
         $mockPromise = $this->getMockForAbstractClass(PromiseInterface::class);
@@ -40,7 +42,7 @@ class CoroutineTest extends TestCase
     {
         return [
             ['then', [null, null]],
-            ['otherwise', [function () {}]],
+            ['otherwise', [function (): void {}]],
             ['wait', [true]],
             ['getState', []],
             ['resolve', [null]],
@@ -48,7 +50,7 @@ class CoroutineTest extends TestCase
         ];
     }
 
-    public function testShouldCancelResultPromiseAndOutsideCurrentPromise()
+    public function testShouldCancelResultPromiseAndOutsideCurrentPromise(): void
     {
         $coroutine = new Coroutine(function () { yield 0; });
 
@@ -72,11 +74,11 @@ class CoroutineTest extends TestCase
         $coroutine->cancel();
     }
 
-    public function testWaitShouldResolveChainedCoroutines()
+    public function testWaitShouldResolveChainedCoroutines(): void
     {
         $promisor = function () {
             return P\Coroutine::of(function () {
-                yield $promise = new Promise(function () use (&$promise) {
+                yield $promise = new Promise(function () use (&$promise): void {
                     $promise->resolve(1);
                 });
             });
@@ -87,16 +89,16 @@ class CoroutineTest extends TestCase
         $this->assertSame(1, $promise->wait());
     }
 
-    public function testWaitShouldHandleIntermediateErrors()
+    public function testWaitShouldHandleIntermediateErrors(): void
     {
         $promise = P\Coroutine::of(function () {
-            yield $promise = new Promise(function () use (&$promise) {
+            yield $promise = new Promise(function () use (&$promise): void {
                 $promise->resolve(1);
             });
         })
         ->then(function () {
             return P\Coroutine::of(function () {
-                yield $promise = new Promise(function () use (&$promise) {
+                yield $promise = new Promise(function () use (&$promise): void {
                     $promise->reject(new \Exception());
                 });
             });

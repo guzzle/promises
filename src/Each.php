@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 final class Each
@@ -82,7 +84,7 @@ final class Each
             $iterable,
             $concurrency,
             $onFulfilled,
-            function ($reason, $idx, PromiseInterface $aggregate) {
+            function ($reason, $idx, PromiseInterface $aggregate): void {
                 $aggregate->reject($reason);
             }
         );

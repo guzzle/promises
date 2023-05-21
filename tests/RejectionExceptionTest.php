@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\RejectionException;
@@ -10,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 class RejectionExceptionTest extends TestCase
 {
-    public function testCanGetReasonFromException()
+    public function testCanGetReasonFromException(): void
     {
         $thing = new Thing1('foo');
         $e = new RejectionException($thing);
@@ -19,7 +21,7 @@ class RejectionExceptionTest extends TestCase
         $this->assertSame('The promise was rejected with reason: foo', $e->getMessage());
     }
 
-    public function testCanGetReasonMessageFromJson()
+    public function testCanGetReasonMessageFromJson(): void
     {
         $reason = new Thing2();
         $e = new RejectionException($reason);

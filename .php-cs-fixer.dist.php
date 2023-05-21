@@ -3,7 +3,8 @@
 $config = (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)
     ->setRules([
-        '@PHP71Migration' => true,
+        '@PHP71Migration:risky' => true,
+        '@PHPUnit75Migration:risky' => true,
         '@Symfony' => true,
         'global_namespace_import' => false,
         'phpdoc_annotation_without_dot' => false,

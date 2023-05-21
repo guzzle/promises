@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 final class Utils
@@ -46,7 +48,7 @@ final class Utils
     {
         $queue = self::queue();
         $promise = new Promise([$queue, 'run']);
-        $queue->add(function () use ($task, $promise) {
+        $queue->add(function () use ($task, $promise): void {
             try {
                 if (Is::pending($promise)) {
                     $promise->resolve($task());
@@ -155,10 +157,10 @@ final class Utils
         $results = [];
         $promise = Each::of(
             $promises,
-            function ($value, $idx) use (&$results) {
+            function ($value, $idx) use (&$results): void {
                 $results[$idx] = $value;
             },
-            function ($reason, $idx, Promise $aggregate) {
+            function ($reason, $idx, Promise $aggregate): void {
                 $aggregate->reject($reason);
             }
         )->then(function () use (&$results) {
@@ -205,7 +207,7 @@ final class Utils
 
         return Each::of(
             $promises,
-            function ($value, $idx, PromiseInterface $p) use (&$results, $count) {
+            function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
                 if (Is::settled($p)) {
                     return;
                 }
@@ -214,7 +216,7 @@ final class Utils
                     $p->resolve(null);
                 }
             },
-            function ($reason) use (&$rejections) {
+            function ($reason) use (&$rejections): void {
                 $rejections[] = $reason;
             }
         )->then(
@@ -265,10 +267,10 @@ final class Utils
 
         return Each::of(
             $promises,
-            function ($value, $idx) use (&$results) {
+            function ($value, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
             },
-            function ($reason, $idx) use (&$results) {
+            function ($reason, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
             }
         )->then(function () use (&$results) {

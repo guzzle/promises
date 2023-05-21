@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -19,7 +21,7 @@ class TaskQueue implements TaskQueueInterface
     public function __construct($withShutdown = true)
     {
         if ($withShutdown) {
-            register_shutdown_function(function () {
+            register_shutdown_function(function (): void {
                 if ($this->enableShutdown) {
                     // Only run the tasks if an E_ERROR didn't occur.
                     $err = error_get_last();
@@ -36,12 +38,12 @@ class TaskQueue implements TaskQueueInterface
         return !$this->queue;
     }
 
-    public function add(callable $task)
+    public function add(callable $task): void
     {
         $this->queue[] = $task;
     }
 
-    public function run()
+    public function run(): void
     {
         while ($task = array_shift($this->queue)) {
             /** @var callable $task */
@@ -60,7 +62,7 @@ class TaskQueue implements TaskQueueInterface
      *
      * Note: This shutdown will occur before any destructors are triggered.
      */
-    public function disableShutdown()
+    public function disableShutdown(): void
     {
         $this->enableShutdown = false;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -35,7 +37,7 @@ class RejectedPromise implements PromiseInterface
         $queue = Utils::queue();
         $reason = $this->reason;
         $p = new Promise([$queue, 'run']);
-        $queue->add(static function () use ($p, $reason, $onRejected) {
+        $queue->add(static function () use ($p, $reason, $onRejected): void {
             if (Is::pending($p)) {
                 try {
                     // Return a resolved promise if onRejected does not throw.
@@ -72,19 +74,19 @@ class RejectedPromise implements PromiseInterface
         return self::REJECTED;
     }
 
-    public function resolve($value)
+    public function resolve($value): void
     {
         throw new \LogicException('Cannot resolve a rejected promise');
     }
 
-    public function reject($reason)
+    public function reject($reason): void
     {
         if ($reason !== $this->reason) {
             throw new \LogicException('Cannot reject a rejected promise');
         }
     }
 
-    public function cancel()
+    public function cancel(): void
     {
         // pass
     }

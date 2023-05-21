@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\Promise;
@@ -18,7 +20,7 @@ class Thennable
         return $this->nextPromise->then($res, $rej);
     }
 
-    public function resolve($value)
+    public function resolve($value): void
     {
         $this->nextPromise->resolve($value);
     }

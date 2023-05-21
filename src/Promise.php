@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise;
 
 /**
@@ -81,7 +83,7 @@ class Promise implements PromiseInterface
         return $this->state;
     }
 
-    public function cancel()
+    public function cancel(): void
     {
         if ($this->state !== self::PENDING) {
             return;
@@ -108,17 +110,17 @@ class Promise implements PromiseInterface
         }
     }
 
-    public function resolve($value)
+    public function resolve($value): void
     {
         $this->settle(self::FULFILLED, $value);
     }
 
-    public function reject($reason)
+    public function reject($reason): void
     {
         $this->settle(self::REJECTED, $reason);
     }
 
-    private function settle($state, $value)
+    private function settle($state, $value): void
     {
         if ($this->state !== self::PENDING) {
             // Ignore calls with the same resolution.
@@ -151,7 +153,7 @@ class Promise implements PromiseInterface
         if (!is_object($value) || !method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
-            Utils::queue()->add(static function () use ($id, $value, $handlers) {
+            Utils::queue()->add(static function () use ($id, $value, $handlers): void {
                 foreach ($handlers as $handler) {
                     self::callHandler($id, $value, $handler);
                 }
@@ -162,12 +164,12 @@ class Promise implements PromiseInterface
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
             $value->then(
-                static function ($value) use ($handlers) {
+                static function ($value) use ($handlers): void {
                     foreach ($handlers as $handler) {
                         self::callHandler(1, $value, $handler);
                     }
                 },
-                static function ($reason) use ($handlers) {
+                static function ($reason) use ($handlers): void {
                     foreach ($handlers as $handler) {
                         self::callHandler(2, $reason, $handler);
                     }
@@ -183,7 +185,7 @@ class Promise implements PromiseInterface
      * @param mixed $value   Value to pass to the callback.
      * @param array $handler Array of handler data (promise and callbacks).
      */
-    private static function callHandler($index, $value, array $handler)
+    private static function callHandler($index, $value, array $handler): void
     {
         /** @var PromiseInterface $promise */
         $promise = $handler[0];
@@ -219,7 +221,7 @@ class Promise implements PromiseInterface
         }
     }
 
-    private function waitIfPending()
+    private function waitIfPending(): void
     {
         if ($this->state !== self::PENDING) {
             return;
@@ -243,7 +245,7 @@ class Promise implements PromiseInterface
         }
     }
 
-    private function invokeWaitFn()
+    private function invokeWaitFn(): void
     {
         try {
             $wfn = $this->waitFn;
@@ -262,7 +264,7 @@ class Promise implements PromiseInterface
         }
     }
 
-    private function invokeWaitList()
+    private function invokeWaitList(): void
     {
         $waitList = $this->waitList;
         $this->waitList = null;

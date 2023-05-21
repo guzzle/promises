@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise as P;
@@ -12,14 +14,14 @@ use PHPUnit\Framework\TestCase;
  */
 class FulfilledPromiseTest extends TestCase
 {
-    public function testReturnsValueWhenWaitedUpon()
+    public function testReturnsValueWhenWaitedUpon(): void
     {
         $p = new FulfilledPromise('foo');
         $this->assertTrue(P\Is::fulfilled($p));
         $this->assertSame('foo', $p->wait(true));
     }
 
-    public function testCannotCancel()
+    public function testCannotCancel(): void
     {
         $p = new FulfilledPromise('foo');
         $this->assertTrue(P\Is::fulfilled($p));
@@ -30,7 +32,7 @@ class FulfilledPromiseTest extends TestCase
     /**
      * @expectedExceptionMessage Cannot resolve a fulfilled promise
      */
-    public function testCannotResolve()
+    public function testCannotResolve(): void
     {
         $this->expectException(\LogicException::class);
 
@@ -41,7 +43,7 @@ class FulfilledPromiseTest extends TestCase
     /**
      * @expectedExceptionMessage Cannot reject a fulfilled promise
      */
-    public function testCannotReject()
+    public function testCannotReject(): void
     {
         $this->expectException(\LogicException::class);
 
@@ -49,31 +51,31 @@ class FulfilledPromiseTest extends TestCase
         $p->reject('bar');
     }
 
-    public function testCanResolveWithSameValue()
+    public function testCanResolveWithSameValue(): void
     {
         $p = new FulfilledPromise('foo');
         $p->resolve('foo');
         $this->assertSame('foo', $p->wait());
     }
 
-    public function testCannotResolveWithPromise()
+    public function testCannotResolveWithPromise(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
         new FulfilledPromise(new Promise());
     }
 
-    public function testReturnsSelfWhenNoOnFulfilled()
+    public function testReturnsSelfWhenNoOnFulfilled(): void
     {
         $p = new FulfilledPromise('a');
         $this->assertSame($p, $p->then());
     }
 
-    public function testAsynchronouslyInvokesOnFulfilled()
+    public function testAsynchronouslyInvokesOnFulfilled(): void
     {
         $p = new FulfilledPromise('a');
         $r = null;
-        $f = function ($d) use (&$r) { $r = $d; };
+        $f = function ($d) use (&$r): void { $r = $d; };
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
         $this->assertNull($r);
@@ -81,10 +83,10 @@ class FulfilledPromiseTest extends TestCase
         $this->assertSame('a', $r);
     }
 
-    public function testReturnsNewRejectedWhenOnFulfilledFails()
+    public function testReturnsNewRejectedWhenOnFulfilledFails(): void
     {
         $p = new FulfilledPromise('a');
-        $f = function () { throw new \Exception('b'); };
+        $f = function (): void { throw new \Exception('b'); };
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
         try {
@@ -95,15 +97,15 @@ class FulfilledPromiseTest extends TestCase
         }
     }
 
-    public function testOtherwiseIsSugarForRejections()
+    public function testOtherwiseIsSugarForRejections(): void
     {
         $c = null;
         $p = new FulfilledPromise('foo');
-        $p->otherwise(function ($v) use (&$c) { $c = $v; });
+        $p->otherwise(function ($v) use (&$c): void { $c = $v; });
         $this->assertNull($c);
     }
 
-    public function testDoesNotTryToFulfillTwiceDuringTrampoline()
+    public function testDoesNotTryToFulfillTwiceDuringTrampoline(): void
     {
         $fp = new FulfilledPromise('a');
         $t1 = $fp->then(function ($v) { return $v.' b'; });
