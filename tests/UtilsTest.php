@@ -239,7 +239,7 @@ class UtilsTest extends TestCase
     public function testCanScheduleThunk()
     {
         $tramp = P\Utils::queue();
-        $promise = P\task(function () { return 'Hi!'; });
+        $promise = P\Utils::task(function () { return 'Hi!'; });
         $c = null;
         $promise->then(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
@@ -250,7 +250,7 @@ class UtilsTest extends TestCase
     public function testCanScheduleThunkWithRejection()
     {
         $tramp = P\Utils::queue();
-        $promise = P\task(function () { throw new \Exception('Hi!'); });
+        $promise = P\Utils::task(function () { throw new \Exception('Hi!'); });
         $c = null;
         $promise->otherwise(function ($v) use (&$c) { $c = $v; });
         $this->assertNull($c);
@@ -261,7 +261,7 @@ class UtilsTest extends TestCase
     public function testCanScheduleThunkWithWait()
     {
         $tramp = P\Utils::queue();
-        $promise = P\task(function () { return 'a'; });
+        $promise = P\Utils::task(function () { return 'a'; });
         $this->assertSame('a', $promise->wait());
         $tramp->run();
     }
