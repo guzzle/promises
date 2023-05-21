@@ -45,9 +45,6 @@ class RejectedPromise implements PromiseInterface
                 } catch (\Throwable $e) {
                     // onRejected threw, so return a rejected promise.
                     $p->reject($e);
-                } catch (\Exception $e) {
-                    // onRejected threw, so return a rejected promise.
-                    $p->reject($e);
                 }
             }
         });

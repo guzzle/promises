@@ -55,8 +55,6 @@ final class Utils
                 }
             } catch (\Throwable $e) {
                 $promise->reject($e);
-            } catch (\Exception $e) {
-                $promise->reject($e);
             }
         });
 
@@ -87,8 +85,6 @@ final class Utils
         } catch (RejectionException $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
         } catch (\Throwable $e) {
-            return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
-        } catch (\Exception $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
         }
     }

@@ -1,36 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Cannot call method reject\\(\\) on null\\.$#"
-			count: 1
-			path: src/EachPromise.php
-
-		-
-			message: "#^Dead catch \\- Exception is already caught above\\.$#"
-			count: 2
-			path: src/EachPromise.php
-
-		-
-			message: "#^Dead catch \\- Exception is already caught above\\.$#"
-			count: 1
-			path: src/FulfilledPromise.php
-
-		-
-			message: "#^Dead catch \\- Exception is already caught above\\.$#"
-			count: 2
-			path: src/Promise.php
-
-		-
-			message: "#^Dead catch \\- Exception is already caught above\\.$#"
-			count: 1
-			path: src/RejectedPromise.php
-
-		-
-			message: "#^Dead catch \\- Exception is already caught above\\.$#"
-			count: 2
-			path: src/Utils.php
-
-		-
 			message: "#^Dead catch \\- GuzzleHttp\\\\Promise\\\\RejectionException is never thrown in the try block\\.$#"
 			count: 1
 			path: src/Utils.php

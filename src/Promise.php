@@ -98,8 +98,6 @@ class Promise implements PromiseInterface
                 $fn();
             } catch (\Throwable $e) {
                 $this->reject($e);
-            } catch (\Exception $e) {
-                $this->reject($e);
             }
         }
 
@@ -216,8 +214,6 @@ class Promise implements PromiseInterface
             }
         } catch (\Throwable $reason) {
             $promise->reject($reason);
-        } catch (\Exception $reason) {
-            $promise->reject($reason);
         }
     }
 
@@ -251,7 +247,7 @@ class Promise implements PromiseInterface
             $wfn = $this->waitFn;
             $this->waitFn = null;
             $wfn(true);
-        } catch (\Exception $reason) {
+        } catch (\Throwable $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise
                 // with the exception.

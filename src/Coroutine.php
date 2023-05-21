@@ -29,7 +29,7 @@ use Throwable;
  *         $value = (yield createPromise('a'));
  *         try {
  *             $value = (yield createPromise($value . 'b'));
- *         } catch (\Exception $e) {
+ *         } catch (\Throwable $e) {
  *             // The promise was rejected.
  *         }
  *         yield $value . 'c';
@@ -71,8 +71,6 @@ final class Coroutine implements PromiseInterface
         });
         try {
             $this->nextCoroutine($this->generator->current());
-        } catch (\Exception $exception) {
-            $this->result->reject($exception);
         } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
@@ -145,8 +143,6 @@ final class Coroutine implements PromiseInterface
             } else {
                 $this->result->resolve($value);
             }
-        } catch (Exception $exception) {
-            $this->result->reject($exception);
         } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
@@ -162,8 +158,6 @@ final class Coroutine implements PromiseInterface
             $nextYield = $this->generator->throw(Create::exceptionFor($reason));
             // The throw was caught, so keep iterating on the coroutine
             $this->nextCoroutine($nextYield);
-        } catch (Exception $exception) {
-            $this->result->reject($exception);
         } catch (Throwable $throwable) {
             $this->result->reject($throwable);
         }
