@@ -80,7 +80,7 @@ final class Utils
         try {
             return [
                 'state' => PromiseInterface::FULFILLED,
-                'value' => $promise->wait()
+                'value' => $promise->wait(),
             ];
         } catch (RejectionException $e) {
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
@@ -163,6 +163,7 @@ final class Utils
             }
         )->then(function () use (&$results) {
             ksort($results);
+
             return $results;
         });
 
@@ -173,6 +174,7 @@ final class Utils
                         return self::all($promises, $recursive);
                     }
                 }
+
                 return $results;
             });
         }
@@ -224,6 +226,7 @@ final class Utils
                     );
                 }
                 ksort($results);
+
                 return array_values($results);
             }
         );
@@ -270,6 +273,7 @@ final class Utils
             }
         )->then(function () use (&$results) {
             ksort($results);
+
             return $results;
         });
     }

@@ -9,13 +9,13 @@ namespace GuzzleHttp\Promise;
  * which registers callbacks to receive either a promise’s eventual value or
  * the reason why the promise cannot be fulfilled.
  *
- * @link https://promisesaplus.com/
+ * @see https://promisesaplus.com/
  */
 interface PromiseInterface
 {
-    const PENDING = 'pending';
-    const FULFILLED = 'fulfilled';
-    const REJECTED = 'rejected';
+    public const PENDING = 'pending';
+    public const FULFILLED = 'fulfilled';
+    public const REJECTED = 'rejected';
 
     /**
      * Appends fulfillment and rejection handlers to the promise, and returns
@@ -74,7 +74,7 @@ interface PromiseInterface
     /**
      * Cancels the promise if possible.
      *
-     * @link https://github.com/promises-aplus/cancellation-spec/issues/7
+     * @see https://github.com/promises-aplus/cancellation-spec/issues/7
      */
     public function cancel();
 

@@ -10,7 +10,7 @@ use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers GuzzleHttp\Promise\EachPromise
+ * @covers \GuzzleHttp\Promise\EachPromise
  */
 class EachPromiseTest extends TestCase
 {
@@ -57,7 +57,7 @@ class EachPromiseTest extends TestCase
         $each = new EachPromise($promises, [
             'fulfilled' => function ($value) use (&$called) {
                 $called[] = $value;
-            }
+            },
         ]);
         $p = $each->promise();
         $promises[0]->resolve('a');
@@ -74,7 +74,7 @@ class EachPromiseTest extends TestCase
         $b = $this->createSelfResolvingPromise('b');
         $called = [];
         $each = new EachPromise([$a, $b], [
-            'fulfilled' => function ($value) use (&$called) { $called[] = $value; }
+            'fulfilled' => function ($value) use (&$called) { $called[] = $value; },
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
@@ -92,11 +92,11 @@ class EachPromiseTest extends TestCase
                 $this->assertSame($idx, 0);
                 $this->assertSame('a', $value);
                 $aggregate->resolve(null);
-                $called++;
+                ++$called;
             },
             'rejected' => function (\Exception $reason) {
                 $this->fail($reason->getMessage());
-            }
+            },
         ]);
         $p = $each->promise();
         $p->wait();
@@ -139,6 +139,7 @@ class EachPromiseTest extends TestCase
         $calls = [];
         $pendingFn = function ($count) use (&$calls) {
             $calls[] = $count;
+
             return 2;
         };
         $pending = [new Promise(), new Promise(), new Promise(), new Promise()];
@@ -173,9 +174,9 @@ class EachPromiseTest extends TestCase
             $called = true;
         });
         $each = new EachPromise([$a], [
-            'concurrency'       => function () { return 1; },
+            'concurrency' => function () { return 1; },
             'fulfilled' => function () {},
-            'rejected'  => function () {}
+            'rejected' => function () {},
         ]);
         $each->promise()->wait();
         $this->assertNull(PropertyHelper::get($each, 'onFulfilled'));
@@ -210,14 +211,14 @@ class EachPromiseTest extends TestCase
     public function testDoesNotBlowStackWithFulfilledPromises()
     {
         $pending = [];
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 100; ++$i) {
             $pending[] = new FulfilledPromise($i);
         }
         $values = [];
         $each = new EachPromise($pending, [
             'fulfilled' => function ($value) use (&$values) {
                 $values[] = $value;
-            }
+            },
         ]);
         $called = false;
         $each->promise()->then(function () use (&$called) {
@@ -232,14 +233,14 @@ class EachPromiseTest extends TestCase
     public function testDoesNotBlowStackWithRejectedPromises()
     {
         $pending = [];
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 100; ++$i) {
             $pending[] = new RejectedPromise($i);
         }
         $values = [];
         $each = new EachPromise($pending, [
             'rejected' => function ($value) use (&$values) {
                 $values[] = $value;
-            }
+            },
         ]);
         $called = false;
         $each->promise()->then(
@@ -257,7 +258,7 @@ class EachPromiseTest extends TestCase
         $called = [];
         $arr = ['a', 'b'];
         $each = new EachPromise($arr, [
-            'fulfilled' => function ($v) use (&$called) { $called[] = $v; }
+            'fulfilled' => function ($v) use (&$called) { $called[] = $v; },
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
@@ -297,7 +298,7 @@ class EachPromiseTest extends TestCase
                 if ($remaining > 0) {
                     $values[] = $remaining--;
                 }
-            }
+            },
         ]);
         $each->promise()->wait();
         $this->assertSame(range(10, 1), $results);
@@ -322,7 +323,7 @@ class EachPromiseTest extends TestCase
                 if ($remaining-- > 0) {
                     $pending[] = $values[] = new Promise();
                 }
-            }
+            },
         ]);
         $i = 0;
         $each->promise();
@@ -350,7 +351,7 @@ class EachPromiseTest extends TestCase
         }
 
         $results = $promises = [];
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 20; ++$i) {
             $p = $this->createSelfResolvingPromise($i);
             $pending[] = $p;
             $promises[] = $p;
@@ -373,7 +374,7 @@ class EachPromiseTest extends TestCase
             'concurrency' => 5,
             'fulfilled' => function ($r) use (&$results, &$pending) {
                 $results[] = $r;
-            }
+            },
         ]);
 
         $each->promise()->wait();
@@ -395,7 +396,7 @@ class EachPromiseTest extends TestCase
         $called = 0;
         $each = new EachPromise($iter(), [
             'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called) {
-                $called++;
+                ++$called;
                 if ($value < 3) {
                     $this->assertSame('foo', $idx);
                 } else {
@@ -413,14 +414,14 @@ class EachPromiseTest extends TestCase
             $this->createSelfResolvingPromise('a'),
             $this->createSelfResolvingPromise('c'),
             $this->createSelfResolvingPromise('b'),
-            $this->createSelfResolvingPromise('d')
+            $this->createSelfResolvingPromise('d'),
         ];
         $called = [];
         $each = new EachPromise($promises, [
             'concurrency' => 2,
             'fulfilled' => function ($value) use (&$called) {
                 $called[] = $value;
-            }
+            },
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());

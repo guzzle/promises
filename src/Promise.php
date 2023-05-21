@@ -5,7 +5,7 @@ namespace GuzzleHttp\Promise;
 /**
  * Promises/A+ implementation that avoids recursion when possible.
  *
- * @link https://promisesaplus.com/
+ * @see https://promisesaplus.com/
  */
 class Promise implements PromiseInterface
 {
@@ -37,18 +37,21 @@ class Promise implements PromiseInterface
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
             $p->waitList = $this->waitList;
             $p->waitList[] = $this;
+
             return $p;
         }
 
         // Return a fulfilled promise and immediately invoke any callbacks.
         if ($this->state === self::FULFILLED) {
             $promise = Create::promiseFor($this->result);
+
             return $onFulfilled ? $promise->then($onFulfilled) : $promise;
         }
 
         // It's either cancelled or rejected, so return a rejected promise
         // and immediately invoke any callbacks.
         $rejection = Create::rejectionFor($this->result);
+
         return $onRejected ? $rejection->then(null, $onRejected) : $rejection;
     }
 
@@ -227,9 +230,9 @@ class Promise implements PromiseInterface
         } else {
             // If there's no wait function, then reject the promise.
             $this->reject('Cannot wait on a promise that has '
-                . 'no internal wait function. You must provide a wait '
-                . 'function when constructing the promise to be able to '
-                . 'wait on a promise.');
+                .'no internal wait function. You must provide a wait '
+                .'function when constructing the promise to be able to '
+                .'wait on a promise.');
         }
 
         Utils::queue()->run();

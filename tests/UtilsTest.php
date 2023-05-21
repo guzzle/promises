@@ -24,7 +24,7 @@ class UtilsTest extends TestCase
         $this->assertSame([
             ['state' => 'fulfilled', 'value' => 'a'],
             ['state' => 'rejected', 'reason' => 'b'],
-            ['state' => 'rejected', 'reason' => $e]
+            ['state' => 'rejected', 'reason' => $e],
         ], $results);
     }
 
@@ -50,7 +50,7 @@ class UtilsTest extends TestCase
         ];
         $this->assertSame([
             'foo' => 'a',
-            'bar' => 'b'
+            'bar' => 'b',
         ], P\Utils::unwrap($promises));
     }
 
@@ -77,7 +77,7 @@ class UtilsTest extends TestCase
         $counter = 0;
         $promises['a'] = new FulfilledPromise('a');
         $promises['b'] = $promise = new Promise(function () use (&$promise, &$promises, &$counter) {
-            $counter++; // Make sure the wait function is called only once
+            ++$counter; // Make sure the wait function is called only once
             $promise->resolve('b');
             $promises['c'] = $subPromise = new Promise(function () use (&$subPromise) {
                 $subPromise->resolve('c');
@@ -198,7 +198,7 @@ class UtilsTest extends TestCase
         $this->assertSame([
             ['state' => 'rejected', 'reason' => 'a'],
             ['state' => 'fulfilled', 'value' => 'b'],
-            ['state' => 'fulfilled', 'value' => 'c']
+            ['state' => 'fulfilled', 'value' => 'c'],
         ], $result);
     }
 
@@ -207,7 +207,7 @@ class UtilsTest extends TestCase
         $p = new FulfilledPromise('foo');
         $this->assertSame([
             'state' => 'fulfilled',
-            'value' => 'foo'
+            'value' => 'foo',
         ], P\Utils::inspect($p));
     }
 
@@ -215,8 +215,8 @@ class UtilsTest extends TestCase
     {
         $p = new RejectedPromise('foo');
         $this->assertSame([
-            'state'  => 'rejected',
-            'reason' => 'foo'
+            'state' => 'rejected',
+            'reason' => 'foo',
         ], P\Utils::inspect($p));
     }
 
@@ -225,8 +225,8 @@ class UtilsTest extends TestCase
         $e = new \Exception('foo');
         $p = new RejectedPromise($e);
         $this->assertSame([
-            'state'  => 'rejected',
-            'reason' => $e
+            'state' => 'rejected',
+            'reason' => $e,
         ], P\Utils::inspect($p));
     }
 
@@ -274,7 +274,7 @@ class UtilsTest extends TestCase
 
         $promise = P\Coroutine::of(function () {
             $value = (yield new FulfilledPromise('a'));
-            yield  $value . 'b';
+            yield $value.'b';
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
         P\Utils::queue()->run();
@@ -293,7 +293,7 @@ class UtilsTest extends TestCase
                 $this->fail('Should have thrown into the coroutine!');
             } catch (RejectionException $e) {
                 $value = (yield new FulfilledPromise($e->getReason()));
-                yield  $value . 'b';
+                yield $value.'b';
             }
         });
         $promise->then(function ($value) use (&$result) { $result = $value; });
@@ -410,7 +410,7 @@ class UtilsTest extends TestCase
     {
         return P\Coroutine::of(function () {
             $value = 0;
-            for ($i = 0; $i < 1000; $i++) {
+            for ($i = 0; $i < 1000; ++$i) {
                 $value = (yield new FulfilledPromise($i));
             }
             yield $value;
@@ -445,7 +445,7 @@ class UtilsTest extends TestCase
     {
         return P\Coroutine::of(function () {
             $value = 0;
-            for ($i = 0; $i < 1000; $i++) {
+            for ($i = 0; $i < 1000; ++$i) {
                 try {
                     if ($i % 2) {
                         $value = (yield new FulfilledPromise($i));
@@ -599,7 +599,7 @@ class UtilsTest extends TestCase
         }
 
         $promises = [];
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 20; ++$i) {
             $promises[] = new Promise();
         }
 
@@ -635,14 +635,15 @@ class UtilsTest extends TestCase
 
         $f = function () {
             static $i = 0;
-            $i++;
+            ++$i;
+
             return $p = new Promise(function () use (&$p, $i) {
-                $p->resolve($i . '-bar');
+                $p->resolve($i.'-bar');
             });
         };
 
         $promises = [];
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 20; ++$i) {
             $promises[] = $f();
         }
 
@@ -725,7 +726,7 @@ class UtilsTest extends TestCase
         $this->assertSame([
             ['state' => 'rejected', 'reason' => 'Promise has been cancelled'],
             ['state' => 'fulfilled', 'value' => 'b2'],
-            ['state' => 'fulfilled', 'value' => 'c']
+            ['state' => 'fulfilled', 'value' => 'c'],
         ], $results);
     }
 }

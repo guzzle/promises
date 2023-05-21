@@ -40,7 +40,7 @@ use Throwable;
  *
  * @return Promise
  *
- * @link https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
+ * @see https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 final class Coroutine implements PromiseInterface
 {

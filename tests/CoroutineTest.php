@@ -97,7 +97,7 @@ class CoroutineTest extends TestCase
         ->then(function () {
             return P\Coroutine::of(function () {
                 yield $promise = new Promise(function () use (&$promise) {
-                    $promise->reject(new \Exception);
+                    $promise->reject(new \Exception());
                 });
             });
         })
@@ -105,6 +105,7 @@ class CoroutineTest extends TestCase
             if (!$error) {
                 self::fail('Error did not propagate.');
             }
+
             return 3;
         });
 

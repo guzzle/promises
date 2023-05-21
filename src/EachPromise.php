@@ -127,7 +127,9 @@ class EachPromise implements PromisorInterface
     {
         if (!$this->concurrency) {
             // Add all pending promises.
-            while ($this->addPending() && $this->advanceIterator());
+            while ($this->addPending() && $this->advanceIterator()) {
+            }
+
             return;
         }
 
@@ -148,7 +150,8 @@ class EachPromise implements PromisorInterface
         // next value to yield until promise callbacks are called.
         while (--$concurrency
             && $this->advanceIterator()
-            && $this->addPending());
+            && $this->addPending()) {
+        }
     }
 
     private function addPending()
@@ -205,14 +208,17 @@ class EachPromise implements PromisorInterface
         try {
             $this->iterable->next();
             $this->mutex = false;
+
             return true;
         } catch (\Throwable $e) {
             $this->aggregate->reject($e);
             $this->mutex = false;
+
             return false;
         } catch (\Exception $e) {
             $this->aggregate->reject($e);
             $this->mutex = false;
+
             return false;
         }
     }
@@ -240,6 +246,7 @@ class EachPromise implements PromisorInterface
         if (!$this->pending && !$this->iterable->valid()) {
             // Resolve the promise if there's nothing left to do.
             $this->aggregate->resolve(null);
+
             return true;
         }
 

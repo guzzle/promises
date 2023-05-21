@@ -8,7 +8,7 @@ use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers GuzzleHttp\Promise\RejectedPromise
+ * @covers \GuzzleHttp\Promise\RejectedPromise
  */
 class RejectedPromiseTest extends TestCase
 {
@@ -131,7 +131,7 @@ class RejectedPromiseTest extends TestCase
         $actual = null;
         $p = new RejectedPromise('foo');
         $p->otherwise(function ($v) {
-            return $v . ' bar';
+            return $v.' bar';
         })->then(function ($v) use (&$actual) {
             $actual = $v;
         });
@@ -142,7 +142,7 @@ class RejectedPromiseTest extends TestCase
     public function testDoesNotTryToRejectTwiceDuringTrampoline()
     {
         $fp = new RejectedPromise('a');
-        $t1 = $fp->then(null, function ($v) { return $v . ' b'; });
+        $t1 = $fp->then(null, function ($v) { return $v.' b'; });
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
     }

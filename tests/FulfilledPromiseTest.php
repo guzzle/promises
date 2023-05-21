@@ -8,7 +8,7 @@ use GuzzleHttp\Promise\Promise;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers GuzzleHttp\Promise\FulfilledPromise
+ * @covers \GuzzleHttp\Promise\FulfilledPromise
  */
 class FulfilledPromiseTest extends TestCase
 {
@@ -106,7 +106,7 @@ class FulfilledPromiseTest extends TestCase
     public function testDoesNotTryToFulfillTwiceDuringTrampoline()
     {
         $fp = new FulfilledPromise('a');
-        $t1 = $fp->then(function ($v) { return $v . ' b'; });
+        $t1 = $fp->then(function ($v) { return $v.' b'; });
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
     }

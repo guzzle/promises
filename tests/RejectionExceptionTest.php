@@ -6,7 +6,7 @@ use GuzzleHttp\Promise\RejectionException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers GuzzleHttp\Promise\RejectionException
+ * @covers \GuzzleHttp\Promise\RejectionException
  */
 class RejectionExceptionTest extends TestCase
 {
@@ -23,6 +23,6 @@ class RejectionExceptionTest extends TestCase
     {
         $reason = new Thing2();
         $e = new RejectionException($reason);
-        $this->assertStringContainsString("{}", $e->getMessage());
+        $this->assertStringContainsString('{}', $e->getMessage());
     }
 }

@@ -74,13 +74,13 @@ class RejectedPromise implements PromiseInterface
 
     public function resolve($value)
     {
-        throw new \LogicException("Cannot resolve a rejected promise");
+        throw new \LogicException('Cannot resolve a rejected promise');
     }
 
     public function reject($reason)
     {
         if ($reason !== $this->reason) {
-            throw new \LogicException("Cannot reject a rejected promise");
+            throw new \LogicException('Cannot reject a rejected promise');
         }
     }
 

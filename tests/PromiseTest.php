@@ -11,7 +11,7 @@ use GuzzleHttp\Promise\RejectionException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers GuzzleHttp\Promise\Promise
+ * @covers \GuzzleHttp\Promise\Promise
  */
 class PromiseTest extends TestCase
 {
@@ -396,10 +396,10 @@ class PromiseTest extends TestCase
         });
         $p2 = $p
             ->then(function ($v) {
-                return $v . '-1-';
+                return $v.'-1-';
             })
             ->then(function ($v) {
-                return $v . '2';
+                return $v.'2';
             });
         $this->assertSame('a-1-2', $p2->wait());
     }
@@ -432,7 +432,8 @@ class PromiseTest extends TestCase
         $p->then(null, null)
             ->then(function ($v) use (&$r) {
                 $r = $v;
-                return $v . '2';
+
+                return $v.'2';
             })
             ->then(function ($v) use (&$r2) {
                 $r2 = $v;
@@ -450,7 +451,8 @@ class PromiseTest extends TestCase
         $p->then(null, null)
             ->then(null, function ($v) use (&$r) {
                 $r = $v;
-                return $v . '2';
+
+                return $v.'2';
             })
             ->then(function ($v) use (&$r2) {
                 $r2 = $v;
@@ -491,6 +493,7 @@ class PromiseTest extends TestCase
         $p->then(null, null)
             ->then(null, function ($v) use (&$r, $rejected) {
                 $r = $v;
+
                 return $rejected;
             })
             ->then(
@@ -540,11 +543,12 @@ class PromiseTest extends TestCase
         $pb = $p->then(
             function ($v) use ($p2, &$r) {
                 $r = $v;
+
                 return $p2;
             }
         )
             ->then(function ($v) {
-                return $v . '.';
+                return $v.'.';
             });
         $this->assertSame('a', $p->wait());
         $this->assertSame('b', $p2->wait());
@@ -559,20 +563,21 @@ class PromiseTest extends TestCase
         $p2 = new Promise();
         $p2->resolve('foo');
         $p2->then(function ($v) use (&$res) {
-            $res[] = 'A:' . $v;
+            $res[] = 'A:'.$v;
         });
         // $res is A:foo
         $p
             ->then(function () use ($p2, &$res) {
                 $res[] = 'B';
+
                 return $p2;
             })
             ->then(function ($v) use (&$res) {
-                $res[] = 'C:' . $v;
+                $res[] = 'C:'.$v;
             });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) {
-            $res[] = 'D:' . $v;
+            $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
@@ -585,18 +590,19 @@ class PromiseTest extends TestCase
         $p2 = new Promise();
         $p2->reject('foo');
         $p2->then(null, function ($v) use (&$res) {
-            $res[] = 'A:' . $v;
+            $res[] = 'A:'.$v;
         });
         $p->then(null, function () use ($p2, &$res) {
             $res[] = 'B';
+
             return $p2;
         })
             ->then(null, function ($v) use (&$res) {
-                $res[] = 'C:' . $v;
+                $res[] = 'C:'.$v;
             });
         $p->reject('a');
         $p->then(null, function ($v) use (&$res) {
-            $res[] = 'D:' . $v;
+            $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
@@ -610,18 +616,20 @@ class PromiseTest extends TestCase
         $p2->cancel();
         $p2->then(function ($v) use (&$res) {
             $res[] = "B:$v";
+
             return $v;
         });
         $p->then(function ($v) use ($p2, &$res) {
             $res[] = "B:$v";
+
             return $p2;
         })
             ->then(function ($v) use (&$res) {
-                $res[] = 'C:' . $v;
+                $res[] = 'C:'.$v;
             });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) {
-            $res[] = 'D:' . $v;
+            $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
         $this->assertSame(['B:a', 'D:a'], $res);
@@ -634,18 +642,19 @@ class PromiseTest extends TestCase
         $p2 = new Thennable();
         $p2->resolve('foo');
         $p2->then(function ($v) use (&$res) {
-            $res[] = 'A:' . $v;
+            $res[] = 'A:'.$v;
         });
         $p->then(function () use ($p2, &$res) {
             $res[] = 'B';
+
             return $p2;
         })
             ->then(function ($v) use (&$res) {
-                $res[] = 'C:' . $v;
+                $res[] = 'C:'.$v;
             });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) {
-            $res[] = 'D:' . $v;
+            $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
         $this->assertSame(['A:foo', 'B', 'D:a', 'C:foo'], $res);
@@ -657,18 +666,19 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new NotPromiseInstance();
         $p2->then(function ($v) use (&$res) {
-            $res[] = 'A:' . $v;
+            $res[] = 'A:'.$v;
         });
         $p->then(function () use ($p2, &$res) {
             $res[] = 'B';
+
             return $p2;
         })
             ->then(function ($v) use (&$res) {
-                $res[] = 'C:' . $v;
+                $res[] = 'C:'.$v;
             });
         $p->resolve('a');
         $p->then(function ($v) use (&$res) {
-            $res[] = 'D:' . $v;
+            $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
         $this->assertSame(['B', 'D:a'], $res);
@@ -701,7 +711,7 @@ class PromiseTest extends TestCase
             $inner->resolve(0);
         });
         $prev = $inner;
-        for ($i = 1; $i < 100; $i++) {
+        for ($i = 1; $i < 100; ++$i) {
             $prev = $prev->then(function ($i) {
                 return $i + 1;
             });
@@ -746,14 +756,14 @@ class PromiseTest extends TestCase
             $promise->wait();
         } catch (\Exception $e) {
             $this->assertSame('foo', $e->getMessage());
-            $exceptionCount++;
+            ++$exceptionCount;
         }
 
         try {
             $promise->wait();
         } catch (\Exception $e) {
             $this->assertSame('foo', $e->getMessage());
-            $exceptionCount++;
+            ++$exceptionCount;
         }
 
         $this->assertSame(2, $exceptionCount);
