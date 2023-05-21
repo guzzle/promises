@@ -3,6 +3,10 @@
 
 ## 2.0.0 - TBC
 
+### Changed
+
+- All previously non-final non-exception classes have been marked as soft-final
+
 ### Removed
 
 - Removed deprecated global functions

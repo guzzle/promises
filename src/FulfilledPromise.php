@@ -9,6 +9,8 @@ namespace GuzzleHttp\Promise;
  *
  * Thenning off of this promise will invoke the onFulfilled callback
  * immediately and ignore other callbacks.
+ *
+ * @final
  */
 class FulfilledPromise implements PromiseInterface
 {

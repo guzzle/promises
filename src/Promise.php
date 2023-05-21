@@ -8,6 +8,8 @@ namespace GuzzleHttp\Promise;
  * Promises/A+ implementation that avoids recursion when possible.
  *
  * @see https://promisesaplus.com/
+ *
+ * @final
  */
 class Promise implements PromiseInterface
 {

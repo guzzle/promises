@@ -12,6 +12,8 @@ namespace GuzzleHttp\Promise;
  * by calling the `run()` function of the global task queue in an event loop.
  *
  *     GuzzleHttp\Promise\Utils::queue()->run();
+ *
+ * @final
  */
 class TaskQueue implements TaskQueueInterface
 {

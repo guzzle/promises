@@ -7,6 +7,8 @@ namespace GuzzleHttp\Promise;
 /**
  * Represents a promise that iterates over many promises and invokes
  * side-effect functions in the process.
+ *
+ * @final
  */
 class EachPromise implements PromisorInterface
 {
