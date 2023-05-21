@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Promise;
 
-use Exception;
 use Generator;
 use Throwable;
 
