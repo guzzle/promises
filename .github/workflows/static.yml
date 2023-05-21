@@ -17,15 +17,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download dependencies
-        run: |
-          composer update --no-interaction --optimize-autoloader
-
-      - name: PHPStan
-        uses: docker://oskarstark/phpstan-ga:1.6.0
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          entrypoint: /composer/vendor/bin/phpstan
-          args: analyze --no-progress
+          php-version: '7.4'
+          coverage: none
+          extensions: mbstring
+          tools: composer
+
+      - name: Download dependencies
+        run: composer update --no-interaction --no-progress
+
+      - name: Download PHPStan
+        run: composer bin phpstan update --no-interaction --no-progress
+
+      - name: Execute PHPStan
+        run: vendor/bin/phpstan analyze --no-progress
 
   php-cs-fixer:
     name: PHP-CS-Fixer
@@ -41,12 +48,13 @@ jobs:
           php-version: '7.4'
           coverage: none
           extensions: mbstring
+          tools: composer
 
       - name: Download dependencies
         run: composer update --no-interaction --no-progress
 
       - name: Download PHP CS Fixer
-        run: composer require "friendsofphp/php-cs-fixer:3.10.0"
+        run: composer bin php-cs-fixer update --no-interaction --no-progress
 
       - name: Execute PHP CS Fixer
         run: vendor/bin/php-cs-fixer fix --diff --dry-run
@@ -54,9 +62,24 @@ jobs:
   psalm:
     name: Psalm
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Psalm
-        uses: docker://vimeo/psalm-github-actions
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          extensions: mbstring
+          tools: composer
+
+      - name: Download dependencies
+        run: composer update --no-interaction --no-progress
+
+      - name: Download Psalm
+        run: composer bin psalm update --no-interaction --no-progress
+
+      - name: Execute Psalm
+        run: vendor/bin/psalm.phar --no-progress --output-format=github

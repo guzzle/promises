@@ -9,13 +9,35 @@ permissions:
   contents: read
 
 jobs:
+  build-lowest-version:
+    name: Build lowest version
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.2'
+          ini-values: error_reporting=E_ALL
+          coverage: 'none'
+          extensions: mbstring
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: composer update --no-interaction --prefer-stable --prefer-lowest --no-progress
+
+      - name: Run tests
+        run: vendor/bin/phpunit 
+
   build:
     name: Build
     runs-on: ubuntu-22.04
     strategy:
       max-parallel: 10
       matrix:
-        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
 
     steps:
       - name: Set up PHP
@@ -23,43 +45,14 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           ini-values: error_reporting=E_ALL
-          coverage: none
-          tools: flex
+          coverage: 'none'
+          extensions: mbstring
 
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download dependencies
-        run: composer update --no-interaction --optimize-autoloader --prefer-stable
-
-      - name: Run PHP < 8 tests
-        run: ./vendor/bin/simple-phpunit
-        if: matrix.php < 8
-
-      - name: Run PHP >= 8 tests
-        run: ./vendor/bin/simple-phpunit
-        env:
-          SYMFONY_PHPUNIT_VERSION: 9.5
-        if: matrix.php >= 8
-
-  lowest:
-    name: Lowest deps
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 7.3
-          ini-values: error_reporting=E_ALL
-          coverage: pcov
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download dependencies
-        run: composer update --no-interaction --optimize-autoloader --prefer-stable --prefer-lowest
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress
 
       - name: Run tests
-        env:
-          SYMFONY_DEPRECATIONS_HELPER: "max[self]=0"
-        run: ./vendor/bin/simple-phpunit --coverage-text
+        run: vendor/bin/phpunit 

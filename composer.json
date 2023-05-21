@@ -26,10 +26,11 @@
         }
     ],
     "require": {
-        "php": ">=5.5"
+        "php": "^7.2.5 || ^8.0"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "^4.4 || ^5.1"
+        "bamarni/composer-bin-plugin": "^1.8.1",
+        "phpunit/phpunit": "^8.5.29 || ^9.5.23"
     },
     "autoload": {
         "psr-4": {
@@ -41,11 +42,16 @@
             "GuzzleHttp\\Promise\\Tests\\": "tests/"
         }
     },
-    "scripts": {
-        "test": "vendor/bin/simple-phpunit",
-        "test-ci": "vendor/bin/simple-phpunit --coverage-text"
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": true,
+            "forward-command": false
+        }
     },
     "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        },
         "preferred-install": "dist",
         "sort-packages": true
     }

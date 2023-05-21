@@ -88,6 +88,7 @@ class EachPromise implements PromisorInterface
 
         /**
          * @psalm-suppress NullableReturnStatement
+         *
          * @phpstan-ignore-next-line
          */
         return $this->aggregate;
