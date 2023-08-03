@@ -1,11 +1,12 @@
 # CHANGELOG
 
 
-## UPCOMING
+## 2.0.1 - 2023-08-03
 
 ### Changed
 
 - PHP 8.3 support
+
 
 ## 2.0.0 - 2023-05-21
 
