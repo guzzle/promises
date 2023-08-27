@@ -9,7 +9,7 @@ use GuzzleHttp\Promise\PromiseInterface;
 
 class NotPromiseInstance extends Thennable implements PromiseInterface
 {
-    private $nextPromise = null;
+    private $nextPromise;
 
     public function __construct()
     {
