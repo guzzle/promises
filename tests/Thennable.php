@@ -8,7 +8,7 @@ use GuzzleHttp\Promise\Promise;
 
 class Thennable
 {
-    private $nextPromise = null;
+    private $nextPromise;
 
     public function __construct()
     {
