@@ -29,13 +29,13 @@ class CoroutineTest extends TestCase
     {
         $coroutine = new Coroutine(function () { yield 0; });
         $mockPromise = $this->getMockForAbstractClass(PromiseInterface::class);
-        call_user_func_array([$mockPromise->expects($this->once())->method($method), 'with'], $args);
+        $mockPromise->expects($this->once())->method($method)->with(...$args);
 
         $resultPromiseProp = (new ReflectionClass(Coroutine::class))->getProperty('result');
         $resultPromiseProp->setAccessible(true);
         $resultPromiseProp->setValue($coroutine, $mockPromise);
 
-        call_user_func_array([$coroutine, $method], $args);
+        $coroutine->{$method}(...$args);
     }
 
     public function promiseInterfaceMethodProvider()
