@@ -103,7 +103,7 @@ class CoroutineTest extends TestCase
                 });
             });
         })
-        ->otherwise(function (\Exception $error = null) {
+        ->otherwise(function (?\Exception $error = null) {
             if (!$error) {
                 self::fail('Error did not propagate.');
             }
