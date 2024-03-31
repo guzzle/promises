@@ -32,7 +32,7 @@ class UtilsTest extends TestCase
 
     public function testUnwrapsPromisesWithNoDefaultAndFailure(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+        $this->expectException(RejectionException::class);
 
         $promises = [new FulfilledPromise('a'), new Promise()];
         P\Utils::unwrap($promises);
@@ -151,7 +151,7 @@ class UtilsTest extends TestCase
 
     public function testThrowsIfImpossibleToWaitForSomeCount(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
+        $this->expectException(AggregateException::class);
         $this->expectExceptionMessage('Not enough promises to fulfill count');
 
         $a = new Promise(function () use (&$a): void { $a->resolve('a'); });
@@ -161,7 +161,7 @@ class UtilsTest extends TestCase
 
     public function testThrowsIfResolvedWithoutCountTotalResults(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\AggregateException::class);
+        $this->expectException(AggregateException::class);
         $this->expectExceptionMessage('Not enough promises to fulfill count');
 
         $a = new Promise();
