@@ -75,7 +75,7 @@ class PromiseTest extends TestCase
 
     public function testRejectsAndThrowsWhenWaitFailsToResolve(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+        $this->expectException(RejectionException::class);
         $this->expectExceptionMessage('The promise was rejected with reason: Invoking the wait callback did not resolve the promise');
 
         $p = new Promise(function (): void {});
@@ -84,7 +84,7 @@ class PromiseTest extends TestCase
 
     public function testThrowsWhenUnwrapIsRejectedWithNonException(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+        $this->expectException(RejectionException::class);
         $this->expectExceptionMessage('The promise was rejected with reason: foo');
 
         $p = new Promise(function () use (&$p): void {
@@ -145,7 +145,7 @@ class PromiseTest extends TestCase
 
     public function testThrowsWhenWaitingOnPromiseWithNoWaitFunction(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\RejectionException::class);
+        $this->expectException(RejectionException::class);
 
         $p = new Promise();
         $p->wait();
@@ -219,7 +219,7 @@ class PromiseTest extends TestCase
 
     public function testCancelsPromiseWhenNoCancelFunction(): void
     {
-        $this->expectException(\GuzzleHttp\Promise\CancellationException::class);
+        $this->expectException(CancellationException::class);
 
         $p = new Promise();
         $p->cancel();

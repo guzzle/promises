@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Promise\Tests;
 
-use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\Coroutine;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -16,7 +15,7 @@ class CoroutineTest extends TestCase
     public function testReturnsCoroutine(): void
     {
         $fn = function () { yield 'foo'; };
-        $this->assertInstanceOf(P\Coroutine::class, P\Coroutine::of($fn));
+        $this->assertInstanceOf(Coroutine::class, Coroutine::of($fn));
     }
 
     /**
@@ -77,7 +76,7 @@ class CoroutineTest extends TestCase
     public function testWaitShouldResolveChainedCoroutines(): void
     {
         $promisor = function () {
-            return P\Coroutine::of(function () {
+            return Coroutine::of(function () {
                 yield $promise = new Promise(function () use (&$promise): void {
                     $promise->resolve(1);
                 });
@@ -91,19 +90,19 @@ class CoroutineTest extends TestCase
 
     public function testWaitShouldHandleIntermediateErrors(): void
     {
-        $promise = P\Coroutine::of(function () {
+        $promise = Coroutine::of(function () {
             yield $promise = new Promise(function () use (&$promise): void {
                 $promise->resolve(1);
             });
         })
         ->then(function () {
-            return P\Coroutine::of(function () {
+            return Coroutine::of(function () {
                 yield $promise = new Promise(function () use (&$promise): void {
                     $promise->reject(new \Exception());
                 });
             });
         })
-        ->otherwise(function (\Exception $error = null) {
+        ->otherwise(function (?\Exception $error = null) {
             if (!$error) {
                 self::fail('Error did not propagate.');
             }
