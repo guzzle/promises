@@ -144,7 +144,9 @@ final class Utils
                 $results[$idx] = $value;
             },
             function ($reason, $idx, Promise $aggregate): void {
-                $aggregate->reject($reason);
+                if (Is::pending($aggregate)) {
+                    $aggregate->reject($reason);
+                }
             }
         )->then(function () use (&$results) {
             ksort($results);
