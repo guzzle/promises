@@ -12,6 +12,7 @@ namespace GuzzleHttp\Promise;
  * the reason why the promise cannot be fulfilled.
  *
  * @see https://promisesaplus.com/
+ * @template T
  */
 interface PromiseInterface
 {
@@ -23,8 +24,12 @@ interface PromiseInterface
      * Appends fulfillment and rejection handlers to the promise, and returns
      * a new promise resolving to the return value of the called handler.
      *
-     * @param callable $onFulfilled Invoked when the promise fulfills.
-     * @param callable $onRejected  Invoked when the promise is rejected.
+     * @template U
+     * @template V
+     * @param null|callable(T): U $onFulfilled Invoked when the promise fulfills.
+     * @param null|callable(mixed): V $onRejected  Invoked when the promise is rejected.
+     *
+     * @return ($onFulfilled is null ? ($onRejected is null ? PromiseInterface<T> : PromiseInterface<T|V>) : ($onRejected is null ? PromiseInterface<T|U> : PromiseInterface<U|V>))
      */
     public function then(
         ?callable $onFulfilled = null,
@@ -37,7 +42,10 @@ interface PromiseInterface
      * or to its original fulfillment value if the promise is instead
      * fulfilled.
      *
-     * @param callable $onRejected Invoked when the promise is rejected.
+     * @template V
+     * @param callable(mixed): V $onRejected Invoked when the promise is rejected.
+     *
+     * @return PromiseInterface<T|V>
      */
     public function otherwise(callable $onRejected): PromiseInterface;
 
@@ -46,13 +54,15 @@ interface PromiseInterface
      *
      * The three states can be checked against the constants defined on
      * PromiseInterface: PENDING, FULFILLED, and REJECTED.
+     *
+     * @return 'pending'|'fulfilled'|'rejected'
      */
     public function getState(): string;
 
     /**
      * Resolve the promise with the given value.
      *
-     * @param mixed $value
+     * @param T $value
      *
      * @throws \RuntimeException if the promise is already resolved.
      */
@@ -82,7 +92,9 @@ interface PromiseInterface
      *
      * If the promise cannot be waited on, then the promise will be rejected.
      *
-     * @return mixed
+     * @param bool $unwrap
+     *
+     * @return ($unwrap is true ? T : void)
      *
      * @throws \LogicException if the promise has no wait function or if the
      *                         promise does not settle after waiting.
