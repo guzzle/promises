@@ -7,6 +7,7 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Promise\Is;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +30,17 @@ class EachPromiseTest extends TestCase
         $p = $each->promise();
         $this->assertNull($p->wait());
         $this->assertTrue(P\Is::fulfilled($p));
+    }
+
+    // See https://github.com/guzzle/promises/issues/176
+    public function testResolvesWithQueueInCaseOfEmptyList(): void
+    {
+        $promises = [];
+        $each = new EachPromise($promises);
+        $p = $each->promise();
+        P\Utils::queue()->run();
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertNull($p->wait());
     }
 
     public function testResolvesInCaseOfAnEmptyListAndInvokesFulfilled(): void
@@ -428,6 +440,25 @@ class EachPromiseTest extends TestCase
         $p = $each->promise();
         $this->assertNull($p->wait());
         $this->assertSame(['a', 'c', 'b', 'd'], $called);
+        $this->assertTrue(P\Is::fulfilled($p));
+    }
+
+    public function testRewindsExhaustedIterator(): void
+    {
+        $promises = P\Create::iterFor([
+            $this->createSelfResolvingPromise('a'),
+            $this->createSelfResolvingPromise('b'),
+        ]);
+        while ($promises->valid()) { $promises->next(); }
+        $called = [];
+        $each = new EachPromise($promises, [
+            'fulfilled' => function ($value) use (&$called): void {
+                $called[] = $value;
+            },
+        ]);
+        $p = $each->promise();
+        $this->assertNull($p->wait());
+        $this->assertSame(['a', 'b'], $called);
         $this->assertTrue(P\Is::fulfilled($p));
     }
 }
