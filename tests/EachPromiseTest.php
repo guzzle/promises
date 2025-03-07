@@ -7,7 +7,6 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise\FulfilledPromise;
-use GuzzleHttp\Promise\Is;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use PHPUnit\Framework\TestCase;
