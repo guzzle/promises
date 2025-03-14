@@ -28,7 +28,7 @@ class EachPromise implements PromisorInterface
     /** @var callable|null */
     private $onRejected;
 
-    /** @var Promise|null */
+    /** @var PromiseInterface|null */
     private $aggregate;
 
     /** @var bool|null */
