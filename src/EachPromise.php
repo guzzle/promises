@@ -109,6 +109,7 @@ class EachPromise implements PromisorInterface
         // EachPromiseTest::testResolvesInCaseOfAnEmptyListAndInvokesFulfilled)
         if (!$this->iterable->valid()) {
             $this->aggregate = Create::promiseFor(null)->then($clearFn);
+
             return;
         }
 
