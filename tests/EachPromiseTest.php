@@ -448,7 +448,9 @@ class EachPromiseTest extends TestCase
             $this->createSelfResolvingPromise('a'),
             $this->createSelfResolvingPromise('b'),
         ]);
-        while ($promises->valid()) { $promises->next(); }
+        while ($promises->valid()) {
+            $promises->next();
+        }
         $called = [];
         $each = new EachPromise($promises, [
             'fulfilled' => function ($value) use (&$called): void {
