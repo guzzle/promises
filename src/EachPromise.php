@@ -79,41 +79,45 @@ class EachPromise implements PromisorInterface
             return $this->aggregate;
         }
 
-        try {
-            $this->iterable->rewind();
-        } catch (\Throwable $e) {
-            return $this->aggregate = Create::rejectionFor($e);
-        }
-
-        try {
-            $this->createPromise();
-            /** @psalm-assert Promise $this->aggregate */
-            $this->refillPending();
-        } catch (\Throwable $e) {
-            $this->aggregate->reject($e);
-        }
-
-        /**
-         * @psalm-suppress NullableReturnStatement
-         */
-        return $this->aggregate;
-    }
-
-    private function createPromise(): void
-    {
-        // Clear the references when the promise is resolved.
+        // Clear the references when the promise is resolved
         $clearFn = function (): void {
             $this->iterable = $this->concurrency = $this->pending = null;
             $this->onFulfilled = $this->onRejected = null;
             $this->nextPendingIndex = 0;
         };
 
+        try {
+            $this->iterable->rewind();
+        } catch (\Throwable $e) {
+            $clearFn();
+
+            return $this->aggregate = Create::rejectionFor($e);
+        }
+
+        try {
+            $this->createPromise();
+            $this->aggregate;
+            /** @psalm-assert Promise $this->aggregate */
+            $this->refillPending();
+        } catch (\Throwable $e) {
+            $this->aggregate->reject($e);
+
+            $clearFn();
+
+            return $this->aggregate;
+        }
+
+        return $this->aggregate->then($clearFn, $clearFn);
+    }
+
+    private function createPromise(): void
+    {
         // In the case of empty, create a promise that will immediately become resolved via wait() or
         // via Utils::queue()->run() (https://github.com/guzzle/promises/issues/176). We could simply
         // create a fulfilled promise here, but that would be an observable behavioral change (see
         // EachPromiseTest::testResolvesInCaseOfAnEmptyListAndInvokesFulfilled)
         if (!$this->iterable->valid()) {
-            $this->aggregate = Create::promiseFor(null)->then($clearFn);
+            $this->aggregate = Create::promiseFor(null);
 
             return;
         }
@@ -135,7 +139,7 @@ class EachPromise implements PromisorInterface
             }
         });
 
-        $this->aggregate->then($clearFn, $clearFn);
+        $this->aggregate;
     }
 
     private function refillPending(): void
