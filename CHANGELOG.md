@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.1.0 - 2025-03-27
+
+### Added
+
+- Allow an empty EachPromise to be resolved by running the queue
+
+
 ## 2.0.4 - 2024-10-17
 
 ### Fixed
