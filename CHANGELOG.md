@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.2.0 - 2025-03-27
+
+### Fixed
+
+- Revert "Allow an empty EachPromise to be resolved by running the queue"
+
+
 ## 2.1.0 - 2025-03-27
 
 ### Added
