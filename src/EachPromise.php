@@ -28,7 +28,7 @@ class EachPromise implements PromisorInterface
     /** @var callable|null */
     private $onRejected;
 
-    /** @var Promise|null */
+    /** @var PromiseInterface|null */
     private $aggregate;
 
     /** @var bool|null */
@@ -80,9 +80,9 @@ class EachPromise implements PromisorInterface
         }
 
         try {
+            $this->iterable->rewind();
             $this->createPromise();
             /** @psalm-assert Promise $this->aggregate */
-            $this->iterable->rewind();
             $this->refillPending();
         } catch (\Throwable $e) {
             $this->aggregate->reject($e);
@@ -96,6 +96,23 @@ class EachPromise implements PromisorInterface
 
     private function createPromise(): void
     {
+        // Clear the references when the promise is resolved.
+        $clearFn = function (): void {
+            $this->iterable = $this->concurrency = $this->pending = null;
+            $this->onFulfilled = $this->onRejected = null;
+            $this->nextPendingIndex = 0;
+        };
+
+        // In the case of empty, create a promise that will immediately become resolved via wait() or
+        // via Utils::queue()->run() (https://github.com/guzzle/promises/issues/176). We could simply
+        // create a fulfilled promise here, but that would be an observable behavioral change (see
+        // EachPromiseTest::testResolvesInCaseOfAnEmptyListAndInvokesFulfilled)
+        if (!$this->iterable->valid()) {
+            $this->aggregate = Create::promiseFor(null)->then($clearFn);
+
+            return;
+        }
+
         $this->mutex = false;
         $this->aggregate = new Promise(function (): void {
             if ($this->checkIfFinished()) {
@@ -112,13 +129,6 @@ class EachPromise implements PromisorInterface
                 }
             }
         });
-
-        // Clear the references when the promise is resolved.
-        $clearFn = function (): void {
-            $this->iterable = $this->concurrency = $this->pending = null;
-            $this->onFulfilled = $this->onRejected = null;
-            $this->nextPendingIndex = 0;
-        };
 
         $this->aggregate->then($clearFn, $clearFn);
     }
