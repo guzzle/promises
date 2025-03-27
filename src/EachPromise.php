@@ -81,6 +81,11 @@ class EachPromise implements PromisorInterface
 
         try {
             $this->iterable->rewind();
+        } catch (\Throwable $e) {
+            return $this->aggregate = Create::rejectionFor($e);
+        }
+
+        try {
             $this->createPromise();
             /** @psalm-assert Promise $this->aggregate */
             $this->refillPending();
