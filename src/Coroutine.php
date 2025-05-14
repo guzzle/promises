@@ -42,6 +42,8 @@ use Throwable;
  * @return Promise
  *
  * @see https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
+ * @template T
+ * @template-implements PromiseInterface<T>
  */
 final class Coroutine implements PromiseInterface
 {
