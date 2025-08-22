@@ -37,7 +37,7 @@ class CoroutineTest extends TestCase
         $coroutine->{$method}(...$args);
     }
 
-    public function promiseInterfaceMethodProvider()
+    public static function promiseInterfaceMethodProvider()
     {
         return [
             ['then', [null, null]],
