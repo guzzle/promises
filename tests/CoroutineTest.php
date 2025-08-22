@@ -59,7 +59,7 @@ class CoroutineTest extends TestCase
         ];
         foreach ($mockPromises as $propName => $mockPromise) {
             /**
-             * @var $mockPromise \PHPUnit_Framework_MockObject_MockObject
+             * @var \PHPUnit_Framework_MockObject_MockObject $mockPromise
              */
             $mockPromise->expects($this->once())
                 ->method('cancel')
