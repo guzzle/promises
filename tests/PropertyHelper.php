@@ -22,7 +22,10 @@ class PropertyHelper
     public static function get($object, $property)
     {
         $property = (new \ReflectionObject($object))->getProperty($property);
-        $property->setAccessible(true);
+
+        if (PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true);
+        }
 
         return $property->getValue($object);
     }

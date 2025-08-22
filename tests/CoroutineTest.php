@@ -31,7 +31,11 @@ class CoroutineTest extends TestCase
         $mockPromise->expects($this->once())->method($method)->with(...$args);
 
         $resultPromiseProp = (new ReflectionClass(Coroutine::class))->getProperty('result');
-        $resultPromiseProp->setAccessible(true);
+
+        if (PHP_VERSION_ID < 80100) {
+            $resultPromiseProp->setAccessible(true);
+        }
+
         $resultPromiseProp->setValue($coroutine, $mockPromise);
 
         $coroutine->{$method}(...$args);
@@ -66,7 +70,11 @@ class CoroutineTest extends TestCase
                 ->with();
 
             $promiseProp = (new ReflectionClass(Coroutine::class))->getProperty($propName);
-            $promiseProp->setAccessible(true);
+
+            if (PHP_VERSION_ID < 80100) {
+                $promiseProp->setAccessible(true);
+            }
+
             $promiseProp->setValue($coroutine, $mockPromise);
         }
 
