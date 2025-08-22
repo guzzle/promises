@@ -31,13 +31,17 @@ class CoroutineTest extends TestCase
         $mockPromise->expects($this->once())->method($method)->with(...$args);
 
         $resultPromiseProp = (new ReflectionClass(Coroutine::class))->getProperty('result');
-        $resultPromiseProp->setAccessible(true);
+
+        if (PHP_VERSION_ID < 80100) {
+            $resultPromiseProp->setAccessible(true);
+        }
+
         $resultPromiseProp->setValue($coroutine, $mockPromise);
 
         $coroutine->{$method}(...$args);
     }
 
-    public function promiseInterfaceMethodProvider()
+    public static function promiseInterfaceMethodProvider()
     {
         return [
             ['then', [null, null]],
@@ -59,14 +63,18 @@ class CoroutineTest extends TestCase
         ];
         foreach ($mockPromises as $propName => $mockPromise) {
             /**
-             * @var $mockPromise \PHPUnit_Framework_MockObject_MockObject
+             * @var \PHPUnit_Framework_MockObject_MockObject $mockPromise
              */
             $mockPromise->expects($this->once())
                 ->method('cancel')
                 ->with();
 
             $promiseProp = (new ReflectionClass(Coroutine::class))->getProperty($propName);
-            $promiseProp->setAccessible(true);
+
+            if (PHP_VERSION_ID < 80100) {
+                $promiseProp->setAccessible(true);
+            }
+
             $promiseProp->setValue($coroutine, $mockPromise);
         }
 

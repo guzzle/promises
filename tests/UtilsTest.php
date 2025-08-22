@@ -318,7 +318,7 @@ class UtilsTest extends TestCase
         $this->assertSame('a', $result->getMessage());
     }
 
-    public function rejectsParentExceptionProvider()
+    public static function rejectsParentExceptionProvider()
     {
         return [
             [P\Coroutine::of(function () {
