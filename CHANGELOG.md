@@ -5,7 +5,7 @@
 
 ### Fixed
 
-- Fixed `Utils::inspect()` returning the internal reason array instead of the `AggregateException` when inspecting failed `Utils::some()` or `Utils::any()` promises.
+- Fixed `Utils::inspect()` returning the internal reason array instead of the `AggregateException`
 
 
 ## 2.3.0 - 2025-08-22
