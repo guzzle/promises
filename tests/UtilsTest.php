@@ -244,6 +244,38 @@ class UtilsTest extends TestCase
         ], P\Utils::inspect($p));
     }
 
+    public function testInspectPreservesRejectionExceptionAsReason(): void
+    {
+        $reason = new RejectionException('inner');
+        $result = P\Utils::inspect(new RejectedPromise($reason));
+
+        $this->assertSame(PromiseInterface::REJECTED, $result['state']);
+        $this->assertSame($reason, $result['reason']);
+    }
+
+    public function testInspectPreservesCancellationExceptionAsReason(): void
+    {
+        $promise = new Promise();
+        $promise->cancel();
+
+        $result = P\Utils::inspect($promise);
+
+        $this->assertSame(PromiseInterface::REJECTED, $result['state']);
+        $this->assertInstanceOf(P\CancellationException::class, $result['reason']);
+        $this->assertSame('Promise has been cancelled', $result['reason']->getReason());
+    }
+
+    public function testInspectHandlesPromiseResolvedWithRejectedPromise(): void
+    {
+        $promise = new Promise();
+        $promise->resolve(new RejectedPromise('inner'));
+
+        $result = P\Utils::inspect($promise);
+
+        $this->assertSame(PromiseInterface::REJECTED, $result['state']);
+        $this->assertSame('inner', $result['reason']);
+    }
+
     public function testReturnsTrampoline(): void
     {
         $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
@@ -700,7 +732,8 @@ class UtilsTest extends TestCase
         });
 
         $res = P\Utils::inspect($co);
-        $this->assertSame('f', $res['reason']);
+        $this->assertInstanceOf(RejectionException::class, $res['reason']);
+        $this->assertSame('f', $res['reason']->getReason());
     }
 
     public function testCoroutineOtherwiseIntegrationTest(): void
@@ -737,10 +770,10 @@ class UtilsTest extends TestCase
 
         $results = P\Utils::inspectAll([$p1, $p2, $p3]);
 
-        $this->assertSame([
-            ['state' => 'rejected', 'reason' => 'Promise has been cancelled'],
-            ['state' => 'fulfilled', 'value' => 'b2'],
-            ['state' => 'fulfilled', 'value' => 'c'],
-        ], $results);
+        $this->assertSame(PromiseInterface::REJECTED, $results[0]['state']);
+        $this->assertInstanceOf(P\CancellationException::class, $results[0]['reason']);
+        $this->assertSame('Promise has been cancelled', $results[0]['reason']->getReason());
+        $this->assertSame(['state' => 'fulfilled', 'value' => 'b2'], $results[1]);
+        $this->assertSame(['state' => 'fulfilled', 'value' => 'c'], $results[2]);
     }
 }

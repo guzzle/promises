@@ -3,6 +3,14 @@
 
 ## 3.0.0 - Unreleased
 
+### Changed
+
+- Changed `Utils::inspect()` and `Utils::inspectAll()` to return the actual promise rejection reason instead of unwrapping `RejectionException` reasons
+
+### Fixed
+
+- Fixed rejection callbacks not being invoked when `then()` is called after a promise was resolved with a rejected promise
+
 ### Removed
 
 - Dropped support for PHP 7.2 and 7.3
