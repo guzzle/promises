@@ -42,6 +42,7 @@ composer require guzzlehttp/promises
 |---------|---------------------|--------------|
 | 1.x     | Security fixes only | >=5.5,<8.3   |
 | 2.x     | Latest              | >=7.2.5,<8.6 |
+| 3.x     | Experimental        | >=7.4,<8.6   |
 
 
 ## Quick Start
