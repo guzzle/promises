@@ -13,7 +13,7 @@ class Thing1
         $this->message = $message;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->message;
     }
