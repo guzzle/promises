@@ -288,6 +288,16 @@ wait function will be the value delivered to promise B.
 **Note**: when you do not unwrap the promise, no value is returned.
 
 
+### Inspecting a Promise
+
+`Utils::inspect($promise)` waits for a promise to settle and returns an array
+describing its final state. For rejected promises, the `reason` entry is the
+actual rejection reason delivered to rejection callbacks.
+
+This means `RejectionException` and subclasses are not unwrapped by `inspect()`.
+For example, cancelled promises inspect with a `CancellationException` reason.
+
+
 ## Cancellation
 
 You can cancel a promise that has not yet been fulfilled using the `cancel()`

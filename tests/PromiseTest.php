@@ -382,6 +382,20 @@ class PromiseTest extends TestCase
         $this->assertSame('foo', $carry);
     }
 
+    public function testForwardsRejectedPromiseWhenResolvedBeforeThen(): void
+    {
+        $p = new Promise();
+        $p->resolve(new RejectedPromise('inner'));
+
+        $result = null;
+        $p->then(null, function ($reason) use (&$result): void {
+            $result = $reason;
+        });
+
+        P\Utils::queue()->run();
+        $this->assertSame('inner', $result);
+    }
+
     public function testCreatesPromiseWhenRejectedWithNoCallback(): void
     {
         $p = new Promise();

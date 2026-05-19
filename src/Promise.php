@@ -49,7 +49,7 @@ class Promise implements PromiseInterface
         if ($this->state === self::FULFILLED) {
             $promise = Create::promiseFor($this->result);
 
-            return $onFulfilled ? $promise->then($onFulfilled) : $promise;
+            return $promise->then($onFulfilled, $onRejected);
         }
 
         // It's either cancelled or rejected, so return a rejected promise

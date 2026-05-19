@@ -3,6 +3,11 @@
 
 ## 3.0.0 - Unreleased
 
+### Changed
+
+- Changed `Utils::inspect()` to return actual rejection reasons
+- Changed late rejection callbacks to follow rejected promises
+
 ### Removed
 
 - Dropped support for PHP 7.2 and 7.3

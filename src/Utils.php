@@ -71,22 +71,45 @@ final class Utils
      */
     public static function inspect(PromiseInterface $promise): array
     {
+        $result = null;
+        $getResult = static function () use (&$result): ?array {
+            return $result;
+        };
+
+        $inspection = $promise->then(
+            static function ($value) use (&$result): void {
+                $result = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
+            },
+            static function ($reason) use (&$result): void {
+                $result = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
+            }
+        );
+
         try {
-            return [
-                'state' => PromiseInterface::FULFILLED,
-                'value' => $promise->wait(),
-            ];
+            $inspection->wait(false);
         } catch (\Throwable $e) {
-            if ($e instanceof AggregateException) {
-                return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
+            $settled = $getResult();
+            if (null !== $settled) {
+                return $settled;
             }
 
-            if ($e instanceof RejectionException) {
-                return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
+            if (Is::settled($promise)) {
+                try {
+                    self::queue()->run();
+                } catch (\Throwable $queueError) {
+                    return ['state' => PromiseInterface::REJECTED, 'reason' => $queueError];
+                }
+
+                $settled = $getResult();
+                if (null !== $settled) {
+                    return $settled;
+                }
             }
 
             return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
         }
+
+        return $getResult() ?? ['state' => $promise->getState()];
     }
 
     /**
