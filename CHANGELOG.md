@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 3.0.0 - Unreleased
+
+### Removed
+
+- Dropped support for PHP 7.2 and 7.3
+
+
 ## 2.3.1 - 2026-05-19
 
 ### Fixed
