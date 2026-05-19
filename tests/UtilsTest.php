@@ -140,6 +140,18 @@ class UtilsTest extends TestCase
         $this->assertContains('bad', $called->getReason());
     }
 
+    public function testInspectPreservesAggregateExceptionFromSome(): void
+    {
+        $a = new Promise(function () use (&$a): void { $a->reject('bad'); });
+        $b = new Promise(function () use (&$b): void { $b->resolve('good'); });
+
+        $result = P\Utils::inspect(P\Utils::some(2, [$a, $b]));
+
+        $this->assertSame(PromiseInterface::REJECTED, $result['state']);
+        $this->assertInstanceOf(AggregateException::class, $result['reason']);
+        $this->assertContains('bad', $result['reason']->getReason());
+    }
+
     public function testCanWaitUntilSomeCountIsSatisfied(): void
     {
         $a = new Promise(function () use (&$a): void { $a->resolve('a'); });
