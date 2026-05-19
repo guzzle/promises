@@ -15,6 +15,9 @@ $config = (new PhpCsFixer\Config())
         'phpdoc_summary' => false,
         'phpdoc_to_comment' => false,
         'single_line_throw' => false,
+        'trailing_comma_in_multiline' => [
+            'elements' => ['arrays'],
+        ],
         'yoda_style' => false,
     ])
     ->setFinder(

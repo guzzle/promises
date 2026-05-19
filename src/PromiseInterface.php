@@ -28,7 +28,7 @@ interface PromiseInterface
      */
     public function then(
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null,
+        ?callable $onRejected = null
     ): PromiseInterface;
 
     /**
