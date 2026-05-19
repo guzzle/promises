@@ -6,10 +6,7 @@
 ### Changed
 
 - Changed `Utils::inspect()` and `Utils::inspectAll()` to return the actual promise rejection reason instead of unwrapping `RejectionException` reasons
-
-### Fixed
-
-- Fixed rejection callbacks not being invoked when `then()` is called after a promise was resolved with a rejected promise
+- Changed rejection callbacks to be invoked when `then()` is called after a promise was resolved with a rejected promise
 
 ### Removed
 
