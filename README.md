@@ -510,36 +510,9 @@ $promise->resolve('foo');
 ```
 
 
-## Upgrading from Function API
+## Upgrading
 
-A static API was first introduced in 1.4.0, in order to mitigate problems with
-functions conflicting between global and local copies of the package. The
-function API was removed in 2.0.0. A migration table has been provided here for
-your convenience:
-
-| Original Function | Replacement Method |
-|----------------|----------------|
-| `queue` | `Utils::queue` |
-| `task` | `Utils::task` |
-| `promise_for` | `Create::promiseFor` |
-| `rejection_for` | `Create::rejectionFor` |
-| `exception_for` | `Create::exceptionFor` |
-| `iter_for` | `Create::iterFor` |
-| `inspect` | `Utils::inspect` |
-| `inspect_all` | `Utils::inspectAll` |
-| `unwrap` | `Utils::unwrap` |
-| `all` | `Utils::all` |
-| `some` | `Utils::some` |
-| `any` | `Utils::any` |
-| `settle` | `Utils::settle` |
-| `each` | `Each::of` |
-| `each_limit` | `Each::ofLimit` |
-| `each_limit_all` | `Each::ofLimitAll` |
-| `!is_fulfilled` | `Is::pending` |
-| `is_fulfilled` | `Is::fulfilled` |
-| `is_rejected` | `Is::rejected` |
-| `is_settled` | `Is::settled` |
-| `coroutine` | `Coroutine::of` |
+See [UPGRADING.md](UPGRADING.md) for package upgrade notes.
 
 
 ## Security
