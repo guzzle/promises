@@ -3,6 +3,10 @@
 
 ## 3.0.0 - Unreleased
 
+### Added
+
+- Added generic PHPDoc annotations to promise APIs
+
 ### Changed
 
 - Changed `Utils::inspect()` to return actual rejection reasons

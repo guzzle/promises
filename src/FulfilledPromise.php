@@ -10,14 +10,20 @@ namespace GuzzleHttp\Promise;
  * Thenning off of this promise will invoke the onFulfilled callback
  * immediately and ignore other callbacks.
  *
+ * @template TValue = mixed
+ * @template TReason = mixed
+ *
+ * @implements PromiseInterface<TValue, TReason>
+ *
  * @final
  */
 class FulfilledPromise implements PromiseInterface
 {
+    /** @var TValue */
     private $value;
 
     /**
-     * @param mixed $value
+     * @param TValue $value
      */
     public function __construct($value)
     {

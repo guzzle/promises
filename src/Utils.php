@@ -38,7 +38,11 @@ final class Utils
      * Adds a function to run in the task queue when it is next `run()` and
      * returns a promise that is fulfilled or rejected with the result.
      *
-     * @param callable $task Task function to run.
+     * @template TValue
+     *
+     * @param callable(): TValue $task Task function to run.
+     *
+     * @return PromiseInterface<TValue, \Throwable>
      */
     public static function task(callable $task): PromiseInterface
     {
@@ -67,7 +71,12 @@ final class Utils
      * promise. If the promise is rejected, the array will contain a "reason"
      * key mapping to the rejection reason of the promise.
      *
-     * @param PromiseInterface $promise Promise or value.
+     * @template TValue
+     * @template TReason
+     *
+     * @param PromiseInterface<TValue, TReason> $promise Promise to inspect.
+     *
+     * @return array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}|array{state: PromiseInterface::PENDING}
      */
     public static function inspect(PromiseInterface $promise): array
     {
@@ -120,7 +129,13 @@ final class Utils
      *
      * @see inspect for the inspection state array format.
      *
-     * @param PromiseInterface[] $promises Traversable of promises to wait upon.
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, PromiseInterface<TValue, TReason>> $promises Traversable of promises to wait upon.
+     *
+     * @return array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>
      */
     public static function inspectAll($promises): array
     {
@@ -139,7 +154,13 @@ final class Utils
      * order the promises were provided). An exception is thrown if any of the
      * promises are rejected.
      *
-     * @param iterable<PromiseInterface> $promises Iterable of PromiseInterface objects to wait on.
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, PromiseInterface<TValue, TReason>> $promises Iterable of PromiseInterface objects to wait on.
+     *
+     * @return array<TKey, TValue>
      *
      * @throws \Throwable on error
      */
@@ -161,8 +182,14 @@ final class Utils
      * respective positions to the original array. If any promise in the array
      * rejects, the returned promise is rejected with the rejection reason.
      *
-     * @param mixed $promises  Promises or values.
-     * @param bool  $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises  Promises or values.
+     * @param bool                                                     $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+     *
+     * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
      */
     public static function all($promises, bool $recursive = false): PromiseInterface
     {
@@ -172,7 +199,7 @@ final class Utils
             function ($value, $idx) use (&$results): void {
                 $results[$idx] = $value;
             },
-            function ($reason, $idx, Promise $aggregate): void {
+            function ($reason, $idx, PromiseInterface $aggregate): void {
                 if (Is::pending($aggregate)) {
                     $aggregate->reject($reason);
                 }
@@ -209,8 +236,13 @@ final class Utils
      * This promise is rejected with a {@see AggregateException} if the number
      * of fulfilled promises is less than the desired $count.
      *
-     * @param int   $count    Total number of promises.
-     * @param mixed $promises Promises or values.
+     * @template TValue
+     * @template TReason
+     *
+     * @param int                                                $count    Total number of promises.
+     * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
+     *
+     * @return PromiseInterface<list<mixed>, mixed>
      */
     public static function some(int $count, $promises): PromiseInterface
     {
@@ -250,7 +282,12 @@ final class Utils
      * Like some(), with 1 as count. However, if the promise fulfills, the
      * fulfillment value is not an array of 1 but the value directly.
      *
-     * @param mixed $promises Promises or values.
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
+     *
+     * @return PromiseInterface<mixed, mixed>
      */
     public static function any($promises): PromiseInterface
     {
@@ -267,7 +304,13 @@ final class Utils
      *
      * @see inspect for the inspection state array format.
      *
-     * @param mixed $promises Promises or values.
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
+     *
+     * @return PromiseInterface<array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>, \Throwable>
      */
     public static function settle($promises): PromiseInterface
     {

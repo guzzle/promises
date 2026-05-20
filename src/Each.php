@@ -19,7 +19,15 @@ final class Each
      * index, and the aggregate promise. The callback can invoke any necessary
      * side effects and choose to resolve or reject the aggregate if needed.
      *
-     * @param mixed $iterable Iterator or array to iterate over.
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>             $iterable    Iterator or array to iterate over.
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): void)|null  $onFulfilled
+     * @param (callable(TReason, TKey, PromiseInterface<mixed, mixed>): void)|null $onRejected
+     *
+     * @return PromiseInterface<mixed, mixed>
      */
     public static function of(
         $iterable,
@@ -40,8 +48,16 @@ final class Each
      * pending promises and returns a numeric concurrency limit value to allow
      * for dynamic a concurrency size.
      *
-     * @param mixed        $iterable
-     * @param int|callable $concurrency
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>             $iterable
+     * @param int|(callable(int): int)                                             $concurrency
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): void)|null  $onFulfilled
+     * @param (callable(TReason, TKey, PromiseInterface<mixed, mixed>): void)|null $onRejected
+     *
+     * @return PromiseInterface<mixed, mixed>
      */
     public static function ofLimit(
         $iterable,
@@ -61,8 +77,15 @@ final class Each
      * is rejected. If any promise is rejected, then the aggregate promise is
      * rejected with the encountered rejection.
      *
-     * @param mixed        $iterable
-     * @param int|callable $concurrency
+     * @template TKey of array-key
+     * @template TValue
+     * @template TReason
+     *
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>            $iterable
+     * @param int|(callable(int): int)                                            $concurrency
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): void)|null $onFulfilled
+     *
+     * @return PromiseInterface<mixed, mixed>
      */
     public static function ofLimitAll(
         $iterable,
