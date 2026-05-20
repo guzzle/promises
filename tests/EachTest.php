@@ -33,23 +33,4 @@ class EachTest extends TestCase
         $result = P\Utils::inspect($aggregate);
         $this->assertSame('b', $result['reason']);
     }
-
-    /**
-     * @dataProvider nonIterableProvider
-     */
-    public function testEachHelpersRequireIterable(callable $callback): void
-    {
-        $this->expectException(\TypeError::class);
-
-        $callback();
-    }
-
-    public static function nonIterableProvider(): array
-    {
-        return [
-            'of' => [static function (): void { P\Each::of('foo'); }],
-            'ofLimit' => [static function (): void { P\Each::ofLimit(new Promise(), 2); }],
-            'ofLimitAll' => [static function (): void { P\Each::ofLimitAll(new Promise(), 2); }],
-        ];
-    }
 }

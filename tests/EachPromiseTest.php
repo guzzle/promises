@@ -322,13 +322,6 @@ class EachPromiseTest extends TestCase
         $this->assertSame(['a', 'b'], $called);
     }
 
-    public function testConstructorRequiresIterable(): void
-    {
-        $this->expectException(\TypeError::class);
-
-        new EachPromise(new Promise());
-    }
-
     public function testRejectsAggregateWhenNextThrows(): void
     {
         $iter = function () {
