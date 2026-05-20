@@ -81,25 +81,31 @@ class CoroutineTest extends TestCase
         $coroutine->cancel();
     }
 
-    public function testCanCancelAfterFulfilledCoroutine(): void
+    public function testCurrentPromiseIsResetToNullAfterFulfilledCoroutine(): void
     {
         $coroutine = new Coroutine(function () {
             yield new FulfilledPromise('ok');
         });
 
         Utils::queue()->run();
+
+        $this->assertNull(PropertyHelper::get($coroutine, 'currentPromise'));
+
         $coroutine->cancel();
 
         $this->assertSame(PromiseInterface::FULFILLED, $coroutine->getState());
     }
 
-    public function testCanCancelAfterRejectedCoroutine(): void
+    public function testCurrentPromiseIsResetToNullAfterRejectedCoroutine(): void
     {
         $coroutine = new Coroutine(function () {
             yield new RejectedPromise('no');
         });
 
         Utils::queue()->run();
+
+        $this->assertNull(PropertyHelper::get($coroutine, 'currentPromise'));
+
         $coroutine->cancel();
 
         $this->assertSame(PromiseInterface::REJECTED, $coroutine->getState());
