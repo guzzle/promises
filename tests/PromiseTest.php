@@ -357,7 +357,6 @@ class PromiseTest extends TestCase
         $called = false;
         $received = 'not called';
 
-        /** @param null $value */
         $p->then(function ($value) use (&$called, &$received): void {
             $called = true;
             $received = $value;
@@ -391,7 +390,6 @@ class PromiseTest extends TestCase
         $called = false;
         $received = 'not called';
 
-        /** @param null $value */
         $p->then(function ($value) use (&$called, &$received): void {
             $called = true;
             $received = $value;

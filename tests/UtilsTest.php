@@ -67,7 +67,6 @@ class UtilsTest extends TestCase
         $c->resolve('c');
         $d->then(
             function (array $value) use (&$result): void { $result = $value; },
-            /** @param mixed $reason */
             function ($reason) use (&$result): void { $result = $reason; }
         );
         P\Utils::queue()->run();

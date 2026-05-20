@@ -63,7 +63,6 @@ class EachPromiseTest extends TestCase
         $p = $each->promise();
         $called = false;
         $value = 'not called';
-        /** @param null $result */
         $p->then(function ($result) use (&$called, &$value): void {
             $called = true;
             $value = $result;
@@ -254,7 +253,6 @@ class EachPromiseTest extends TestCase
             'fulfilled' => function (string $value, int $idx, Promise $aggregate): void {
                 $aggregate->cancel();
             },
-            /** @param mixed $reason */
             'rejected' => function ($reason) use (&$called): void {
                 $called = true;
             },
@@ -457,7 +455,6 @@ class EachPromiseTest extends TestCase
         };
         $called = 0;
         $each = new EachPromise($iter(), [
-            /** @param int|string $idx */
             'fulfilled' => function (int $value, $idx, Promise $aggregate) use (&$called): void {
                 ++$called;
                 if ($value < 3) {

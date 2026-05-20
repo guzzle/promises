@@ -118,7 +118,6 @@ class FulfilledPromiseTest extends TestCase
     {
         $c = null;
         $p = new FulfilledPromise('foo');
-        /** @param mixed $v */
         $p->otherwise(function ($v) use (&$c): void { $c = $v; });
         $this->assertNull($c);
     }
