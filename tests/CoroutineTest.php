@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace GuzzleHttp\Promise\Tests;
 
 use GuzzleHttp\Promise\Coroutine;
+use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\RejectedPromise;
+use GuzzleHttp\Promise\Utils;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -76,6 +79,30 @@ class CoroutineTest extends TestCase
         }
 
         $coroutine->cancel();
+    }
+
+    public function testCanCancelAfterFulfilledCoroutine(): void
+    {
+        $coroutine = new Coroutine(function () {
+            yield new FulfilledPromise('ok');
+        });
+
+        Utils::queue()->run();
+        $coroutine->cancel();
+
+        $this->assertSame(PromiseInterface::FULFILLED, $coroutine->getState());
+    }
+
+    public function testCanCancelAfterRejectedCoroutine(): void
+    {
+        $coroutine = new Coroutine(function () {
+            yield new RejectedPromise('no');
+        });
+
+        Utils::queue()->run();
+        $coroutine->cancel();
+
+        $this->assertSame(PromiseInterface::REJECTED, $coroutine->getState());
     }
 
     public function testWaitShouldResolveChainedCoroutines(): void
