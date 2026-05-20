@@ -5,7 +5,7 @@
 
 ### Changed
 
-- Fixed empty `EachPromise` instances remaining pending when the task queue is run without calling `wait()`.
+- Empty `EachPromise` instances now resolve when the task queue runs without `wait()`
 
 
 ## 2.3.1 - 2026-05-19
