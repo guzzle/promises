@@ -15,7 +15,7 @@ class EachTest extends TestCase
     public function testCallsEachLimit(): void
     {
         $p = new Promise();
-        $aggregate = P\Each::ofLimit($p, 2);
+        $aggregate = P\Each::ofLimit([$p], 2);
 
         $p->resolve('a');
         P\Utils::queue()->run();
