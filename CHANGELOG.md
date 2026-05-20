@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 2.4.1 - Upcoming
+## 2.4.1 - 2026-05-20
 
 ### Fixed
 
