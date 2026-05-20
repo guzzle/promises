@@ -143,7 +143,8 @@ final class Coroutine implements PromiseInterface
      */
     public function _handleSuccess($value): void
     {
-        unset($this->currentPromise);
+        $this->currentPromise = null;
+
         try {
             $next = $this->generator->send($value);
             if ($this->generator->valid()) {
@@ -161,7 +162,8 @@ final class Coroutine implements PromiseInterface
      */
     public function _handleFailure($reason): void
     {
-        unset($this->currentPromise);
+        $this->currentPromise = null;
+
         try {
             $nextYield = $this->generator->throw(Create::exceptionFor($reason));
             // The throw was caught, so keep iterating on the coroutine
