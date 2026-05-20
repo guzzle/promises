@@ -27,7 +27,7 @@ class CoroutineTest extends TestCase
     public function testShouldProxyPromiseMethodsToResultPromise($method, $args = []): void
     {
         $coroutine = new Coroutine(function () { yield 0; });
-        $mockPromise = $this->getMockForAbstractClass(PromiseInterface::class);
+        $mockPromise = $this->createMock(PromiseInterface::class);
         $mockPromise->expects($this->once())->method($method)->with(...$args);
 
         $resultPromiseProp = (new ReflectionClass(Coroutine::class))->getProperty('result');
@@ -58,13 +58,10 @@ class CoroutineTest extends TestCase
         $coroutine = new Coroutine(function () { yield 0; });
 
         $mockPromises = [
-            'result' => $this->getMockForAbstractClass(PromiseInterface::class),
-            'currentPromise' => $this->getMockForAbstractClass(PromiseInterface::class),
+            'result' => $this->createMock(PromiseInterface::class),
+            'currentPromise' => $this->createMock(PromiseInterface::class),
         ];
         foreach ($mockPromises as $propName => $mockPromise) {
-            /**
-             * @var \PHPUnit_Framework_MockObject_MockObject $mockPromise
-             */
             $mockPromise->expects($this->once())
                 ->method('cancel')
                 ->with();
