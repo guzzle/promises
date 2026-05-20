@@ -6,9 +6,9 @@ namespace GuzzleHttp\Promise\Tests;
 
 class Thing1
 {
-    private $message;
+    private string $message;
 
-    public function __construct($message)
+    public function __construct(string $message)
     {
         $this->message = $message;
     }

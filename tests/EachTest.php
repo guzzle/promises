@@ -39,7 +39,7 @@ class EachTest extends TestCase
 
         $aggregate = P\Each::of(
             $iterable(),
-            function ($value, $key) use (&$results): void {
+            function (string $value, string $key) use (&$results): void {
                 $results[$key] = $value;
             },
             null,
@@ -70,7 +70,7 @@ class EachTest extends TestCase
 
         P\Each::of(
             [new FulfilledPromise('a')],
-            function ($value) use (&$results): void {
+            function (string $value) use (&$results): void {
                 $results[] = $value;
             },
             null,
