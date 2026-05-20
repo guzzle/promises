@@ -17,8 +17,10 @@ Promises 2.x until your minimum PHP version is raised.
 `PromiseInterface::resolve()` now accepts an optional value. Calling `resolve()`
 without an argument fulfills the promise with `null`.
 
-Custom implementations of `PromiseInterface` must update their method signature
-from `resolve($value): void` to `resolve($value = null): void`.
+Custom implementations of `PromiseInterface`, and subclasses that override
+`resolve()` on `Promise`, `FulfilledPromise`, or `RejectedPromise`, must update
+their method signature from `resolve($value): void` to
+`resolve($value = null): void`.
 
 #### Collection Helper Inputs
 
@@ -39,10 +41,15 @@ $promise = Each::ofLimit($singlePromise, 2);
 $promise = Each::ofLimit([$singlePromise], 2);
 ```
 
-#### Collection Helper Config
+#### Collection Helper Signatures
 
-`Utils::all()`, `Utils::settle()`, and `Each::of()` now accept a trailing
-`$config` array with a `concurrency` option for lazy iterables:
+`Utils::all()`, `Utils::settle()`, and `Each::of()` now accept trailing optional
+arguments. Direct calls using the 2.x argument lists continue to work, and the
+affected helper classes are final so subclass signatures do not need to change.
+Code that mirrors or reflects exact helper signatures may need to be updated.
+
+Pass the recursive flag before the config array when using `Utils::all()` or
+`Utils::settle()`:
 
 ```php
 use GuzzleHttp\Promise\Utils;
@@ -51,13 +58,18 @@ $promise = Utils::all($promises, false, ['concurrency' => 5]);
 $promise = Utils::settle($promises, false, ['concurrency' => 5]);
 ```
 
-Only `concurrency` is honored by these wrappers. Callback config keys such as
-`fulfilled` and `rejected` are ignored; pass callbacks to `Each::of()` directly
-or use `EachPromise`.
+Only `concurrency` is honored by these helper config arrays. Callback config
+keys such as `fulfilled` and `rejected` are ignored; pass callbacks to
+`Each::of()` directly or use `EachPromise`.
 
 #### Recursive Collection Helpers
 
-`Utils::settle()` now accepts a `$recursive` argument, matching `Utils::all()`:
+Existing `Utils::all($promises, true)` calls may return different results in
+3.0. Recursive mode now detects dynamically-added settled promises and raw
+values. In 2.x, recursive mode only checked for pending promises.
+
+If you previously worked around the lack of recursive `Utils::settle()` support,
+you can replace that workaround with the new `$recursive` argument:
 
 ```php
 use GuzzleHttp\Promise\Utils;
@@ -68,11 +80,8 @@ $promise = Utils::settle($promises, true);
 When `$recursive` is true, collection helpers continue taking passes over the
 collection until no new entries are found and no visible promises remain pending.
 This is intended for rewindable mutable collections such as `ArrayIterator`.
-One-shot generators are not suitable for recursive mode because recursive passes
-need to iterate the collection again.
-
-Recursive `Utils::all()` now also detects dynamically-added settled values and
-raw values. Previously, recursive mode only checked for pending promises.
+If recursive mode needs to observe values added after the first pass, replace
+one-shot generators with a rewindable mutable collection.
 
 #### Generic PHPDoc Types
 
