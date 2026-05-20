@@ -52,6 +52,46 @@ class EachPromiseTest extends TestCase
         $this->assertFalse($onRejectedCalled);
     }
 
+    public function testResolvesEmptyGeneratorWhenQueueRuns(): void
+    {
+        $iter = static function (): \Generator {
+            if (false) {
+                yield 1;
+            }
+        };
+        $each = new EachPromise($iter());
+        $p = $each->promise();
+        $called = false;
+        $value = 'not called';
+        $p->then(function ($result) use (&$called, &$value): void {
+            $called = true;
+            $value = $result;
+        });
+
+        $this->assertTrue(P\Is::pending($p));
+        $this->assertFalse($called);
+
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertTrue($called);
+        $this->assertNull($value);
+    }
+
+    public function testDoesNotResolveNonEmptyListWithNoDynamicConcurrencyWhenQueueRuns(): void
+    {
+        $each = new EachPromise([new FulfilledPromise('a')], [
+            'concurrency' => static function (): int {
+                return 0;
+            },
+        ]);
+        $p = $each->promise();
+
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::pending($p));
+    }
+
     public function testInvokesAllPromises(): void
     {
         $promises = [new Promise(), new Promise(), new Promise()];
@@ -187,6 +227,21 @@ class EachPromiseTest extends TestCase
         $this->assertNull(PropertyHelper::get($each, 'pending'));
         $this->assertNull(PropertyHelper::get($each, 'concurrency'));
         $this->assertTrue($called);
+    }
+
+    public function testClearsReferencesWhenEmptyListResolvedByQueue(): void
+    {
+        $each = new EachPromise([]);
+        $p = $each->promise();
+
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertNull(PropertyHelper::get($each, 'onFulfilled'));
+        $this->assertNull(PropertyHelper::get($each, 'onRejected'));
+        $this->assertNull(PropertyHelper::get($each, 'iterable'));
+        $this->assertNull(PropertyHelper::get($each, 'pending'));
+        $this->assertNull(PropertyHelper::get($each, 'concurrency'));
     }
 
     public function testCanBeCancelled(): void

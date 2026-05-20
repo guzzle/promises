@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.4.0 - Upcoming
+
+### Changed
+
+- Empty `EachPromise` instances now resolve when the task queue runs without `wait()`
+
+
 ## 2.3.1 - 2026-05-19
 
 ### Fixed
