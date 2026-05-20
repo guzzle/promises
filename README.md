@@ -438,11 +438,13 @@ $queue = GuzzleHttp\Promise\Utils::queue();
 $queue->run();
 ```
 
-For example, you could use Guzzle promises with React using a periodic timer:
+For example, you could use Guzzle promises with React using a short periodic
+timer. Avoid zero-interval timers because they may keep the loop busy even when
+there is no promise work to run.
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$loop->addPeriodicTimer(0, [$queue, 'run']);
+$loop->addPeriodicTimer(0.01, [$queue, 'run']);
 ```
 
 
