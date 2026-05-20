@@ -63,6 +63,7 @@ class EachPromiseTest extends TestCase
         $p = $each->promise();
         $called = false;
         $value = 'not called';
+        /** @param null $result */
         $p->then(function ($result) use (&$called, &$value): void {
             $called = true;
             $value = $result;
@@ -81,7 +82,7 @@ class EachPromiseTest extends TestCase
     public function testDoesNotResolveNonEmptyListWithNoDynamicConcurrencyWhenQueueRuns(): void
     {
         $each = new EachPromise([new FulfilledPromise('a')], [
-            'concurrency' => static function (): int {
+            'concurrency' => static function (int $count): int {
                 return 0;
             },
         ]);
@@ -97,7 +98,7 @@ class EachPromiseTest extends TestCase
         $promises = [new Promise(), new Promise(), new Promise()];
         $called = [];
         $each = new EachPromise($promises, [
-            'fulfilled' => function ($value) use (&$called): void {
+            'fulfilled' => function (string $value) use (&$called): void {
                 $called[] = $value;
             },
         ]);
@@ -116,7 +117,7 @@ class EachPromiseTest extends TestCase
         $b = $this->createSelfResolvingPromise('b');
         $called = [];
         $each = new EachPromise([$a, $b], [
-            'fulfilled' => function ($value) use (&$called): void { $called[] = $value; },
+            'fulfilled' => function (string $value) use (&$called): void { $called[] = $value; },
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
@@ -130,7 +131,7 @@ class EachPromiseTest extends TestCase
         $a = $this->createSelfResolvingPromise('a');
         $b = new Promise(function (): void { $this->fail(); });
         $each = new EachPromise([$a, $b], [
-            'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called): void {
+            'fulfilled' => function (string $value, int $idx, Promise $aggregate) use (&$called): void {
                 $this->assertSame($idx, 0);
                 $this->assertSame('a', $value);
                 $aggregate->resolve(null);
@@ -179,7 +180,7 @@ class EachPromiseTest extends TestCase
     public function testDynamicallyLimitsPendingPromises(): void
     {
         $calls = [];
-        $pendingFn = function ($count) use (&$calls) {
+        $pendingFn = function (int $count) use (&$calls): int {
             $calls[] = $count;
 
             return 2;
@@ -216,7 +217,7 @@ class EachPromiseTest extends TestCase
             $called = true;
         });
         $each = new EachPromise([$a], [
-            'concurrency' => function () { return 1; },
+            'concurrency' => function (int $count): int { return 1; },
             'fulfilled' => function (): void {},
             'rejected' => function (): void {},
         ]);
@@ -250,9 +251,10 @@ class EachPromiseTest extends TestCase
         $a = new FulfilledPromise('a');
         $b = new Promise(function () use (&$called): void { $called = true; });
         $each = new EachPromise([$a, $b], [
-            'fulfilled' => function ($value, $idx, Promise $aggregate): void {
+            'fulfilled' => function (string $value, int $idx, Promise $aggregate): void {
                 $aggregate->cancel();
             },
+            /** @param mixed $reason */
             'rejected' => function ($reason) use (&$called): void {
                 $called = true;
             },
@@ -273,7 +275,7 @@ class EachPromiseTest extends TestCase
         }
         $values = [];
         $each = new EachPromise($pending, [
-            'fulfilled' => function ($value) use (&$values): void {
+            'fulfilled' => function (int $value) use (&$values): void {
                 $values[] = $value;
             },
         ]);
@@ -295,7 +297,7 @@ class EachPromiseTest extends TestCase
         }
         $values = [];
         $each = new EachPromise($pending, [
-            'rejected' => function ($value) use (&$values): void {
+            'rejected' => function (int $value) use (&$values): void {
                 $values[] = $value;
             },
         ]);
@@ -315,7 +317,7 @@ class EachPromiseTest extends TestCase
         $called = [];
         $arr = ['a', 'b'];
         $each = new EachPromise($arr, [
-            'fulfilled' => function ($v) use (&$called): void { $called[] = $v; },
+            'fulfilled' => function (string $v) use (&$called): void { $called[] = $v; },
         ]);
         $p = $each->promise();
         $this->assertNull($p->wait());
@@ -324,7 +326,7 @@ class EachPromiseTest extends TestCase
 
     public function testRejectsAggregateWhenNextThrows(): void
     {
-        $iter = function () {
+        $iter = function (): \Generator {
             yield 'a';
             throw new \Exception('Failure');
         };
@@ -332,7 +334,7 @@ class EachPromiseTest extends TestCase
         $p = $each->promise();
         $e = null;
         $received = null;
-        $p->then(null, function ($reason) use (&$e): void { $e = $reason; });
+        $p->then(null, function (\Exception $reason) use (&$e): void { $e = $reason; });
         P\Utils::queue()->run();
         $this->assertInstanceOf(\Exception::class, $e);
         $this->assertSame('Failure', $e->getMessage());
@@ -343,14 +345,14 @@ class EachPromiseTest extends TestCase
         $results = [];
         $values = [10];
         $remaining = 9;
-        $iter = function () use (&$values) {
+        $iter = function () use (&$values): \Generator {
             while ($value = array_pop($values)) {
                 yield $value;
             }
         };
         $each = new EachPromise($iter(), [
             'concurrency' => 1,
-            'fulfilled' => function ($r) use (&$results, &$values, &$remaining): void {
+            'fulfilled' => function (int $r) use (&$results, &$values, &$remaining): void {
                 $results[] = $r;
                 if ($remaining > 0) {
                     $values[] = $remaining--;
@@ -368,14 +370,14 @@ class EachPromiseTest extends TestCase
         $values = [$firstPromise];
         $results = [];
         $remaining = 9;
-        $iter = function () use (&$values) {
+        $iter = function () use (&$values): \Generator {
             while ($value = array_pop($values)) {
                 yield $value;
             }
         };
         $each = new EachPromise($iter(), [
             'concurrency' => 1,
-            'fulfilled' => function ($r) use (&$results, &$values, &$remaining, &$pending): void {
+            'fulfilled' => function (int $r) use (&$results, &$values, &$remaining, &$pending): void {
                 $results[] = $r;
                 if ($remaining-- > 0) {
                     $pending[] = $values[] = new Promise();
@@ -391,7 +393,10 @@ class EachPromiseTest extends TestCase
         $this->assertSame(range(0, 9), $results);
     }
 
-    private function createSelfResolvingPromise($value)
+    /**
+     * @param mixed $value
+     */
+    private function createSelfResolvingPromise($value): Promise
     {
         $p = new Promise(function () use (&$p, $value): void {
             $p->resolve($value);
@@ -414,7 +419,7 @@ class EachPromiseTest extends TestCase
             $promises[] = $p;
         }
 
-        $iter = function () use (&$promises, &$pending) {
+        $iter = function () use (&$promises, &$pending): \Generator {
             foreach ($promises as $promise) {
                 // Resolve a promises, which will trigger the then() function,
                 // which would cause the EachPromise to try to add more
@@ -429,7 +434,7 @@ class EachPromiseTest extends TestCase
 
         $each = new EachPromise($iter(), [
             'concurrency' => 5,
-            'fulfilled' => function ($r) use (&$results, &$pending): void {
+            'fulfilled' => function (int $r) use (&$results, &$pending): void {
                 $results[] = $r;
             },
         ]);
@@ -444,7 +449,7 @@ class EachPromiseTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $iter = function () {
+        $iter = function (): \Generator {
             yield 'foo' => $this->createSelfResolvingPromise(1);
             yield 'foo' => $this->createSelfResolvingPromise(2);
             yield 1 => $this->createSelfResolvingPromise(3);
@@ -452,7 +457,8 @@ class EachPromiseTest extends TestCase
         };
         $called = 0;
         $each = new EachPromise($iter(), [
-            'fulfilled' => function ($value, $idx, Promise $aggregate) use (&$called): void {
+            /** @param int|string $idx */
+            'fulfilled' => function (int $value, $idx, Promise $aggregate) use (&$called): void {
                 ++$called;
                 if ($value < 3) {
                     $this->assertSame('foo', $idx);
@@ -476,7 +482,7 @@ class EachPromiseTest extends TestCase
         $called = [];
         $each = new EachPromise($promises, [
             'concurrency' => 2,
-            'fulfilled' => function ($value) use (&$called): void {
+            'fulfilled' => function (string $value) use (&$called): void {
                 $called[] = $value;
             },
         ]);

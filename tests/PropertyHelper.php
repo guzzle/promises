@@ -14,12 +14,11 @@ namespace GuzzleHttp\Promise\Tests;
 class PropertyHelper
 {
     /**
-     * @param object $object
-     * @param string $property
+     * @return mixed
      *
      * @throws \ReflectionException
      */
-    public static function get($object, $property)
+    public static function get(object $object, string $property)
     {
         $property = (new \ReflectionObject($object))->getProperty($property);
 

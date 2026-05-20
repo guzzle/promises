@@ -9,7 +9,7 @@ use GuzzleHttp\Promise\PromiseInterface;
 
 class NotPromiseInstance extends Thennable implements PromiseInterface
 {
-    private $nextPromise;
+    private Promise $nextPromise;
 
     public function __construct()
     {
@@ -26,17 +26,26 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
         return $this->then($onRejected);
     }
 
+    /**
+     * @param mixed $value
+     */
     public function resolve($value = null): void
     {
         $this->nextPromise->resolve($value);
     }
 
+    /**
+     * @param mixed $reason
+     */
     public function reject($reason): void
     {
         $this->nextPromise->reject($reason);
     }
 
-    public function wait(bool $unwrap = true, ?bool $defaultResolution = null): void
+    /**
+     * @return mixed
+     */
+    public function wait(bool $unwrap = true)
     {
     }
 

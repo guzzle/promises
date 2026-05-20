@@ -66,7 +66,8 @@ class UtilsTest extends TestCase
         $a->resolve('a');
         $c->resolve('c');
         $d->then(
-            function ($value) use (&$result): void { $result = $value; },
+            function (array $value) use (&$result): void { $result = $value; },
+            /** @param mixed $reason */
             function ($reason) use (&$result): void { $result = $reason; }
         );
         P\Utils::queue()->run();
@@ -203,7 +204,7 @@ class UtilsTest extends TestCase
         $promises['a']->reject('fail');
         P\Utils::queue()->run();
 
-        $aggregate->then(null, function ($reason) use (&$result): void {
+        $aggregate->then(null, function (string $reason) use (&$result): void {
             $result = $reason;
         });
         P\Utils::queue()->run();
@@ -279,8 +280,8 @@ class UtilsTest extends TestCase
         $a->reject('fail');
         $c->resolve('c');
         $d->then(
-            function ($value) use (&$result): void { $result = $value; },
-            function ($reason) use (&$result): void { $result = $reason; }
+            function (array $value) use (&$result): void { $result = $value; },
+            function (string $reason) use (&$result): void { $result = $reason; }
         );
         P\Utils::queue()->run();
         $this->assertSame('fail', $result);
@@ -295,7 +296,7 @@ class UtilsTest extends TestCase
         $b->resolve('b');
         $c->resolve('c');
         $a->resolve('a');
-        $d->then(function ($value) use (&$result): void { $result = $value; });
+        $d->then(function (array $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame(['b', 'c'], $result);
     }
@@ -309,7 +310,7 @@ class UtilsTest extends TestCase
         $b->resolve('good');
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($d));
-        $d->then(null, function ($reason) use (&$called): void {
+        $d->then(null, function (AggregateException $reason) use (&$called): void {
             $called = $reason;
         });
         P\Utils::queue()->run();
@@ -368,7 +369,7 @@ class UtilsTest extends TestCase
         $c = P\Utils::any([$a, $b]);
         $b->resolve('b');
         $a->resolve('a');
-        $c->then(function ($value) use (&$result): void { $result = $value; });
+        $c->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame('b', $result);
     }
@@ -384,7 +385,7 @@ class UtilsTest extends TestCase
         $a->reject('a');
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::fulfilled($d));
-        $d->then(function ($value) use (&$result): void { $result = $value; });
+        $d->then(function (array $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame([
             ['state' => 'rejected', 'reason' => 'a'],
@@ -642,9 +643,9 @@ class UtilsTest extends TestCase
     public function testCanScheduleThunk(): void
     {
         $tramp = P\Utils::queue();
-        $promise = P\Utils::task(function () { return 'Hi!'; });
+        $promise = P\Utils::task(function (): string { return 'Hi!'; });
         $c = null;
-        $promise->then(function ($v) use (&$c): void { $c = $v; });
+        $promise->then(function (string $v) use (&$c): void { $c = $v; });
         $this->assertNull($c);
         $tramp->run();
         $this->assertSame('Hi!', $c);
@@ -655,7 +656,7 @@ class UtilsTest extends TestCase
         $tramp = P\Utils::queue();
         $promise = P\Utils::task(function (): void { throw new \Exception('Hi!'); });
         $c = null;
-        $promise->otherwise(function ($v) use (&$c): void { $c = $v; });
+        $promise->otherwise(function (\Exception $v) use (&$c): void { $c = $v; });
         $this->assertNull($c);
         $tramp->run();
         $this->assertSame('Hi!', $c->getMessage());
@@ -664,7 +665,7 @@ class UtilsTest extends TestCase
     public function testCanScheduleThunkWithWait(): void
     {
         $tramp = P\Utils::queue();
-        $promise = P\Utils::task(function () { return 'a'; });
+        $promise = P\Utils::task(function (): string { return 'a'; });
         $this->assertSame('a', $promise->wait());
         $tramp->run();
     }
@@ -675,11 +676,11 @@ class UtilsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\Coroutine::of(function () {
+        $promise = P\Coroutine::of(function (): \Generator {
             $value = (yield new FulfilledPromise('a'));
             yield $value.'b';
         });
-        $promise->then(function ($value) use (&$result): void { $result = $value; });
+        $promise->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame('ab', $result);
     }
@@ -690,7 +691,7 @@ class UtilsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\Coroutine::of(function () {
+        $promise = P\Coroutine::of(function (): \Generator {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -699,7 +700,7 @@ class UtilsTest extends TestCase
                 yield $value.'b';
             }
         });
-        $promise->then(function ($value) use (&$result): void { $result = $value; });
+        $promise->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::fulfilled($promise));
         $this->assertSame('ab', $result);
@@ -712,21 +713,21 @@ class UtilsTest extends TestCase
     {
         $promise->then(
             function (): void { $this->fail(); },
-            function ($reason) use (&$result): void { $result = $reason; }
+            function (\Exception $reason) use (&$result): void { $result = $reason; }
         );
         P\Utils::queue()->run();
         $this->assertInstanceOf(\Exception::class, $result);
         $this->assertSame('a', $result->getMessage());
     }
 
-    public static function rejectsParentExceptionProvider()
+    public static function rejectsParentExceptionProvider(): array
     {
         return [
-            [P\Coroutine::of(function () {
+            [P\Coroutine::of(function (): \Generator {
                 yield new FulfilledPromise(0);
                 throw new \Exception('a');
             })],
-            [P\Coroutine::of(function () {
+            [P\Coroutine::of(function (): \Generator {
                 throw new \Exception('a');
                 yield new FulfilledPromise(0);
             })],
@@ -739,13 +740,13 @@ class UtilsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\Coroutine::of(function () {
+        $promise = P\Coroutine::of(function (): \Generator {
             yield new FulfilledPromise(0);
             yield new RejectedPromise('no!');
         });
         $promise->then(
             function (): void { $this->fail(); },
-            function ($reason) use (&$result): void { $result = $reason; }
+            function (RejectionException $reason) use (&$result): void { $result = $reason; }
         );
         P\Utils::queue()->run();
         $this->assertInstanceOf(RejectionException::class, $result);
@@ -759,13 +760,13 @@ class UtilsTest extends TestCase
         }
 
         $rej = new Promise();
-        $promise = P\Coroutine::of(function () use ($rej) {
+        $promise = P\Coroutine::of(function () use ($rej): \Generator {
             yield new FulfilledPromise(0);
             yield $rej;
         });
         $promise->then(
             function (): void { $this->fail(); },
-            function ($reason) use (&$result): void { $result = $reason; }
+            function (RejectionException $reason) use (&$result): void { $result = $reason; }
         );
         $rej->reject('no!');
         P\Utils::queue()->run();
@@ -775,7 +776,7 @@ class UtilsTest extends TestCase
 
     public function testCanCatchAndThrowOtherException(): void
     {
-        $promise = P\Coroutine::of(function () {
+        $promise = P\Coroutine::of(function (): \Generator {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -783,7 +784,7 @@ class UtilsTest extends TestCase
                 throw new \Exception('foo');
             }
         });
-        $promise->otherwise(function ($value) use (&$result): void { $result = $value; });
+        $promise->otherwise(function (\Exception $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
         $this->assertStringContainsString('foo', $result->getMessage());
@@ -795,7 +796,7 @@ class UtilsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $promise = P\Coroutine::of(function () {
+        $promise = P\Coroutine::of(function (): \Generator {
             try {
                 yield new RejectedPromise('a');
                 $this->fail('Should have thrown into the coroutine!');
@@ -803,15 +804,15 @@ class UtilsTest extends TestCase
                 yield new RejectedPromise('foo');
             }
         });
-        $promise->otherwise(function ($value) use (&$result): void { $result = $value; });
+        $promise->otherwise(function (RejectionException $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertTrue(P\Is::rejected($promise));
         $this->assertStringContainsString('foo', $result->getMessage());
     }
 
-    public function createLotsOfSynchronousPromise()
+    public function createLotsOfSynchronousPromise(): PromiseInterface
     {
-        return P\Coroutine::of(function () {
+        return P\Coroutine::of(function (): \Generator {
             $value = 0;
             for ($i = 0; $i < 1000; ++$i) {
                 $value = (yield new FulfilledPromise($i));
@@ -827,7 +828,7 @@ class UtilsTest extends TestCase
         }
 
         $promise = $this->createLotsOfSynchronousPromise();
-        $promise->then(function ($v) use (&$r): void { $r = $v; });
+        $promise->then(function (int $v) use (&$r): void { $r = $v; });
         P\Utils::queue()->run();
         $this->assertSame(999, $r);
     }
@@ -839,14 +840,14 @@ class UtilsTest extends TestCase
         }
 
         $promise = $this->createLotsOfSynchronousPromise();
-        $promise->then(function ($v) use (&$r): void { $r = $v; });
+        $promise->then(function (int $v) use (&$r): void { $r = $v; });
         $this->assertSame(999, $promise->wait());
         $this->assertSame(999, $r);
     }
 
-    private function createLotsOfFlappingPromise()
+    private function createLotsOfFlappingPromise(): PromiseInterface
     {
-        return P\Coroutine::of(function () {
+        return P\Coroutine::of(function (): \Generator {
             $value = 0;
             for ($i = 0; $i < 1000; ++$i) {
                 try {
@@ -870,7 +871,7 @@ class UtilsTest extends TestCase
         }
 
         $promise = $this->createLotsOfFlappingPromise();
-        $promise->then(function ($v) use (&$r): void { $r = $v; });
+        $promise->then(function (int $v) use (&$r): void { $r = $v; });
         P\Utils::queue()->run();
         $this->assertSame(999, $r);
     }
@@ -882,7 +883,7 @@ class UtilsTest extends TestCase
         }
 
         $promise = $this->createLotsOfFlappingPromise();
-        $promise->then(function ($v) use (&$r): void { $r = $v; });
+        $promise->then(function (int $v) use (&$r): void { $r = $v; });
         $this->assertSame(999, $promise->wait());
         $this->assertSame(999, $r);
     }
@@ -900,7 +901,7 @@ class UtilsTest extends TestCase
         ];
 
         eval('
-        $promise = \GuzzleHttp\Promise\Coroutine::of(function () use ($promises) {
+        $promise = \GuzzleHttp\Promise\Coroutine::of(function () use ($promises): \Generator {
             $value = null;
             $this->assertSame(\'skip\', (yield new \GuzzleHttp\Promise\FulfilledPromise(\'skip\')));
             foreach ($promises as $idx => $p) {
@@ -917,7 +918,7 @@ class UtilsTest extends TestCase
         $promises[1]->resolve(1);
         $promises[2]->resolve(2);
 
-        $promise->then(function ($v) use (&$r): void { $r = $v; });
+        $promise->then(function (int $v) use (&$r): void { $r = $v; });
         P\Utils::queue()->run();
         $this->assertSame(2, $r);
     }
@@ -934,7 +935,7 @@ class UtilsTest extends TestCase
         $p2 = new Promise(function () use (&$p2): void {
             $p2->resolve('hello!');
         });
-        $co = P\Coroutine::of(function () use ($p1, $p2) {
+        $co = P\Coroutine::of(function () use ($p1, $p2): \Generator {
             yield $p1;
             yield $p2;
         });
@@ -950,13 +951,13 @@ class UtilsTest extends TestCase
 
         $p1 = new Promise();
         $p2 = new Promise();
-        $co = P\Coroutine::of(function () use ($p1, $p2) {
+        $co = P\Coroutine::of(function () use ($p1, $p2): \Generator {
             yield $p1;
             yield $p2;
         });
         $p1->resolve('a');
         $p2->resolve('b');
-        $co->then(function ($value) use (&$result): void { $result = $value; });
+        $co->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame('b', $result);
     }
@@ -972,7 +973,7 @@ class UtilsTest extends TestCase
         $p3 = new Promise();
         $p4 = new Promise();
         $p5 = new Promise();
-        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5) {
+        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5): \Generator {
             try {
                 yield $p1;
             } catch (\Exception $e) {
@@ -990,7 +991,7 @@ class UtilsTest extends TestCase
         $p3->resolve('c');
         $p4->reject('d');
         $p5->resolve('e');
-        $co->then(function ($value) use (&$result): void { $result = $value; });
+        $co->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame('e', $result);
     }
@@ -1006,7 +1007,7 @@ class UtilsTest extends TestCase
             $promises[] = new Promise();
         }
 
-        $co = P\Coroutine::of(function () use ($promises) {
+        $co = P\Coroutine::of(function () use ($promises): \Generator {
             for ($i = 0; $i < 20; $i += 4) {
                 try {
                     yield $promises[$i];
@@ -1025,7 +1026,7 @@ class UtilsTest extends TestCase
             $promises[$i + 3]->resolve($i + 3);
         }
 
-        $co->then(function ($value) use (&$result): void { $result = $value; });
+        $co->then(function (int $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame(19, $result);
     }
@@ -1036,7 +1037,7 @@ class UtilsTest extends TestCase
             $this->markTestIncomplete('Broken on HHVM.');
         }
 
-        $f = function () {
+        $f = function (): Promise {
             static $i = 0;
             ++$i;
 
@@ -1050,7 +1051,7 @@ class UtilsTest extends TestCase
             $promises[] = $f();
         }
 
-        $p = P\Coroutine::of(function () use ($promises) {
+        $p = P\Coroutine::of(function () use ($promises): \Generator {
             yield new FulfilledPromise('foo!');
             foreach ($promises as $promise) {
                 yield $promise;
@@ -1073,7 +1074,7 @@ class UtilsTest extends TestCase
         $p5 = new Promise(function () use (&$p5): void { $p5->resolve('e'); });
         $p6 = new Promise(function () use (&$p6): void { $p6->reject('f'); });
 
-        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5, $p6) {
+        $co = P\Coroutine::of(function () use ($p1, $p2, $p3, $p4, $p5, $p6): \Generator {
             try {
                 yield $p1;
             } catch (\Exception $e) {
@@ -1101,7 +1102,7 @@ class UtilsTest extends TestCase
 
         $a = new Promise();
         $b = new Promise();
-        $promise = P\Coroutine::of(function () use ($a, $b) {
+        $promise = P\Coroutine::of(function () use ($a, $b): \Generator {
             // Execute the pool of commands concurrently, and process errors.
             yield $a;
             yield $b;
@@ -1118,9 +1119,9 @@ class UtilsTest extends TestCase
 
     public function testCanManuallySettleTaskQueueGeneratedPromises(): void
     {
-        $p1 = P\Utils::task(function () { return 'a'; });
-        $p2 = P\Utils::task(function () { return 'b'; });
-        $p3 = P\Utils::task(function () { return 'c'; });
+        $p1 = P\Utils::task(function (): string { return 'a'; });
+        $p2 = P\Utils::task(function (): string { return 'b'; });
+        $p3 = P\Utils::task(function (): string { return 'c'; });
 
         $p1->cancel();
         $p2->resolve('b2');

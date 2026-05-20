@@ -92,7 +92,7 @@ class FulfilledPromiseTest extends TestCase
     {
         $p = new FulfilledPromise('a');
         $r = null;
-        $f = function ($d) use (&$r): void { $r = $d; };
+        $f = function (string $d) use (&$r): void { $r = $d; };
         $p2 = $p->then($f);
         $this->assertNotSame($p, $p2);
         $this->assertNull($r);
@@ -118,6 +118,7 @@ class FulfilledPromiseTest extends TestCase
     {
         $c = null;
         $p = new FulfilledPromise('foo');
+        /** @param mixed $v */
         $p->otherwise(function ($v) use (&$c): void { $c = $v; });
         $this->assertNull($c);
     }
@@ -125,7 +126,7 @@ class FulfilledPromiseTest extends TestCase
     public function testDoesNotTryToFulfillTwiceDuringTrampoline(): void
     {
         $fp = new FulfilledPromise('a');
-        $t1 = $fp->then(function ($v) { return $v.' b'; });
+        $t1 = $fp->then(function (string $v): string { return $v.' b'; });
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
     }

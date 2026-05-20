@@ -17,7 +17,7 @@ class CoroutineTest extends TestCase
 {
     public function testReturnsCoroutine(): void
     {
-        $fn = function () { yield 'foo'; };
+        $fn = function (): \Generator { yield 'foo'; };
         $this->assertInstanceOf(Coroutine::class, Coroutine::of($fn));
     }
 
@@ -26,7 +26,7 @@ class CoroutineTest extends TestCase
      */
     public function testShouldProxyPromiseMethodsToResultPromise(string $method, array $args = []): void
     {
-        $coroutine = new Coroutine(function () { yield 0; });
+        $coroutine = new Coroutine(function (): \Generator { yield 0; });
         $mockPromise = $this->createMock(PromiseInterface::class);
         $mockPromise->expects($this->once())->method($method)->with(...$args);
 
@@ -55,7 +55,7 @@ class CoroutineTest extends TestCase
 
     public function testShouldProxyResolveWithoutValueToResultPromiseAsNull(): void
     {
-        $coroutine = new Coroutine(function () { yield 0; });
+        $coroutine = new Coroutine(function (): \Generator { yield 0; });
         $mockPromise = $this->createMock(PromiseInterface::class);
         $mockPromise->expects($this->once())->method('resolve')->with(null);
 
@@ -72,7 +72,7 @@ class CoroutineTest extends TestCase
 
     public function testShouldCancelResultPromiseAndOutsideCurrentPromise(): void
     {
-        $coroutine = new Coroutine(function () { yield 0; });
+        $coroutine = new Coroutine(function (): \Generator { yield 0; });
 
         $mockPromises = [
             'result' => $this->createMock(PromiseInterface::class),
@@ -97,7 +97,7 @@ class CoroutineTest extends TestCase
 
     public function testCurrentPromiseIsResetToNullAfterFulfilledCoroutine(): void
     {
-        $coroutine = new Coroutine(function () {
+        $coroutine = new Coroutine(function (): \Generator {
             yield new FulfilledPromise('ok');
         });
 
@@ -112,7 +112,7 @@ class CoroutineTest extends TestCase
 
     public function testCurrentPromiseIsResetToNullAfterRejectedCoroutine(): void
     {
-        $coroutine = new Coroutine(function () {
+        $coroutine = new Coroutine(function (): \Generator {
             yield new RejectedPromise('no');
         });
 
@@ -127,8 +127,8 @@ class CoroutineTest extends TestCase
 
     public function testWaitShouldResolveChainedCoroutines(): void
     {
-        $promisor = function () {
-            return Coroutine::of(function () {
+        $promisor = function (): Coroutine {
+            return Coroutine::of(function (): \Generator {
                 yield $promise = new Promise(function () use (&$promise): void {
                     $promise->resolve(1);
                 });
@@ -142,19 +142,19 @@ class CoroutineTest extends TestCase
 
     public function testWaitShouldHandleIntermediateErrors(): void
     {
-        $promise = Coroutine::of(function () {
+        $promise = Coroutine::of(function (): \Generator {
             yield $promise = new Promise(function () use (&$promise): void {
                 $promise->resolve(1);
             });
         })
-        ->then(function () {
-            return Coroutine::of(function () {
+        ->then(function (): Coroutine {
+            return Coroutine::of(function (): \Generator {
                 yield $promise = new Promise(function () use (&$promise): void {
                     $promise->reject(new \Exception());
                 });
             });
         })
-        ->otherwise(function (?\Exception $error = null) {
+        ->otherwise(function (?\Exception $error = null): int {
             if (!$error) {
                 self::fail('Error did not propagate.');
             }

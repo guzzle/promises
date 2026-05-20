@@ -8,6 +8,7 @@ use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\CancellationException;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Promise\RejectionException;
 use PHPUnit\Framework\TestCase;
@@ -155,7 +156,7 @@ class PromiseTest extends TestCase
         $p2 = new Promise(function () use (&$p2): void {
             $p2->resolve('foo');
         });
-        $p3 = $p->then(function () use ($p2) {
+        $p3 = $p->then(function () use ($p2): PromiseInterface {
             return $p2;
         });
         $this->assertSame('foo', $p3->wait());
@@ -189,7 +190,7 @@ class PromiseTest extends TestCase
         $p = new Promise(function () use (&$p): void {
             $p->reject('Foo!');
         });
-        $p2 = $p->then(null, function ($reason) {
+        $p2 = $p->then(null, function (string $reason): PromiseInterface {
             return new RejectedPromise([$reason]);
         });
 
@@ -301,7 +302,7 @@ class PromiseTest extends TestCase
         $p3 = new Promise(null, function () use (&$called3): void {
             $called3 = true;
         });
-        $p4 = $p2->then(function () use ($p3) {
+        $p4 = $p2->then(function () use ($p3): PromiseInterface {
             return $p3;
         });
         $p5 = $p4->then(function (): void {
@@ -340,7 +341,7 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $carry = null;
-        $p2 = $p->then(function ($v) use (&$carry): void {
+        $p2 = $p->then(function (string $v) use (&$carry): void {
             $carry = $v;
         });
         $this->assertNotSame($p, $p2);
@@ -356,6 +357,7 @@ class PromiseTest extends TestCase
         $called = false;
         $received = 'not called';
 
+        /** @param null $value */
         $p->then(function ($value) use (&$called, &$received): void {
             $called = true;
             $received = $value;
@@ -373,7 +375,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->resolve('foo');
         $carry = null;
-        $p2 = $p->then(function ($v) use (&$carry): void {
+        $p2 = $p->then(function (string $v) use (&$carry): void {
             $carry = $v;
         });
         $this->assertNotSame($p, $p2);
@@ -389,6 +391,7 @@ class PromiseTest extends TestCase
         $called = false;
         $received = 'not called';
 
+        /** @param null $value */
         $p->then(function ($value) use (&$called, &$received): void {
             $called = true;
             $received = $value;
@@ -413,7 +416,7 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $carry = null;
-        $p2 = $p->then(null, function ($v) use (&$carry): void {
+        $p2 = $p->then(null, function (string $v) use (&$carry): void {
             $carry = $v;
         });
         $this->assertNotSame($p, $p2);
@@ -427,7 +430,7 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p->reject('foo');
         $carry = null;
-        $p2 = $p->then(null, function ($v) use (&$carry): void {
+        $p2 = $p->then(null, function (string $v) use (&$carry): void {
             $carry = $v;
         });
         $this->assertNotSame($p, $p2);
@@ -442,7 +445,7 @@ class PromiseTest extends TestCase
         $p->resolve(new RejectedPromise('inner'));
 
         $result = null;
-        $p->then(null, function ($reason) use (&$result): void {
+        $p->then(null, function (string $reason) use (&$result): void {
             $result = $reason;
         });
 
@@ -465,10 +468,10 @@ class PromiseTest extends TestCase
             $p->resolve('a');
         });
         $p2 = $p
-            ->then(function ($v) {
+            ->then(function (string $v): string {
                 return $v.'-1-';
             })
-            ->then(function ($v) {
+            ->then(function (string $v): string {
                 return $v.'2';
             });
         $this->assertSame('a-1-2', $p2->wait());
@@ -486,10 +489,10 @@ class PromiseTest extends TestCase
             $p3->resolve('c');
         });
         $p4 = $p1
-            ->then(function () use ($p2) {
+            ->then(function () use ($p2): PromiseInterface {
                 return $p2;
             })
-            ->then(function () use ($p3) {
+            ->then(function () use ($p3): PromiseInterface {
                 return $p3;
             });
         $this->assertSame('c', $p4->wait());
@@ -500,12 +503,12 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(function ($v) use (&$r) {
+            ->then(function (string $v) use (&$r): string {
                 $r = $v;
 
                 return $v.'2';
             })
-            ->then(function ($v) use (&$r2): void {
+            ->then(function (string $v) use (&$r2): void {
                 $r2 = $v;
             });
         $p->resolve('foo');
@@ -519,12 +522,12 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(null, function ($v) use (&$r) {
+            ->then(null, function (string $v) use (&$r): string {
                 $r = $v;
 
                 return $v.'2';
             })
-            ->then(function ($v) use (&$r2): void {
+            ->then(function (string $v) use (&$r2): void {
                 $r2 = $v;
             });
         $p->reject('foo');
@@ -539,13 +542,13 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(null, function ($v) use (&$r, $e): void {
+            ->then(null, function (string $v) use (&$r, $e): void {
                 $r = $v;
                 throw $e;
             })
             ->then(
                 null,
-                function ($v) use (&$r2): void {
+                function (\Exception $v) use (&$r2): void {
                     $r2 = $v;
                 }
             );
@@ -561,14 +564,14 @@ class PromiseTest extends TestCase
         $rejected = new RejectedPromise('bar');
         $r = $r2 = null;
         $p->then(null, null)
-            ->then(null, function ($v) use (&$r, $rejected) {
+            ->then(null, function (string $v) use (&$r, $rejected): PromiseInterface {
                 $r = $v;
 
                 return $rejected;
             })
             ->then(
                 null,
-                function ($v) use (&$r2): void {
+                function (string $v) use (&$r2): void {
                     $r2 = $v;
                 }
             );
@@ -589,10 +592,10 @@ class PromiseTest extends TestCase
         $p2 = new Promise();
         $resolved = null;
         $p
-            ->then(function ($v) use ($p2) {
+            ->then(function (string $v) use ($p2): PromiseInterface {
                 return $p2;
             })
-            ->then(function ($value) use (&$resolved): void {
+            ->then(function (string $value) use (&$resolved): void {
                 $resolved = $value;
             });
         $p->resolve('a');
@@ -611,13 +614,13 @@ class PromiseTest extends TestCase
             $p2->resolve('b');
         });
         $pb = $p->then(
-            function ($v) use ($p2, &$r) {
+            function (string $v) use ($p2, &$r): PromiseInterface {
                 $r = $v;
 
                 return $p2;
             }
         )
-            ->then(function ($v) {
+            ->then(function (string $v): string {
                 return $v.'.';
             });
         $this->assertSame('a', $p->wait());
@@ -632,21 +635,21 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->resolve('foo');
-        $p2->then(function ($v) use (&$res): void {
+        $p2->then(function (string $v) use (&$res): void {
             $res[] = 'A:'.$v;
         });
         // $res is A:foo
         $p
-            ->then(function () use ($p2, &$res) {
+            ->then(function () use ($p2, &$res): PromiseInterface {
                 $res[] = 'B';
 
                 return $p2;
             })
-            ->then(function ($v) use (&$res): void {
+            ->then(function (string $v) use (&$res): void {
                 $res[] = 'C:'.$v;
             });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res): void {
+        $p->then(function (string $v) use (&$res): void {
             $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
@@ -659,19 +662,19 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->reject('foo');
-        $p2->then(null, function ($v) use (&$res): void {
+        $p2->then(null, function (string $v) use (&$res): void {
             $res[] = 'A:'.$v;
         });
-        $p->then(null, function () use ($p2, &$res) {
+        $p->then(null, function () use ($p2, &$res): PromiseInterface {
             $res[] = 'B';
 
             return $p2;
         })
-            ->then(null, function ($v) use (&$res): void {
+            ->then(null, function (string $v) use (&$res): void {
                 $res[] = 'C:'.$v;
             });
         $p->reject('a');
-        $p->then(null, function ($v) use (&$res): void {
+        $p->then(null, function (string $v) use (&$res): void {
             $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
@@ -684,21 +687,21 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Promise();
         $p2->cancel();
-        $p2->then(function ($v) use (&$res) {
+        $p2->then(function (string $v) use (&$res): string {
             $res[] = "B:$v";
 
             return $v;
         });
-        $p->then(function ($v) use ($p2, &$res) {
+        $p->then(function (string $v) use ($p2, &$res): PromiseInterface {
             $res[] = "B:$v";
 
             return $p2;
         })
-            ->then(function ($v) use (&$res): void {
+            ->then(function (string $v) use (&$res): void {
                 $res[] = 'C:'.$v;
             });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res): void {
+        $p->then(function (string $v) use (&$res): void {
             $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
@@ -711,19 +714,19 @@ class PromiseTest extends TestCase
         $p = new Promise();
         $p2 = new Thennable();
         $p2->resolve('foo');
-        $p2->then(function ($v) use (&$res): void {
+        $p2->then(function (string $v) use (&$res): void {
             $res[] = 'A:'.$v;
         });
-        $p->then(function () use ($p2, &$res) {
+        $p->then(function () use ($p2, &$res): Thennable {
             $res[] = 'B';
 
             return $p2;
         })
-            ->then(function ($v) use (&$res): void {
+            ->then(function (string $v) use (&$res): void {
                 $res[] = 'C:'.$v;
             });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res): void {
+        $p->then(function (string $v) use (&$res): void {
             $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
@@ -735,19 +738,19 @@ class PromiseTest extends TestCase
         $res = [];
         $p = new Promise();
         $p2 = new NotPromiseInstance();
-        $p2->then(function ($v) use (&$res): void {
+        $p2->then(function (string $v) use (&$res): void {
             $res[] = 'A:'.$v;
         });
-        $p->then(function () use ($p2, &$res) {
+        $p->then(function () use ($p2, &$res): PromiseInterface {
             $res[] = 'B';
 
             return $p2;
         })
-            ->then(function ($v) use (&$res): void {
+            ->then(function (string $v) use (&$res): void {
                 $res[] = 'C:'.$v;
             });
         $p->resolve('a');
-        $p->then(function ($v) use (&$res): void {
+        $p->then(function (string $v) use (&$res): void {
             $res[] = 'D:'.$v;
         });
         P\Utils::queue()->run();
@@ -782,7 +785,7 @@ class PromiseTest extends TestCase
         });
         $prev = $inner;
         for ($i = 1; $i < 100; ++$i) {
-            $prev = $prev->then(function ($i) {
+            $prev = $prev->then(function (int $i): int {
                 return $i + 1;
             });
         }
@@ -798,7 +801,7 @@ class PromiseTest extends TestCase
     {
         $p = new Promise();
         $p->reject('foo');
-        $p->otherwise(function ($v) use (&$c): void {
+        $p->otherwise(function (string $v) use (&$c): void {
             $c = $v;
         });
         P\Utils::queue()->run();
