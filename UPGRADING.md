@@ -41,18 +41,38 @@ $promise = Each::ofLimit([$singlePromise], 2);
 
 #### Collection Helper Config
 
-`Utils::all()` and `Each::of()` now accept a trailing `$config` array with a
-`concurrency` option for lazy iterables:
+`Utils::all()`, `Utils::settle()`, and `Each::of()` now accept a trailing
+`$config` array with a `concurrency` option for lazy iterables:
 
 ```php
 use GuzzleHttp\Promise\Utils;
 
 $promise = Utils::all($promises, false, ['concurrency' => 5]);
+$promise = Utils::settle($promises, false, ['concurrency' => 5]);
 ```
 
 Only `concurrency` is honored by these wrappers. Callback config keys such as
 `fulfilled` and `rejected` are ignored; pass callbacks to `Each::of()` directly
 or use `EachPromise`.
+
+#### Recursive Collection Helpers
+
+`Utils::settle()` now accepts a `$recursive` argument, matching `Utils::all()`:
+
+```php
+use GuzzleHttp\Promise\Utils;
+
+$promise = Utils::settle($promises, true);
+```
+
+When `$recursive` is true, collection helpers continue taking passes over the
+collection until no new entries are found and no visible promises remain pending.
+This is intended for rewindable mutable collections such as `ArrayIterator`.
+One-shot generators are not suitable for recursive mode because recursive passes
+need to iterate the collection again.
+
+Recursive `Utils::all()` now also detects dynamically-added settled values and
+raw values. Previously, recursive mode only checked for pending promises.
 
 #### Generic PHPDoc Types
 
