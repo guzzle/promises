@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.4.1 - Upcoming
+
+### Fixed
+
+- Fixed cancelling settled coroutines when no current promise remains
+
+
 ## 2.4.0 - 2026-05-20
 
 ### Changed
