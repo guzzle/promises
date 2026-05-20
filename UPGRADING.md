@@ -12,6 +12,14 @@ PHP `^7.2.5 || ^8.0`.
 If your application still supports PHP 7.2 or 7.3, continue using Guzzle
 Promises 2.x until your minimum PHP version is raised.
 
+#### Optional Promise Resolution Values
+
+`PromiseInterface::resolve()` now accepts an optional value. Calling `resolve()`
+without an argument fulfills the promise with `null`.
+
+Custom implementations of `PromiseInterface` must update their method signature
+from `resolve($value): void` to `resolve($value = null): void`.
+
 #### Collection Helper Inputs
 
 Promise collection helpers now require iterable inputs. Passing a single promise

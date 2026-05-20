@@ -23,11 +23,8 @@ class CoroutineTest extends TestCase
 
     /**
      * @dataProvider promiseInterfaceMethodProvider
-     *
-     * @param string $method
-     * @param array  $args
      */
-    public function testShouldProxyPromiseMethodsToResultPromise($method, $args = []): void
+    public function testShouldProxyPromiseMethodsToResultPromise(string $method, array $args = []): void
     {
         $coroutine = new Coroutine(function () { yield 0; });
         $mockPromise = $this->createMock(PromiseInterface::class);
@@ -44,7 +41,7 @@ class CoroutineTest extends TestCase
         $coroutine->{$method}(...$args);
     }
 
-    public static function promiseInterfaceMethodProvider()
+    public static function promiseInterfaceMethodProvider(): array
     {
         return [
             ['then', [null, null]],
@@ -54,6 +51,23 @@ class CoroutineTest extends TestCase
             ['resolve', [null]],
             ['reject', [null]],
         ];
+    }
+
+    public function testShouldProxyResolveWithoutValueToResultPromiseAsNull(): void
+    {
+        $coroutine = new Coroutine(function () { yield 0; });
+        $mockPromise = $this->createMock(PromiseInterface::class);
+        $mockPromise->expects($this->once())->method('resolve')->with(null);
+
+        $resultPromiseProp = (new ReflectionClass(Coroutine::class))->getProperty('result');
+
+        if (PHP_VERSION_ID < 80100) {
+            $resultPromiseProp->setAccessible(true);
+        }
+
+        $resultPromiseProp->setValue($coroutine, $mockPromise);
+
+        $coroutine->resolve();
     }
 
     public function testShouldCancelResultPromiseAndOutsideCurrentPromise(): void

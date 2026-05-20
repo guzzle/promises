@@ -26,7 +26,7 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
         return $this->then($onRejected);
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         $this->nextPromise->resolve($value);
     }

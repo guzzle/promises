@@ -20,7 +20,7 @@ class Thennable
         return $this->nextPromise->then($res, $rej);
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         $this->nextPromise->resolve($value);
     }

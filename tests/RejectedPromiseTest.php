@@ -45,6 +45,15 @@ class RejectedPromiseTest extends TestCase
         $p->resolve('bar');
     }
 
+    public function testCannotResolveWithoutValue(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Cannot resolve a rejected promise');
+
+        $p = new RejectedPromise('foo');
+        $p->resolve();
+    }
+
     /**
      * @expectedExceptionMessage Cannot reject a rejected promise
      */

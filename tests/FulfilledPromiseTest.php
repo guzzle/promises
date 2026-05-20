@@ -58,6 +58,23 @@ class FulfilledPromiseTest extends TestCase
         $this->assertSame('foo', $p->wait());
     }
 
+    public function testCanResolveNullFulfilledPromiseWithoutValue(): void
+    {
+        $p = new FulfilledPromise(null);
+        $p->resolve();
+
+        $this->assertNull($p->wait());
+    }
+
+    public function testCannotResolveNonNullFulfilledPromiseWithoutValue(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Cannot resolve a fulfilled promise');
+
+        $p = new FulfilledPromise('foo');
+        $p->resolve();
+    }
+
     public function testCannotResolveWithPromise(): void
     {
         $this->expectException(\InvalidArgumentException::class);

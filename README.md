@@ -81,10 +81,11 @@ only once and in the order in which they were added.
 
 ### Resolving a Promise
 
-Promises are fulfilled using the `resolve($value)` method. Resolving a promise
-with any value other than a `GuzzleHttp\Promise\RejectedPromise` will trigger
-all of the onFulfilled callbacks (resolving a promise with a rejected promise
-will reject the promise and trigger the `$onRejected` callbacks).
+Promises are fulfilled using the `resolve($value = null)` method. Calling
+`resolve()` without an argument fulfills the promise with `null`. Resolving a
+promise with any value other than a `GuzzleHttp\Promise\RejectedPromise` will
+trigger all of the onFulfilled callbacks (resolving a promise with a rejected
+promise will reject the promise and trigger the `$onRejected` callbacks).
 
 ```php
 use GuzzleHttp\Promise\Promise;
@@ -362,9 +363,10 @@ A promise has the following methods:
   Returns the state of the promise. One of `pending`, `fulfilled`, or
   `rejected`.
 
-- `resolve($value)`
+- `resolve($value = null)`
 
-  Fulfills the promise with the given `$value`.
+  Fulfills the promise with the given `$value`, or with `null` if no value is
+  given.
 
 - `reject($reason)`
 

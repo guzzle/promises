@@ -67,13 +67,13 @@ interface PromiseInterface
     public function getState(): string;
 
     /**
-     * Resolve the promise with the given value.
+     * Resolve the promise with the given value, or with null if no value is given.
      *
-     * @param TValue|PromiseInterface<TValue, TReason> $value
+     * @param TValue|PromiseInterface<TValue, TReason>|null $value
      *
      * @throws \RuntimeException if the promise is already resolved.
      */
-    public function resolve($value): void;
+    public function resolve($value = null): void;
 
     /**
      * Reject the promise with the given reason.

@@ -113,7 +113,7 @@ final class Coroutine implements PromiseInterface
         return $this->result->getState();
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         $this->result->resolve($value);
     }
