@@ -59,7 +59,7 @@ class EachPromise implements PromisorInterface
      *   allowed number of outstanding concurrently executing promises,
      *   creating a capped pool of promises. There is no limit by default.
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $iterable Promises or values to iterate.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>|TValue|PromiseInterface<TValue, TReason> $iterable Promises or values to iterate.
      * @param array{
      *     fulfilled?: callable(TValue, TKey, PromiseInterface<mixed, mixed>): void,
      *     rejected?: callable(TReason, TKey, PromiseInterface<mixed, mixed>): void,
@@ -68,6 +68,18 @@ class EachPromise implements PromisorInterface
      */
     public function __construct($iterable, array $config = [])
     {
+        if (!is_iterable($iterable)) {
+            \trigger_deprecation(
+                'guzzlehttp/promises',
+                '2.5',
+                'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
+                __CLASS__,
+                __FUNCTION__
+            );
+
+            $iterable = [$iterable];
+        }
+
         $this->iterable = Create::iterFor($iterable);
 
         if (isset($config['concurrency'])) {

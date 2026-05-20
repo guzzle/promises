@@ -34,6 +34,8 @@ final class Each
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
     ): PromiseInterface {
+        $iterable = self::prepareIterable($iterable, __FUNCTION__);
+
         return (new EachPromise($iterable, [
             'fulfilled' => $onFulfilled,
             'rejected' => $onRejected,
@@ -65,6 +67,8 @@ final class Each
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
     ): PromiseInterface {
+        $iterable = self::prepareIterable($iterable, __FUNCTION__);
+
         return (new EachPromise($iterable, [
             'fulfilled' => $onFulfilled,
             'rejected' => $onRejected,
@@ -92,6 +96,8 @@ final class Each
         $concurrency,
         ?callable $onFulfilled = null
     ): PromiseInterface {
+        $iterable = self::prepareIterable($iterable, __FUNCTION__);
+
         return self::ofLimit(
             $iterable,
             $concurrency,
@@ -100,5 +106,22 @@ final class Each
                 $aggregate->reject($reason);
             }
         );
+    }
+
+    private static function prepareIterable($iterable, string $method): iterable
+    {
+        if (is_iterable($iterable)) {
+            return $iterable;
+        }
+
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '2.5',
+            'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
+            self::class,
+            $method
+        );
+
+        return [$iterable];
     }
 }

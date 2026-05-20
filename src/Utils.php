@@ -139,6 +139,8 @@ final class Utils
      */
     public static function inspectAll($promises): array
     {
+        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
+
         $results = [];
         foreach ($promises as $key => $promise) {
             $results[$key] = self::inspect($promise);
@@ -166,6 +168,8 @@ final class Utils
      */
     public static function unwrap($promises): array
     {
+        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
+
         $results = [];
         foreach ($promises as $key => $promise) {
             $results[$key] = $promise->wait();
@@ -193,6 +197,8 @@ final class Utils
      */
     public static function all($promises, bool $recursive = false): PromiseInterface
     {
+        $promises = self::prepareIterable($promises, __FUNCTION__);
+
         $results = [];
         $promise = Each::of(
             $promises,
@@ -246,6 +252,8 @@ final class Utils
      */
     public static function some(int $count, $promises): PromiseInterface
     {
+        $promises = self::prepareIterable($promises, __FUNCTION__);
+
         $results = [];
         $rejections = [];
 
@@ -291,6 +299,8 @@ final class Utils
      */
     public static function any($promises): PromiseInterface
     {
+        $promises = self::prepareIterable($promises, __FUNCTION__);
+
         return self::some(1, $promises)->then(function ($values) {
             return $values[0];
         });
@@ -314,6 +324,8 @@ final class Utils
      */
     public static function settle($promises): PromiseInterface
     {
+        $promises = self::prepareIterable($promises, __FUNCTION__);
+
         $results = [];
 
         return Each::of(
@@ -329,5 +341,31 @@ final class Utils
 
             return $results;
         });
+    }
+
+    private static function prepareIterable($promises, string $method): iterable
+    {
+        if (is_iterable($promises)) {
+            return $promises;
+        }
+
+        self::triggerNonIterableDeprecation($promises, $method);
+
+        return [$promises];
+    }
+
+    private static function triggerNonIterableDeprecation($promises, string $method): void
+    {
+        if (is_iterable($promises)) {
+            return;
+        }
+
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '2.5',
+            'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
+            self::class,
+            $method
+        );
     }
 }

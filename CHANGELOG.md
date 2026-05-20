@@ -17,6 +17,13 @@
 - Dropped support for PHP 7.2 and 7.3
 
 
+## 2.5.0 - Upcoming
+
+### Deprecated
+
+- Deprecated passing non-iterable inputs to promise collection helpers and `EachPromise`
+
+
 ## 2.4.0 - 2026-05-20
 
 ### Changed
