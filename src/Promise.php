@@ -7,22 +7,38 @@ namespace GuzzleHttp\Promise;
 /**
  * Promises/A+ implementation that avoids recursion when possible.
  *
+ * @template TValue = mixed
+ * @template TReason = mixed
+ *
+ * @implements PromiseInterface<TValue, TReason>
+ *
  * @see https://promisesaplus.com/
  *
  * @final
  */
 class Promise implements PromiseInterface
 {
+    /** @var self::PENDING|self::FULFILLED|self::REJECTED */
     private $state = self::PENDING;
+
+    /** @var TValue|TReason|PromiseInterface<TValue, TReason>|null */
     private $result;
+
+    /** @var (callable(): void)|null */
     private $cancelFn;
+
+    /** @var (callable(bool): void)|null */
     private $waitFn;
+
+    /** @var list<Promise<mixed, mixed>>|null */
     private $waitList;
+
+    /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: (callable|null), 2: (callable|null)}>|null */
     private $handlers = [];
 
     /**
-     * @param callable $waitFn   Fn that when invoked resolves the promise.
-     * @param callable $cancelFn Fn that when invoked cancels the promise.
+     * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.
+     * @param (callable(): void)|null     $cancelFn Fn that when invoked cancels the promise.
      */
     public function __construct(
         ?callable $waitFn = null,
@@ -32,6 +48,9 @@ class Promise implements PromiseInterface
         $this->cancelFn = $cancelFn;
     }
 
+    /**
+     * @return PromiseInterface<mixed, mixed>
+     */
     public function then(
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
@@ -78,6 +97,8 @@ class Promise implements PromiseInterface
             // It's rejected so "unwrap" and throw an exception.
             throw Create::exceptionFor($this->result);
         }
+
+        return null;
     }
 
     public function getState(): string
@@ -187,7 +208,7 @@ class Promise implements PromiseInterface
      */
     private static function callHandler(int $index, $value, array $handler): void
     {
-        /** @var PromiseInterface $promise */
+        /** @var PromiseInterface<mixed, mixed> $promise */
         $promise = $handler[0];
 
         // The promise may have been cancelled or resolved before placing

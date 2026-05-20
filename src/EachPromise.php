@@ -8,27 +8,34 @@ namespace GuzzleHttp\Promise;
  * Represents a promise that iterates over many promises and invokes
  * side-effect functions in the process.
  *
+ * @template TKey of array-key
+ * @template TValue
+ * @template TReason
+ *
+ * @implements PromisorInterface<mixed, mixed>
+ *
  * @final
  */
 class EachPromise implements PromisorInterface
 {
+    /** @var array<int, PromiseInterface<mixed, mixed>>|null */
     private $pending = [];
 
     private $nextPendingIndex = 0;
 
-    /** @var \Iterator|null */
+    /** @var \Iterator<TKey, TValue|PromiseInterface<TValue, TReason>>|null */
     private $iterable;
 
-    /** @var callable|int|null */
+    /** @var (callable(int): int)|int|null */
     private $concurrency;
 
-    /** @var callable|null */
+    /** @var (callable(TValue, TKey, Promise<mixed, mixed>): void)|null */
     private $onFulfilled;
 
-    /** @var callable|null */
+    /** @var (callable(TReason, TKey, Promise<mixed, mixed>): void)|null */
     private $onRejected;
 
-    /** @var Promise|null */
+    /** @var Promise<mixed, mixed>|null */
     private $aggregate;
 
     /** @var bool|null */
@@ -52,8 +59,12 @@ class EachPromise implements PromisorInterface
      *   allowed number of outstanding concurrently executing promises,
      *   creating a capped pool of promises. There is no limit by default.
      *
-     * @param mixed $iterable Promises or values to iterate.
-     * @param array $config   Configuration options
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $iterable Promises or values to iterate.
+     * @param array{
+     *     fulfilled?: callable(TValue, TKey, Promise<mixed, mixed>): void,
+     *     rejected?: callable(TReason, TKey, Promise<mixed, mixed>): void,
+     *     concurrency?: int|(callable(int): int)
+     * } $config Configuration options
      */
     public function __construct($iterable, array $config = [])
     {
@@ -72,7 +83,9 @@ class EachPromise implements PromisorInterface
         }
     }
 
-    /** @psalm-suppress InvalidNullableReturnType */
+    /**
+     * @return PromiseInterface<mixed, mixed>
+     */
     public function promise(): PromiseInterface
     {
         if ($this->aggregate) {
@@ -81,16 +94,12 @@ class EachPromise implements PromisorInterface
 
         try {
             $this->createPromise();
-            /** @psalm-assert Promise $this->aggregate */
             $this->iterable->rewind();
             $this->refillPending();
         } catch (\Throwable $e) {
             $this->aggregate->reject($e);
         }
 
-        /**
-         * @psalm-suppress NullableReturnStatement
-         */
         return $this->aggregate;
     }
 

@@ -37,29 +37,33 @@ use Throwable;
  *     // Outputs "abc"
  *     $promise->then(function ($v) { echo $v; });
  *
- * @param callable $generatorFn Generator function to wrap into a promise.
+ * @template TValue = mixed
+ * @template TReason = mixed
  *
- * @return Promise
+ * @implements PromiseInterface<TValue, TReason>
  *
  * @see https://github.com/petkaantonov/bluebird/blob/master/API.md#generators inspiration
  */
 final class Coroutine implements PromiseInterface
 {
     /**
-     * @var PromiseInterface|null
+     * @var PromiseInterface<mixed, mixed>|null
      */
     private $currentPromise;
 
     /**
-     * @var Generator
+     * @var Generator<mixed, mixed, mixed, mixed>
      */
     private $generator;
 
     /**
-     * @var Promise
+     * @var Promise<TValue, TReason>
      */
     private $result;
 
+    /**
+     * @param callable(): Generator<mixed, mixed, mixed, mixed> $generatorFn
+     */
     public function __construct(callable $generatorFn)
     {
         $this->generator = $generatorFn();
@@ -77,6 +81,10 @@ final class Coroutine implements PromiseInterface
 
     /**
      * Create a new coroutine.
+     *
+     * @param callable(): Generator<mixed, mixed, mixed, mixed> $generatorFn
+     *
+     * @return self<mixed, mixed>
      */
     public static function of(callable $generatorFn): self
     {

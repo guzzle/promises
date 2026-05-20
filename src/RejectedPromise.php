@@ -10,14 +10,20 @@ namespace GuzzleHttp\Promise;
  * Thenning off of this promise will invoke the onRejected callback
  * immediately and ignore other callbacks.
  *
+ * @template TValue = mixed
+ * @template TReason = mixed
+ *
+ * @implements PromiseInterface<TValue, TReason>
+ *
  * @final
  */
 class RejectedPromise implements PromiseInterface
 {
+    /** @var TReason */
     private $reason;
 
     /**
-     * @param mixed $reason
+     * @param TReason $reason
      */
     public function __construct($reason)
     {
