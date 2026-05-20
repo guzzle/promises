@@ -92,6 +92,56 @@ class UtilsTest extends TestCase
         $this->assertSame(1, $counter);
     }
 
+    public function testAllRecursivelyHandlesRawValues(): void
+    {
+        $result = P\Utils::all(new \ArrayIterator(['a' => 1]), true)->wait();
+
+        $this->assertSame(['a' => 1], $result);
+    }
+
+    public function testAllRecursivelyIncludesDynamicallyAddedFulfilledPromise(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = new FulfilledPromise('b');
+        });
+
+        $result = P\Utils::all($promises, true)->wait();
+
+        $this->assertSame(['a' => 'a', 'b' => 'b'], $result);
+    }
+
+    public function testAllRecursivelyIncludesDynamicallyAddedRawValue(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = 'b';
+        });
+
+        $result = P\Utils::all($promises, true)->wait();
+
+        $this->assertSame(['a' => 'a', 'b' => 'b'], $result);
+    }
+
+    public function testAllRecursivelyRejectsDynamicallyAddedRejectedPromise(): void
+    {
+        $this->expectException(RejectionException::class);
+        $this->expectExceptionMessage('bad');
+
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = new RejectedPromise('bad');
+        });
+
+        P\Utils::all($promises, true)->wait();
+    }
+
     public function testAllLimitsConcurrencyForLazyIterable(): void
     {
         $created = 0;
@@ -340,6 +390,186 @@ class UtilsTest extends TestCase
             ['state' => 'rejected', 'reason' => 'a'],
             ['state' => 'fulfilled', 'value' => 'b'],
             ['state' => 'fulfilled', 'value' => 'c'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyWaitsOnDynamicallyAddedPendingPromise(): void
+    {
+        $promises = new \ArrayIterator();
+        $waited = false;
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises, &$waited): void {
+            $promise->resolve('a');
+
+            $promises['b'] = $next = new Promise(function () use (&$next, &$waited): void {
+                $waited = true;
+                $next->resolve('b');
+            });
+        });
+
+        $result = P\Utils::settle($promises, true)->wait();
+
+        $this->assertTrue($waited);
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+            'b' => ['state' => PromiseInterface::FULFILLED, 'value' => 'b'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyIncludesDynamicallyAddedFulfilledPromise(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = new FulfilledPromise('b');
+        });
+
+        $result = P\Utils::settle($promises, true)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+            'b' => ['state' => PromiseInterface::FULFILLED, 'value' => 'b'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyIncludesDynamicallyAddedRejectedPromise(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = new RejectedPromise('bad');
+        });
+
+        $result = P\Utils::settle($promises, true)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+            'b' => ['state' => PromiseInterface::REJECTED, 'reason' => 'bad'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyHandlesRawValues(): void
+    {
+        $result = P\Utils::settle(new \ArrayIterator(['a' => 1]), true)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 1],
+        ], $result);
+    }
+
+    public function testSettleDoesNotRecurseByDefault(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $promise = new Promise(function () use (&$promise, $promises): void {
+            $promise->resolve('a');
+            $promises['b'] = new FulfilledPromise('b');
+        });
+
+        $result = P\Utils::settle($promises)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyHandlesRepeatedDynamicAdditions(): void
+    {
+        $promises = new \ArrayIterator();
+
+        $promises['a'] = $first = new Promise(function () use (&$first, $promises): void {
+            $first->resolve('a');
+
+            $promises['b'] = $second = new Promise(function () use (&$second, $promises): void {
+                $second->resolve('b');
+                $promises['c'] = new FulfilledPromise('c');
+            });
+        });
+
+        $result = P\Utils::settle($promises, true)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+            'b' => ['state' => PromiseInterface::FULFILLED, 'value' => 'b'],
+            'c' => ['state' => PromiseInterface::FULFILLED, 'value' => 'c'],
+        ], $result);
+    }
+
+    public function testSettleLimitsConcurrencyForLazyIterable(): void
+    {
+        $created = 0;
+        $promises = [];
+
+        $iterable = static function () use (&$created, &$promises): \Generator {
+            foreach (['a', 'b', 'c'] as $key) {
+                ++$created;
+                $promises[$key] = new Promise();
+
+                yield $key => $promises[$key];
+            }
+        };
+
+        $aggregate = P\Utils::settle($iterable(), false, ['concurrency' => 1]);
+
+        $this->assertSame(1, $created);
+
+        $promises['a']->resolve('A');
+        P\Utils::queue()->run();
+
+        $this->assertSame(2, $created);
+
+        $promises['b']->reject('B');
+        P\Utils::queue()->run();
+
+        $this->assertSame(3, $created);
+
+        $promises['c']->resolve('C');
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'A'],
+            'b' => ['state' => PromiseInterface::REJECTED, 'reason' => 'B'],
+            'c' => ['state' => PromiseInterface::FULFILLED, 'value' => 'C'],
+        ], $aggregate->wait());
+    }
+
+    public function testSettleIgnoresCallbackConfigKeys(): void
+    {
+        $result = P\Utils::settle([new FulfilledPromise('a')], false, [
+            'fulfilled' => static function (): void {
+                throw new \RuntimeException('Should not be called.');
+            },
+            'rejected' => static function (): void {
+                throw new \RuntimeException('Should not be called.');
+            },
+        ])->wait();
+
+        $this->assertSame([
+            ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyHandlesConcurrencyConfig(): void
+    {
+        $promises = new \ArrayIterator();
+        $counter = 0;
+        $promises['a'] = new FulfilledPromise('a');
+        $promises['b'] = $promise = new Promise(function () use (&$promise, $promises, &$counter): void {
+            ++$counter;
+            $promise->resolve('b');
+            $promises['c'] = $subPromise = new Promise(function () use (&$subPromise): void {
+                $subPromise->resolve('c');
+            });
+        });
+
+        $result = P\Utils::settle($promises, true, ['concurrency' => 1])->wait();
+
+        $this->assertSame(1, $counter);
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 'a'],
+            'b' => ['state' => PromiseInterface::FULFILLED, 'value' => 'b'],
+            'c' => ['state' => PromiseInterface::FULFILLED, 'value' => 'c'],
         ], $result);
     }
 

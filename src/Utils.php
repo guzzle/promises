@@ -190,7 +190,7 @@ final class Utils
      * @template TReason
      *
      * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises  Promises or values.
-     * @param bool                                                     $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+     * @param bool                                                     $recursive If true, resolves newly-added entries until no unprocessed entries or pending promises remain.
      * @param array{concurrency?: int|(callable(int): int)}            $config    Configuration options.
      *
      * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
@@ -216,11 +216,9 @@ final class Utils
         });
 
         if (true === $recursive) {
-            $promise = $promise->then(function ($results) use ($recursive, &$promises, $config) {
-                foreach ($promises as $promise) {
-                    if (Is::pending($promise)) {
-                        return self::all($promises, $recursive, $config);
-                    }
+            $promise = $promise->then(function ($results) use (&$promises, $config) {
+                if (self::shouldRecurse($promises, $results)) {
+                    return self::all($promises, true, $config);
                 }
 
                 return $results;
@@ -307,32 +305,71 @@ final class Utils
      *
      * The returned promise is fulfilled with an array of inspection state arrays.
      *
+     * The config array accepts a concurrency option for lazy iterables. Other
+     * config keys are ignored by this wrapper.
+     *
      * @see inspect for the inspection state array format.
      *
      * @template TKey of array-key
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises  Promises or values.
+     * @param bool                                                     $recursive If true, settles newly-added entries until no unprocessed entries or pending promises remain.
+     * @param array{concurrency?: int|(callable(int): int)}            $config    Configuration options.
      *
-     * @return PromiseInterface<array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>, \Throwable>
+     * @return PromiseInterface<array<TKey, array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}>, \Throwable>
      */
-    public static function settle(iterable $promises): PromiseInterface
+    public static function settle(iterable $promises, bool $recursive = false, array $config = []): PromiseInterface
     {
         $results = [];
 
-        return Each::of(
+        $promise = Each::of(
             $promises,
             function ($value, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
             },
             function ($reason, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
-            }
+            },
+            $config
         )->then(function () use (&$results) {
             ksort($results);
 
             return $results;
         });
+
+        if (true === $recursive) {
+            $promise = $promise->then(function ($results) use (&$promises, $config) {
+                if (self::shouldRecurse($promises, $results)) {
+                    return self::settle($promises, true, $config);
+                }
+
+                return $results;
+            });
+        }
+
+        return $promise;
+    }
+
+    /**
+     * @template TKey of array-key
+     *
+     * @param iterable<TKey, mixed> $promises Promises or values.
+     * @param array<TKey, mixed>    $results  Results already collected for a pass.
+     */
+    private static function shouldRecurse(iterable $promises, array $results): bool
+    {
+        foreach ($promises as $key => $promise) {
+            if (!array_key_exists($key, $results)) {
+                return true;
+            }
+
+            if ($promise instanceof PromiseInterface && Is::pending($promise)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

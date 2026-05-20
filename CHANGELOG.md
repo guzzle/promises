@@ -7,6 +7,7 @@
 
 - Added `concurrency` config support to `Utils::all()` and `Each::of()`
 - Added generic PHPDoc annotations to promise APIs
+- Added recursive and `concurrency` config support to `Utils::settle()`
 - Allowed promises to be resolved without passing a value
 
 ### Changed
@@ -14,6 +15,10 @@
 - Changed `Utils::inspect()` to return actual rejection reasons
 - Changed late rejection callbacks to follow rejected promises
 - Require iterable inputs for promise collection helpers and `EachPromise`
+
+### Fixed
+
+- Fixed recursive `Utils::all()` handling of dynamically-added settled values and raw values
 
 ### Removed
 
