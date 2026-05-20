@@ -12,6 +12,26 @@ PHP `^7.2.5 || ^8.0`.
 If your application still supports PHP 7.2 or 7.3, continue using Guzzle
 Promises 2.x until your minimum PHP version is raised.
 
+#### Generic PHPDoc Types
+
+`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
+include generic PHPDoc annotations for static analysis tools. The first template
+type represents the fulfillment value and the second represents the rejection
+reason. This is a static-analysis-only change and does not alter runtime
+behavior:
+
+```php
+use GuzzleHttp\Promise\PromiseInterface;
+
+/** @var PromiseInterface<string, \Throwable> $promise */
+$value = $promise->wait();
+```
+
+Code that uses unparameterized promise types continues to work and is treated as
+`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
+extends promise classes, or has stricter static analysis, you may need to update
+your PHPDoc annotations to include the generic value and reason types.
+
 #### Promise Inspection
 
 `Utils::inspect()` and `Utils::inspectAll()` now return the actual rejection
