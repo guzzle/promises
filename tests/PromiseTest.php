@@ -36,6 +36,24 @@ class PromiseTest extends TestCase
         $this->assertSame('foo', $p->wait());
     }
 
+    public function testCanResolveWithoutValue(): void
+    {
+        $p = new Promise();
+        $p->resolve();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertNull($p->wait());
+    }
+
+    public function testCanResolveWithoutValueRepeatedly(): void
+    {
+        $p = new Promise();
+        $p->resolve();
+        $p->resolve(null);
+
+        $this->assertNull($p->wait());
+    }
+
     public function testCannotRejectNonPendingPromise(): void
     {
         $this->expectException(\LogicException::class);
@@ -332,6 +350,24 @@ class PromiseTest extends TestCase
         $this->assertSame('foo', $carry);
     }
 
+    public function testResolveWithoutValueNotifiesCallbacksWithNull(): void
+    {
+        $p = new Promise();
+        $called = false;
+        $received = 'not called';
+
+        $p->then(function ($value) use (&$called, &$received): void {
+            $called = true;
+            $received = $value;
+        });
+
+        $p->resolve();
+        P\Utils::queue()->run();
+
+        $this->assertTrue($called);
+        $this->assertNull($received);
+    }
+
     public function testCreatesPromiseWhenFulfilledBeforeThen(): void
     {
         $p = new Promise();
@@ -344,6 +380,24 @@ class PromiseTest extends TestCase
         $this->assertNull($carry);
         P\Utils::queue()->run();
         $this->assertSame('foo', $carry);
+    }
+
+    public function testResolveWithoutValueBeforeThenNotifiesCallbackWithNull(): void
+    {
+        $p = new Promise();
+        $p->resolve();
+        $called = false;
+        $received = 'not called';
+
+        $p->then(function ($value) use (&$called, &$received): void {
+            $called = true;
+            $received = $value;
+        });
+
+        P\Utils::queue()->run();
+
+        $this->assertTrue($called);
+        $this->assertNull($received);
     }
 
     public function testCreatesPromiseWhenFulfilledWithNoCallback(): void

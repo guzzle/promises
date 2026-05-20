@@ -82,7 +82,7 @@ class RejectedPromise implements PromiseInterface
         return self::REJECTED;
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         throw new \LogicException('Cannot resolve a rejected promise');
     }

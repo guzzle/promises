@@ -76,7 +76,7 @@ class FulfilledPromise implements PromiseInterface
         return self::FULFILLED;
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         if ($value !== $this->value) {
             throw new \LogicException('Cannot resolve a fulfilled promise');

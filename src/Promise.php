@@ -131,7 +131,7 @@ class Promise implements PromiseInterface
         }
     }
 
-    public function resolve($value): void
+    public function resolve($value = null): void
     {
         $this->settle(self::FULFILLED, $value);
     }
