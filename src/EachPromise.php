@@ -96,6 +96,19 @@ class EachPromise implements PromisorInterface
             $this->createPromise();
             $this->iterable->rewind();
             $this->refillPending();
+            if (!$this->pending) {
+                Utils::queue()->add(function (): void {
+                    if (!$this->aggregate || Is::settled($this->aggregate)) {
+                        return;
+                    }
+
+                    try {
+                        $this->checkIfFinished();
+                    } catch (\Throwable $e) {
+                        $this->aggregate->reject($e);
+                    }
+                });
+            }
         } catch (\Throwable $e) {
             $this->aggregate->reject($e);
         }

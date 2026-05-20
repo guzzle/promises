@@ -17,6 +17,13 @@
 - Dropped support for PHP 7.2 and 7.3
 
 
+## 2.4.0 - 2026-05-20
+
+### Changed
+
+- Empty `EachPromise` instances now resolve when the task queue runs without `wait()`
+
+
 ## 2.3.1 - 2026-05-19
 
 ### Fixed
