@@ -40,11 +40,12 @@ final class Create
      * If the provided reason is a promise, then it is returned as-is.
      *
      * @template TReason
+     * @template TValue = mixed
      * @template TPromise of PromiseInterface<mixed, mixed> = PromiseInterface<mixed, mixed>
      *
      * @param TReason|TPromise $reason Promise or reason.
      *
-     * @return ($reason is PromiseInterface ? TPromise : RejectedPromise<mixed, TReason>)
+     * @return ($reason is PromiseInterface ? TPromise : RejectedPromise<TValue, TReason>)
      */
     public static function rejectionFor($reason): PromiseInterface
     {
