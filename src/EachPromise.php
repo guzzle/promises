@@ -19,12 +19,12 @@ namespace GuzzleHttp\Promise;
 class EachPromise implements PromisorInterface
 {
     /** @var array<int, PromiseInterface<mixed, mixed>>|null */
-    private $pending = [];
+    private ?array $pending = [];
 
-    private $nextPendingIndex = 0;
+    private int $nextPendingIndex = 0;
 
     /** @var \Iterator<TKey, TValue|PromiseInterface<TValue, TReason>>|null */
-    private $iterable;
+    private ?\Iterator $iterable;
 
     /** @var (callable(int): int)|int|null */
     private $concurrency;
@@ -36,10 +36,9 @@ class EachPromise implements PromisorInterface
     private $onRejected;
 
     /** @var Promise<mixed, mixed>|null */
-    private $aggregate;
+    private ?Promise $aggregate = null;
 
-    /** @var bool|null */
-    private $mutex;
+    private ?bool $mutex = null;
 
     /**
      * Configuration hash can include the following key value pairs:
@@ -59,27 +58,15 @@ class EachPromise implements PromisorInterface
      *   allowed number of outstanding concurrently executing promises,
      *   creating a capped pool of promises. There is no limit by default.
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>|TValue|PromiseInterface<TValue, TReason> $iterable Promises or values to iterate.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $iterable Promises or values to iterate.
      * @param array{
      *     fulfilled?: callable(TValue, TKey, PromiseInterface<mixed, mixed>): void,
      *     rejected?: callable(TReason, TKey, PromiseInterface<mixed, mixed>): void,
      *     concurrency?: int|(callable(int): int)
      * } $config Configuration options
      */
-    public function __construct($iterable, array $config = [])
+    public function __construct(iterable $iterable, array $config = [])
     {
-        if (!is_iterable($iterable)) {
-            \trigger_deprecation(
-                'guzzlehttp/promises',
-                '2.5',
-                'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
-                __CLASS__,
-                __FUNCTION__
-            );
-
-            $iterable = [$iterable];
-        }
-
         $this->iterable = Create::iterFor($iterable);
 
         if (isset($config['concurrency'])) {

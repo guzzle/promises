@@ -216,6 +216,28 @@ class UtilsTest extends TestCase
         ], $result);
     }
 
+    /**
+     * @dataProvider nonIterableCollectionProvider
+     */
+    public function testCollectionHelpersRequireIterable(callable $callback): void
+    {
+        $this->expectException(\TypeError::class);
+
+        $callback();
+    }
+
+    public static function nonIterableCollectionProvider(): array
+    {
+        return [
+            'inspectAll' => [static function (): void { P\Utils::inspectAll(new Promise()); }],
+            'unwrap' => [static function (): void { P\Utils::unwrap(new Promise()); }],
+            'all' => [static function (): void { P\Utils::all(new Promise()); }],
+            'some' => [static function (): void { P\Utils::some(1, new Promise()); }],
+            'any' => [static function (): void { P\Utils::any(new Promise()); }],
+            'settle' => [static function (): void { P\Utils::settle(new Promise()); }],
+        ];
+    }
+
     public function testCanInspectFulfilledPromise(): void
     {
         $p = new FulfilledPromise('foo');

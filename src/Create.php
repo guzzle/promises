@@ -78,11 +78,11 @@ final class Create
      * @template TKey of array-key
      * @template TValue
      *
-     * @param iterable<TKey, TValue>|TValue $value
+     * @param iterable<TKey, TValue> $value
      *
-     * @return \Iterator<TKey|int, TValue>
+     * @return \Iterator<TKey, TValue>
      */
-    public static function iterFor($value): \Iterator
+    public static function iterFor(iterable $value): \Iterator
     {
         if ($value instanceof \Iterator) {
             return $value;
@@ -92,16 +92,10 @@ final class Create
             return new \ArrayIterator($value);
         }
 
-        if (!is_iterable($value)) {
-            \trigger_deprecation(
-                'guzzlehttp/promises',
-                '2.5',
-                'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
-                __CLASS__,
-                __FUNCTION__
-            );
+        if ($value instanceof \IteratorAggregate) {
+            return self::iterFor($value->getIterator());
         }
 
-        return new \ArrayIterator([$value]);
+        return new \IteratorIterator($value);
     }
 }

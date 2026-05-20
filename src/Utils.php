@@ -137,10 +137,8 @@ final class Utils
      *
      * @return array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>
      */
-    public static function inspectAll($promises): array
+    public static function inspectAll(iterable $promises): array
     {
-        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
-
         $results = [];
         foreach ($promises as $key => $promise) {
             $results[$key] = self::inspect($promise);
@@ -166,10 +164,8 @@ final class Utils
      *
      * @throws \Throwable on error
      */
-    public static function unwrap($promises): array
+    public static function unwrap(iterable $promises): array
     {
-        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
-
         $results = [];
         foreach ($promises as $key => $promise) {
             $results[$key] = $promise->wait();
@@ -195,10 +191,8 @@ final class Utils
      *
      * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
      */
-    public static function all($promises, bool $recursive = false): PromiseInterface
+    public static function all(iterable $promises, bool $recursive = false): PromiseInterface
     {
-        $promises = self::prepareIterable($promises, __FUNCTION__);
-
         $results = [];
         $promise = Each::of(
             $promises,
@@ -250,10 +244,8 @@ final class Utils
      *
      * @return PromiseInterface<list<mixed>, mixed>
      */
-    public static function some(int $count, $promises): PromiseInterface
+    public static function some(int $count, iterable $promises): PromiseInterface
     {
-        $promises = self::prepareIterable($promises, __FUNCTION__);
-
         $results = [];
         $rejections = [];
 
@@ -297,10 +289,8 @@ final class Utils
      *
      * @return PromiseInterface<mixed, mixed>
      */
-    public static function any($promises): PromiseInterface
+    public static function any(iterable $promises): PromiseInterface
     {
-        $promises = self::prepareIterable($promises, __FUNCTION__);
-
         return self::some(1, $promises)->then(function ($values) {
             return $values[0];
         });
@@ -322,10 +312,8 @@ final class Utils
      *
      * @return PromiseInterface<array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>, \Throwable>
      */
-    public static function settle($promises): PromiseInterface
+    public static function settle(iterable $promises): PromiseInterface
     {
-        $promises = self::prepareIterable($promises, __FUNCTION__);
-
         $results = [];
 
         return Each::of(
@@ -341,31 +329,5 @@ final class Utils
 
             return $results;
         });
-    }
-
-    private static function prepareIterable($promises, string $method): iterable
-    {
-        if (is_iterable($promises)) {
-            return $promises;
-        }
-
-        self::triggerNonIterableDeprecation($promises, $method);
-
-        return [$promises];
-    }
-
-    private static function triggerNonIterableDeprecation($promises, string $method): void
-    {
-        if (is_iterable($promises)) {
-            return;
-        }
-
-        \trigger_deprecation(
-            'guzzlehttp/promises',
-            '2.5',
-            'Passing a non-iterable to %s::%s() is deprecated; guzzlehttp/promises 3.0 will require an iterable.',
-            self::class,
-            $method
-        );
     }
 }

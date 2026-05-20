@@ -19,7 +19,7 @@ namespace GuzzleHttp\Promise;
 class Promise implements PromiseInterface
 {
     /** @var self::PENDING|self::FULFILLED|self::REJECTED */
-    private $state = self::PENDING;
+    private string $state = self::PENDING;
 
     /** @var TValue|TReason|PromiseInterface<TValue, TReason>|null */
     private $result;
@@ -31,10 +31,10 @@ class Promise implements PromiseInterface
     private $waitFn;
 
     /** @var list<Promise<mixed, mixed>>|null */
-    private $waitList;
+    private ?array $waitList = null;
 
     /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: (callable|null), 2: (callable|null)}>|null */
-    private $handlers = [];
+    private ?array $handlers = [];
 
     /**
      * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.

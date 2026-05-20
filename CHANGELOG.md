@@ -11,6 +11,7 @@
 
 - Changed `Utils::inspect()` to return actual rejection reasons
 - Changed late rejection callbacks to follow rejected promises
+- Require iterable inputs for promise collection helpers and `EachPromise`
 
 ### Removed
 

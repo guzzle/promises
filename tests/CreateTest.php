@@ -55,4 +55,11 @@ class CreateTest extends TestCase
         $iter = new \ArrayIterator();
         $this->assertSame($iter, P\Create::iterFor($iter));
     }
+
+    public function testIterForRequiresIterable(): void
+    {
+        $this->expectException(\TypeError::class);
+
+        P\Create::iterFor('foo');
+    }
 }
