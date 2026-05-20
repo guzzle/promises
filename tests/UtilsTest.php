@@ -92,6 +92,133 @@ class UtilsTest extends TestCase
         $this->assertSame(1, $counter);
     }
 
+    public function testAllLimitsConcurrencyForLazyIterable(): void
+    {
+        $created = 0;
+        $promises = [];
+
+        $iterable = static function () use (&$created, &$promises): \Generator {
+            foreach (['a', 'b', 'c', 'd'] as $key) {
+                ++$created;
+                $promises[$key] = new Promise();
+
+                yield $key => $promises[$key];
+            }
+        };
+
+        $aggregate = P\Utils::all($iterable(), false, ['concurrency' => 2]);
+
+        $this->assertSame(2, $created);
+
+        $promises['a']->resolve('A');
+        P\Utils::queue()->run();
+
+        $this->assertSame(3, $created);
+
+        $promises['b']->resolve('B');
+        P\Utils::queue()->run();
+
+        $this->assertSame(4, $created);
+
+        $promises['c']->resolve('C');
+        $promises['d']->resolve('D');
+
+        $this->assertSame([
+            'a' => 'A',
+            'b' => 'B',
+            'c' => 'C',
+            'd' => 'D',
+        ], $aggregate->wait());
+    }
+
+    public function testAllRejectsWithConcurrencyConfig(): void
+    {
+        $created = 0;
+        $promises = [];
+        $result = null;
+
+        $iterable = static function () use (&$created, &$promises): \Generator {
+            foreach (['a', 'b'] as $key) {
+                ++$created;
+                $promises[$key] = new Promise();
+
+                yield $key => $promises[$key];
+            }
+        };
+
+        $aggregate = P\Utils::all($iterable(), false, ['concurrency' => 1]);
+
+        $this->assertSame(1, $created);
+
+        $promises['a']->reject('fail');
+        P\Utils::queue()->run();
+
+        $aggregate->then(null, function ($reason) use (&$result): void {
+            $result = $reason;
+        });
+        P\Utils::queue()->run();
+
+        $this->assertSame('fail', $result);
+        $this->assertSame(1, $created);
+    }
+
+    public function testAllAcceptsCallableConcurrencyConfig(): void
+    {
+        $pendingCounts = [];
+        $promises = [new Promise(), new Promise()];
+
+        $aggregate = P\Utils::all($promises, false, [
+            'concurrency' => static function (int $pendingCount) use (&$pendingCounts): int {
+                $pendingCounts[] = $pendingCount;
+
+                return 1;
+            },
+        ]);
+
+        $promises[0]->resolve('a');
+        P\Utils::queue()->run();
+
+        $promises[1]->resolve('b');
+
+        $this->assertSame(['a', 'b'], $aggregate->wait());
+        $this->assertSame([0, 0], $pendingCounts);
+    }
+
+    public function testAllIgnoresCallbackConfigKeys(): void
+    {
+        $result = P\Utils::all([new FulfilledPromise('a')], false, [
+            'fulfilled' => static function (): void {
+                throw new \RuntimeException('Should not be called.');
+            },
+            'rejected' => static function (): void {
+                throw new \RuntimeException('Should not be called.');
+            },
+        ])->wait();
+
+        $this->assertSame(['a'], $result);
+    }
+
+    public function testPromisesDynamicallyAddedToStackWithConcurrencyConfig(): void
+    {
+        $promises = new \ArrayIterator();
+        $counter = 0;
+        $promises['a'] = new FulfilledPromise('a');
+        $promises['b'] = $promise = new Promise(function () use (&$promise, &$promises, &$counter): void {
+            ++$counter;
+            $promise->resolve('b');
+            $promises['c'] = $subPromise = new Promise(function () use (&$subPromise): void {
+                $subPromise->resolve('c');
+            });
+        });
+
+        $result = P\Utils::all($promises, true, ['concurrency' => 1])->wait();
+
+        $this->assertCount(3, $promises);
+        $this->assertCount(3, $result);
+        $this->assertSame($result['c'], 'c');
+        $this->assertSame(1, $counter);
+    }
+
     public function testAllThrowsWhenAnyRejected(): void
     {
         $a = new Promise();

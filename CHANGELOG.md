@@ -5,6 +5,7 @@
 
 ### Added
 
+- Added `concurrency` config support to `Utils::all()` and `Each::of()`
 - Added generic PHPDoc annotations to promise APIs
 - Allowed promises to be resolved without passing a value
 

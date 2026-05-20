@@ -182,16 +182,20 @@ final class Utils
      * respective positions to the original array. If any promise in the array
      * rejects, the returned promise is rejected with the rejection reason.
      *
+     * The config array accepts a concurrency option for lazy iterables. Other
+     * config keys are ignored by this wrapper.
+     *
      * @template TKey of array-key
      * @template TValue
      * @template TReason
      *
      * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises  Promises or values.
      * @param bool                                                     $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+     * @param array{concurrency?: int|(callable(int): int)}            $config    Configuration options.
      *
      * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
      */
-    public static function all(iterable $promises, bool $recursive = false): PromiseInterface
+    public static function all(iterable $promises, bool $recursive = false, array $config = []): PromiseInterface
     {
         $results = [];
         $promise = Each::of(
@@ -203,7 +207,8 @@ final class Utils
                 if (Is::pending($aggregate)) {
                     $aggregate->reject($reason);
                 }
-            }
+            },
+            $config
         )->then(function () use (&$results) {
             ksort($results);
 
@@ -211,10 +216,10 @@ final class Utils
         });
 
         if (true === $recursive) {
-            $promise = $promise->then(function ($results) use ($recursive, &$promises) {
+            $promise = $promise->then(function ($results) use ($recursive, &$promises, $config) {
                 foreach ($promises as $promise) {
                     if (Is::pending($promise)) {
-                        return self::all($promises, $recursive);
+                        return self::all($promises, $recursive, $config);
                     }
                 }
 
