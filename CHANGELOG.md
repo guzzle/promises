@@ -8,7 +8,7 @@
 - Deprecated passing non-iterable inputs to promise collection helpers and `EachPromise`
 
 
-## 2.4.1 - Upcoming
+## 2.4.1 - 2026-05-20
 
 ### Fixed
 
