@@ -199,7 +199,7 @@ final class Utils
             function ($value, $idx) use (&$results): void {
                 $results[$idx] = $value;
             },
-            function ($reason, $idx, Promise $aggregate): void {
+            function ($reason, $idx, PromiseInterface $aggregate): void {
                 if (Is::pending($aggregate)) {
                     $aggregate->reject($reason);
                 }
