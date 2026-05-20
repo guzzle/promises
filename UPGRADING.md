@@ -23,7 +23,9 @@ behavior:
 ```php
 use GuzzleHttp\Promise\PromiseInterface;
 
-/** @var PromiseInterface<string, \Throwable> $promise */
+/** @var PromiseInterface<string, \Throwable> */
+$promise = $factory->createPromise();
+
 $value = $promise->wait();
 ```
 
