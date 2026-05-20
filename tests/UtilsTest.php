@@ -137,7 +137,7 @@ class UtilsTest extends TestCase
         });
         P\Utils::queue()->run();
         $this->assertInstanceOf(AggregateException::class, $called);
-        $this->assertStringContainsString('bad', $called->getReason());
+        $this->assertContains('bad', $called->getReason());
     }
 
     public function testInspectPreservesAggregateExceptionFromSome(): void
@@ -149,7 +149,7 @@ class UtilsTest extends TestCase
 
         $this->assertSame(PromiseInterface::REJECTED, $result['state']);
         $this->assertInstanceOf(AggregateException::class, $result['reason']);
-        $this->assertStringContainsString('bad', $result['reason']->getReason());
+        $this->assertContains('bad', $result['reason']->getReason());
     }
 
     public function testCanWaitUntilSomeCountIsSatisfied(): void
