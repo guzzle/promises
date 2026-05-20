@@ -32,13 +32,13 @@ interface PromiseInterface
      * @template TRejectedReason = never
      *
      * @param (callable(TValue): (TFulfilledValue|PromiseInterface<TFulfilledValue, TFulfilledReason>))|null $onFulfilled Invoked when the promise fulfills.
-     * @param (callable(TReason): (TRejectedValue|PromiseInterface<TRejectedValue, TRejectedReason>))|null     $onRejected  Invoked when the promise is rejected.
+     * @param (callable(TReason): (TRejectedValue|PromiseInterface<TRejectedValue, TRejectedReason>))|null   $onRejected  Invoked when the promise is rejected.
      *
      * @return PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)>
      */
     public function then(
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
     ): PromiseInterface;
 
     /**

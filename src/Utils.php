@@ -186,8 +186,8 @@ final class Utils
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
-     * @param bool                                                    $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $promises  Promises or values.
+     * @param bool                                                     $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
      *
      * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
      */
@@ -239,7 +239,7 @@ final class Utils
      * @template TValue
      * @template TReason
      *
-     * @param int                                                 $count    Total number of promises.
+     * @param int                                                $count    Total number of promises.
      * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
      *
      * @return PromiseInterface<list<mixed>, mixed>

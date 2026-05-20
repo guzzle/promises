@@ -93,7 +93,7 @@ final class Coroutine implements PromiseInterface
 
     public function then(
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
     ): PromiseInterface {
         return $this->result->then($onFulfilled, $onRejected);
     }

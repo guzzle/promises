@@ -42,7 +42,7 @@ class Promise implements PromiseInterface
      */
     public function __construct(
         ?callable $waitFn = null,
-        ?callable $cancelFn = null
+        ?callable $cancelFn = null,
     ) {
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
@@ -53,7 +53,7 @@ class Promise implements PromiseInterface
      */
     public function then(
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
     ): PromiseInterface {
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);

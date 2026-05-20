@@ -23,7 +23,7 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>   $iterable    Iterator or array to iterate over.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>    $iterable    Iterator or array to iterate over.
      * @param (callable(TValue, TKey, Promise<mixed, mixed>): void)|null  $onFulfilled
      * @param (callable(TReason, TKey, Promise<mixed, mixed>): void)|null $onRejected
      *
@@ -32,7 +32,7 @@ final class Each
     public static function of(
         $iterable,
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
     ): PromiseInterface {
         return (new EachPromise($iterable, [
             'fulfilled' => $onFulfilled,
@@ -52,7 +52,7 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>   $iterable
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>    $iterable
      * @param int|(callable(int): int)                                    $concurrency
      * @param (callable(TValue, TKey, Promise<mixed, mixed>): void)|null  $onFulfilled
      * @param (callable(TReason, TKey, Promise<mixed, mixed>): void)|null $onRejected
@@ -63,7 +63,7 @@ final class Each
         $iterable,
         $concurrency,
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
     ): PromiseInterface {
         return (new EachPromise($iterable, [
             'fulfilled' => $onFulfilled,
@@ -81,7 +81,7 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>  $iterable
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>   $iterable
      * @param int|(callable(int): int)                                   $concurrency
      * @param (callable(TValue, TKey, Promise<mixed, mixed>): void)|null $onFulfilled
      *
@@ -90,7 +90,7 @@ final class Each
     public static function ofLimitAll(
         $iterable,
         $concurrency,
-        ?callable $onFulfilled = null
+        ?callable $onFulfilled = null,
     ): PromiseInterface {
         return self::ofLimit(
             $iterable,
