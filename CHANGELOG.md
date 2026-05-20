@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.4.0 - Upcoming
+
+### Fixed
+
+- Fixed empty `EachPromise` instances remaining pending when the task queue is run without calling `wait()`.
+
+
 ## 2.3.1 - 2026-05-19
 
 ### Fixed
