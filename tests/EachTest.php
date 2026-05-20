@@ -22,6 +22,71 @@ class EachTest extends TestCase
         $this->assertTrue(P\Is::fulfilled($aggregate));
     }
 
+    public function testEachOfLimitsConcurrencyWithConfig(): void
+    {
+        $created = 0;
+        $promises = [];
+        $results = [];
+
+        $iterable = static function () use (&$created, &$promises): \Generator {
+            foreach (['a', 'b', 'c'] as $key) {
+                ++$created;
+                $promises[$key] = new Promise();
+
+                yield $key => $promises[$key];
+            }
+        };
+
+        $aggregate = P\Each::of(
+            $iterable(),
+            function ($value, $key) use (&$results): void {
+                $results[$key] = $value;
+            },
+            null,
+            ['concurrency' => 1]
+        );
+
+        $this->assertSame(1, $created);
+
+        $promises['a']->resolve('A');
+        P\Utils::queue()->run();
+
+        $this->assertSame(2, $created);
+
+        $promises['b']->resolve('B');
+        P\Utils::queue()->run();
+
+        $this->assertSame(3, $created);
+
+        $promises['c']->resolve('C');
+
+        $this->assertNull($aggregate->wait());
+        $this->assertSame(['a' => 'A', 'b' => 'B', 'c' => 'C'], $results);
+    }
+
+    public function testEachOfIgnoresCallbackConfigKeys(): void
+    {
+        $results = [];
+
+        P\Each::of(
+            [new FulfilledPromise('a')],
+            function ($value) use (&$results): void {
+                $results[] = $value;
+            },
+            null,
+            [
+                'fulfilled' => static function (): void {
+                    throw new \RuntimeException('Should not be called.');
+                },
+                'rejected' => static function (): void {
+                    throw new \RuntimeException('Should not be called.');
+                },
+            ]
+        )->wait();
+
+        $this->assertSame(['a'], $results);
+    }
+
     public function testEachLimitAllRejectsOnFailure(): void
     {
         $p = [new FulfilledPromise('a'), new RejectedPromise('b')];

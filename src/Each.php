@@ -19,6 +19,9 @@ final class Each
      * index, and the aggregate promise. The callback can invoke any necessary
      * side effects and choose to resolve or reject the aggregate if needed.
      *
+     * The config array accepts a concurrency option matching {@see ofLimit}.
+     * Other config keys are ignored by this wrapper.
+     *
      * @template TKey of array-key
      * @template TValue
      * @template TReason
@@ -26,18 +29,31 @@ final class Each
      * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>             $iterable    Iterator or array to iterate over.
      * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): void)|null  $onFulfilled
      * @param (callable(TReason, TKey, PromiseInterface<mixed, mixed>): void)|null $onRejected
+     * @param array{concurrency?: int|(callable(int): int)}                        $config      Configuration options.
      *
      * @return PromiseInterface<mixed, mixed>
      */
     public static function of(
         iterable $iterable,
         ?callable $onFulfilled = null,
-        ?callable $onRejected = null
+        ?callable $onRejected = null,
+        array $config = []
     ): PromiseInterface {
-        return (new EachPromise($iterable, [
-            'fulfilled' => $onFulfilled,
-            'rejected' => $onRejected,
-        ]))->promise();
+        $eachConfig = [];
+
+        if (null !== $onFulfilled) {
+            $eachConfig['fulfilled'] = $onFulfilled;
+        }
+
+        if (null !== $onRejected) {
+            $eachConfig['rejected'] = $onRejected;
+        }
+
+        if (isset($config['concurrency'])) {
+            $eachConfig['concurrency'] = $config['concurrency'];
+        }
+
+        return (new EachPromise($iterable, $eachConfig))->promise();
     }
 
     /**

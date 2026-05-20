@@ -39,6 +39,21 @@ $promise = Each::ofLimit($singlePromise, 2);
 $promise = Each::ofLimit([$singlePromise], 2);
 ```
 
+#### Collection Helper Config
+
+`Utils::all()` and `Each::of()` now accept a trailing `$config` array with a
+`concurrency` option for lazy iterables:
+
+```php
+use GuzzleHttp\Promise\Utils;
+
+$promise = Utils::all($promises, false, ['concurrency' => 5]);
+```
+
+Only `concurrency` is honored by these wrappers. Callback config keys such as
+`fulfilled` and `rejected` are ignored; pass callbacks to `Each::of()` directly
+or use `EachPromise`.
+
 #### Generic PHPDoc Types
 
 `PromiseInterface`, `PromisorInterface`, and the built-in promise classes now

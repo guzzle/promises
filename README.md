@@ -10,6 +10,7 @@ for a general introduction to promises.
 - [Synchronous wait](#synchronous-wait)
 - [Cancellation](#cancellation)
 - [API](#api)
+  - [Promise Collection Helpers](#promise-collection-helpers)
   - [Promise](#promise)
   - [FulfilledPromise](#fulfilledpromise)
   - [RejectedPromise](#rejectedpromise)
@@ -308,6 +309,37 @@ of the promise.
 
 
 ## API
+
+### Promise Collection Helpers
+
+`Utils::all()` returns a promise that fulfills with all fulfillment values or
+rejects when any input promise rejects.
+
+For lazy iterables, pass `concurrency` to limit how many items are pulled from
+the iterable at one time:
+
+```php
+use GuzzleHttp\Promise\Utils;
+
+$promise = Utils::all($promises, false, ['concurrency' => 5]);
+```
+
+`Each::of()` accepts the same config when you need callbacks instead of
+collected values:
+
+```php
+use GuzzleHttp\Promise\Each;
+
+$promise = Each::of($promises, $onFulfilled, $onRejected, ['concurrency' => 5]);
+```
+
+This limits lazy promise creation. It does not throttle promises that have
+already been created or started. Callback config keys such as `fulfilled` and
+`rejected` are ignored by these wrappers; pass callbacks to `Each::of()`
+directly or use `EachPromise`.
+
+For HTTP request concurrency, use `GuzzleHttp\Pool` from `guzzlehttp/guzzle`.
+
 
 ### Promise
 
