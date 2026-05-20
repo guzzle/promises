@@ -49,17 +49,17 @@ final class Coroutine implements PromiseInterface
     /**
      * @var PromiseInterface<mixed, mixed>|null
      */
-    private $currentPromise;
+    private ?PromiseInterface $currentPromise = null;
 
     /**
      * @var Generator<mixed, mixed, mixed, mixed>
      */
-    private $generator;
+    private Generator $generator;
 
     /**
      * @var Promise<TValue, TReason>
      */
-    private $result;
+    private PromiseInterface $result;
 
     /**
      * @param callable(): Generator<mixed, mixed, mixed, mixed> $generatorFn

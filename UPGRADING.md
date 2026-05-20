@@ -12,6 +12,25 @@ PHP `^7.2.5 || ^8.0`.
 If your application still supports PHP 7.2 or 7.3, continue using Guzzle
 Promises 2.x until your minimum PHP version is raised.
 
+#### Collection Helper Inputs
+
+Promise collection helpers now require iterable inputs. Passing a single promise
+or scalar value directly now throws a `TypeError`.
+
+Wrap single promises or values in an array before passing them to `Create::iterFor()`,
+`Each::of()`, `Each::ofLimit()`, `Each::ofLimitAll()`, `EachPromise`, or the
+`Utils` collection helpers.
+
+```php
+use GuzzleHttp\Promise\Each;
+
+// 2.x
+$promise = Each::ofLimit($singlePromise, 2);
+
+// 3.0
+$promise = Each::ofLimit([$singlePromise], 2);
+```
+
 #### Generic PHPDoc Types
 
 `PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
