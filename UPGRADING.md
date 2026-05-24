@@ -4,6 +4,12 @@ Guzzle Promises Upgrade Guide
 2.x to 3.0
 ----------
 
+Guzzle Promises 3.0 is a major release that raises the minimum PHP version,
+updates promise and collection helper signatures, adds generic PHPDoc types for
+static analyzers, tightens collection helper inputs, improves recursive
+collection behavior, and clarifies rejection inspection and late rejection
+callback behavior.
+
 #### PHP Version and Dependencies
 
 Guzzle Promises 3.0 requires PHP `^7.4 || ^8.0`. Guzzle Promises 2.x supported
@@ -11,6 +17,9 @@ PHP `^7.2.5 || ^8.0`.
 
 If your application still supports PHP 7.2 or 7.3, continue using Guzzle
 Promises 2.x until your minimum PHP version is raised.
+
+Guzzle Promises has no runtime package dependencies, so there are no runtime
+package dependency changes beyond PHP.
 
 #### Optional Promise Resolution Values
 
@@ -21,6 +30,29 @@ Custom implementations of `PromiseInterface`, and subclasses that override
 `resolve()` on `Promise`, `FulfilledPromise`, or `RejectedPromise`, must update
 their method signature from `resolve($value): void` to
 `resolve($value = null): void`.
+
+#### Generic PHPDoc Types
+
+`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
+include generic PHPDoc annotations for static analysis tools. The first template
+type represents the fulfillment value and the second represents the rejection
+reason. This is a static-analysis-only change and does not alter runtime
+behavior, but projects with stricter static analysis may see new or different
+diagnostics:
+
+```php
+use GuzzleHttp\Promise\PromiseInterface;
+
+/** @var PromiseInterface<string, \Throwable> */
+$promise = $factory->createPromise();
+
+$value = $promise->wait();
+```
+
+Code that uses unparameterized promise types continues to work and is treated as
+`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
+extends promise classes, or has stricter static analysis, you may need to update
+your PHPDoc annotations to include the generic value and reason types.
 
 #### Collection Helper Inputs
 
@@ -82,28 +114,6 @@ collection until no new entries are found and no visible promises remain pending
 This is intended for rewindable mutable collections such as `ArrayIterator`.
 If recursive mode needs to observe values added after the first pass, replace
 one-shot generators with a rewindable mutable collection.
-
-#### Generic PHPDoc Types
-
-`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
-include generic PHPDoc annotations for static analysis tools. The first template
-type represents the fulfillment value and the second represents the rejection
-reason. This is a static-analysis-only change and does not alter runtime
-behavior:
-
-```php
-use GuzzleHttp\Promise\PromiseInterface;
-
-/** @var PromiseInterface<string, \Throwable> */
-$promise = $factory->createPromise();
-
-$value = $promise->wait();
-```
-
-Code that uses unparameterized promise types continues to work and is treated as
-`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
-extends promise classes, or has stricter static analysis, you may need to update
-your PHPDoc annotations to include the generic value and reason types.
 
 #### Promise Inspection
 
