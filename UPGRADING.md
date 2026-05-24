@@ -31,6 +31,29 @@ Custom implementations of `PromiseInterface`, and subclasses that override
 their method signature from `resolve($value): void` to
 `resolve($value = null): void`.
 
+#### Generic PHPDoc Types
+
+`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
+include generic PHPDoc annotations for static analysis tools. The first template
+type represents the fulfillment value and the second represents the rejection
+reason. This is a static-analysis-only change and does not alter runtime
+behavior, but projects with stricter static analysis may see new or different
+diagnostics:
+
+```php
+use GuzzleHttp\Promise\PromiseInterface;
+
+/** @var PromiseInterface<string, \Throwable> */
+$promise = $factory->createPromise();
+
+$value = $promise->wait();
+```
+
+Code that uses unparameterized promise types continues to work and is treated as
+`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
+extends promise classes, or has stricter static analysis, you may need to update
+your PHPDoc annotations to include the generic value and reason types.
+
 #### Collection Helper Inputs
 
 Promise collection helpers now require iterable inputs. Passing a single promise
@@ -70,29 +93,6 @@ $promise = Utils::settle($promises, false, ['concurrency' => 5]);
 Only `concurrency` is honored by these helper config arrays. Callback config
 keys such as `fulfilled` and `rejected` are ignored; pass callbacks to
 `Each::of()` directly or use `EachPromise`.
-
-#### Generic PHPDoc Types
-
-`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
-include generic PHPDoc annotations for static analysis tools. The first template
-type represents the fulfillment value and the second represents the rejection
-reason. This is a static-analysis-only change and does not alter runtime
-behavior, but projects with stricter static analysis may see new or different
-diagnostics:
-
-```php
-use GuzzleHttp\Promise\PromiseInterface;
-
-/** @var PromiseInterface<string, \Throwable> */
-$promise = $factory->createPromise();
-
-$value = $promise->wait();
-```
-
-Code that uses unparameterized promise types continues to work and is treated as
-`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
-extends promise classes, or has stricter static analysis, you may need to update
-your PHPDoc annotations to include the generic value and reason types.
 
 #### Recursive Collection Helpers
 
