@@ -6,6 +6,10 @@ namespace GuzzleHttp\Promise;
 
 final class Create
 {
+    private function __construct()
+    {
+    }
+
     /**
      * Creates a promise for a value if the value is not a promise.
      *

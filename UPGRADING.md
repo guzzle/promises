@@ -159,6 +159,12 @@ $promise->then(null, function ($reason): void {
 Utils::queue()->run();
 ```
 
+#### Non-instantiable Helper Classes
+
+Static helper classes such as `Create`, `Each`, `Is`, and `Utils` now have
+private constructors. Replace any accidental instantiation with static method
+calls.
+
 1.x to 2.0
 ----------
 

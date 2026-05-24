@@ -6,6 +6,10 @@ namespace GuzzleHttp\Promise;
 
 final class Utils
 {
+    private function __construct()
+    {
+    }
+
     /**
      * Get the global task queue used for promise resolution.
      *
