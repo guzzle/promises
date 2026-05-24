@@ -139,7 +139,7 @@ final class Utils
      *
      * @param iterable<TKey, PromiseInterface<TValue, TReason>> $promises Traversable of promises to wait upon.
      *
-     * @return array<TKey, array{state: string, value?: TValue, reason?: TReason|\Throwable}>
+     * @return array<TKey, array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}|array{state: PromiseInterface::PENDING}>
      */
     public static function inspectAll(iterable $promises): array
     {
@@ -249,14 +249,14 @@ final class Utils
      * @param int                                                $count    Total number of promises.
      * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
      *
-     * @return PromiseInterface<list<mixed>, mixed>
+     * @return PromiseInterface<list<TValue>, \Throwable>
      */
     public static function some(int $count, iterable $promises): PromiseInterface
     {
         $results = [];
         $rejections = [];
 
-        return Each::of(
+        $promise = Each::of(
             $promises,
             function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
                 if (Is::settled($p)) {
@@ -283,6 +283,9 @@ final class Utils
                 return array_values($results);
             }
         );
+
+        /** @var PromiseInterface<list<TValue>, \Throwable> $promise */
+        return $promise;
     }
 
     /**
@@ -294,7 +297,7 @@ final class Utils
      *
      * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
      *
-     * @return PromiseInterface<mixed, mixed>
+     * @return PromiseInterface<TValue, \Throwable>
      */
     public static function any(iterable $promises): PromiseInterface
     {

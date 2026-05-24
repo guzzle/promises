@@ -7,6 +7,9 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 
+/**
+ * @implements PromiseInterface<mixed, mixed>
+ */
 class NotPromiseInstance extends Thennable implements PromiseInterface
 {
     private Promise $nextPromise;
@@ -16,11 +19,22 @@ class NotPromiseInstance extends Thennable implements PromiseInterface
         $this->nextPromise = new Promise();
     }
 
+    /**
+     * @param (callable(mixed): mixed)|null $res
+     * @param (callable(mixed): mixed)|null $rej
+     *
+     * @return PromiseInterface<mixed, mixed>
+     */
     public function then(?callable $res = null, ?callable $rej = null): PromiseInterface
     {
         return $this->nextPromise->then($res, $rej);
     }
 
+    /**
+     * @param callable(mixed): mixed $onRejected
+     *
+     * @return PromiseInterface<mixed, mixed>
+     */
     public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then($onRejected);

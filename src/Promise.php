@@ -49,7 +49,15 @@ class Promise implements PromiseInterface
     }
 
     /**
-     * @return PromiseInterface<mixed, mixed>
+     * @template TFulfilledValue = never
+     * @template TFulfilledReason = never
+     * @template TRejectedValue = never
+     * @template TRejectedReason = never
+     *
+     * @param (callable(TValue): (TFulfilledValue|PromiseInterface<TFulfilledValue, TFulfilledReason>))|null $onFulfilled Invoked when the promise fulfills.
+     * @param (callable(TReason): (TRejectedValue|PromiseInterface<TRejectedValue, TRejectedReason>))|null   $onRejected  Invoked when the promise is rejected.
+     *
+     * @return PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)>
      */
     public function then(
         ?callable $onFulfilled = null,
@@ -75,9 +83,20 @@ class Promise implements PromiseInterface
         // and immediately invoke any callbacks.
         $rejection = Create::rejectionFor($this->result);
 
-        return $onRejected ? $rejection->then(null, $onRejected) : $rejection;
+        /** @var PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)> $promise */
+        $promise = $onRejected ? $rejection->then(null, $onRejected) : $rejection;
+
+        return $promise;
     }
 
+    /**
+     * @template TRejectedValue = never
+     * @template TRejectedReason = never
+     *
+     * @param callable(TReason): (TRejectedValue|PromiseInterface<TRejectedValue, TRejectedReason>) $onRejected Invoked when the promise is rejected.
+     *
+     * @return PromiseInterface<TValue|TRejectedValue, TRejectedReason|\Throwable>
+     */
     public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then(null, $onRejected);

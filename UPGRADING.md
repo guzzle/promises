@@ -52,7 +52,11 @@ $value = $promise->wait();
 Code that uses unparameterized promise types continues to work and is treated as
 `PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
 extends promise classes, or has stricter static analysis, you may need to update
-your PHPDoc annotations to include the generic value and reason types.
+your PHPDoc annotations to include the generic value and reason types. The
+expanded PHPDoc also preserves promise-chain fulfillment and rejection types more
+precisely through `then()` and `otherwise()`, and documents collection callbacks
+with value or reason, key, and aggregate-promise arguments so callbacks may
+declare only the arguments they use.
 
 #### Collection Helper Inputs
 
