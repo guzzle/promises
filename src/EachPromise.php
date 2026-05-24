@@ -29,10 +29,10 @@ class EachPromise implements PromisorInterface
     /** @var (callable(int): int)|int|null */
     private $concurrency;
 
-    /** @var (callable(TValue, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null */
+    /** @var (callable(TValue, TKey, PromiseInterface<mixed, mixed>): mixed)|null */
     private $onFulfilled;
 
-    /** @var (callable(TReason, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null */
+    /** @var (callable(TReason, TKey, PromiseInterface<mixed, mixed>): mixed)|null */
     private $onRejected;
 
     /** @var Promise<mixed, mixed>|null */
@@ -60,8 +60,8 @@ class EachPromise implements PromisorInterface
      *
      * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>> $iterable Promises or values to iterate.
      * @param array{
-     *     fulfilled?: callable(TValue, TKey=, PromiseInterface<mixed, mixed>=): mixed,
-     *     rejected?: callable(TReason, TKey=, PromiseInterface<mixed, mixed>=): mixed,
+     *     fulfilled?: callable(TValue, TKey, PromiseInterface<mixed, mixed>): mixed,
+     *     rejected?: callable(TReason, TKey, PromiseInterface<mixed, mixed>): mixed,
      *     concurrency?: int|(callable(int): int)
      * } $config Configuration options
      */

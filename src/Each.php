@@ -30,10 +30,10 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>                $iterable    Iterator or array to iterate over.
-     * @param (callable(TValue, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null  $onFulfilled
-     * @param (callable(TReason, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null $onRejected
-     * @param array{concurrency?: int|(callable(int): int)}                           $config      Configuration options.
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>              $iterable    Iterator or array to iterate over.
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): mixed)|null  $onFulfilled
+     * @param (callable(TReason, TKey, PromiseInterface<mixed, mixed>): mixed)|null $onRejected
+     * @param array{concurrency?: int|(callable(int): int)}                         $config      Configuration options.
      *
      * @return PromiseInterface<mixed, mixed>
      */
@@ -72,10 +72,10 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>                $iterable
-     * @param int|(callable(int): int)                                                $concurrency
-     * @param (callable(TValue, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null  $onFulfilled
-     * @param (callable(TReason, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null $onRejected
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>              $iterable
+     * @param int|(callable(int): int)                                              $concurrency
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): mixed)|null  $onFulfilled
+     * @param (callable(TReason, TKey, PromiseInterface<mixed, mixed>): mixed)|null $onRejected
      *
      * @return PromiseInterface<mixed, mixed>
      */
@@ -97,9 +97,9 @@ final class Each
      * @template TValue
      * @template TReason
      *
-     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>               $iterable
-     * @param int|(callable(int): int)                                               $concurrency
-     * @param (callable(TValue, TKey=, PromiseInterface<mixed, mixed>=): mixed)|null $onFulfilled
+     * @param iterable<TKey, TValue|PromiseInterface<TValue, TReason>>             $iterable
+     * @param int|(callable(int): int)                                             $concurrency
+     * @param (callable(TValue, TKey, PromiseInterface<mixed, mixed>): mixed)|null $onFulfilled
      *
      * @return PromiseInterface<mixed, mixed>
      */
@@ -112,10 +112,8 @@ final class Each
             $iterable,
             $concurrency,
             $onFulfilled,
-            function ($reason, $idx = null, ?PromiseInterface $aggregate = null): void {
-                if (null !== $aggregate) {
-                    $aggregate->reject($reason);
-                }
+            function ($reason, $idx, PromiseInterface $aggregate): void {
+                $aggregate->reject($reason);
             }
         );
     }

@@ -81,7 +81,6 @@ class Promise implements PromiseInterface
 
         // It's either cancelled or rejected, so return a rejected promise
         // and immediately invoke any callbacks.
-        /** @var RejectedPromise<TValue, TReason> $rejection */
         $rejection = Create::rejectionFor($this->result);
 
         /** @var PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)> $promise */

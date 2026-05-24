@@ -204,11 +204,11 @@ final class Utils
         $results = [];
         $promise = Each::of(
             $promises,
-            function ($value, $idx = null) use (&$results): void {
+            function ($value, $idx) use (&$results): void {
                 $results[$idx] = $value;
             },
-            function ($reason, $idx = null, ?PromiseInterface $aggregate = null): void {
-                if (null !== $aggregate && Is::pending($aggregate)) {
+            function ($reason, $idx, PromiseInterface $aggregate): void {
+                if (Is::pending($aggregate)) {
                     $aggregate->reject($reason);
                 }
             },
@@ -258,8 +258,8 @@ final class Utils
 
         $promise = Each::of(
             $promises,
-            function ($value, $idx = null, ?PromiseInterface $p = null) use (&$results, $count): void {
-                if (null === $p || Is::settled($p)) {
+            function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
+                if (Is::settled($p)) {
                     return;
                 }
                 $results[$idx] = $value;
@@ -333,10 +333,10 @@ final class Utils
 
         $promise = Each::of(
             $promises,
-            function ($value, $idx = null) use (&$results): void {
+            function ($value, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
             },
-            function ($reason, $idx = null) use (&$results): void {
+            function ($reason, $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
             },
             $config
