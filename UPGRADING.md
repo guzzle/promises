@@ -5,9 +5,10 @@ Guzzle Promises Upgrade Guide
 ----------
 
 Guzzle Promises 3.0 is a major release that raises the minimum PHP version,
-updates promise and collection helper signatures, tightens collection helper
-inputs, improves recursive collection behavior, and clarifies rejection
-inspection and late rejection callback behavior.
+updates promise and collection helper signatures, adds generic PHPDoc types for
+static analyzers, tightens collection helper inputs, improves recursive
+collection behavior, and clarifies rejection inspection and late rejection
+callback behavior.
 
 #### PHP Version and Dependencies
 
@@ -69,6 +70,29 @@ $promise = Utils::settle($promises, false, ['concurrency' => 5]);
 Only `concurrency` is honored by these helper config arrays. Callback config
 keys such as `fulfilled` and `rejected` are ignored; pass callbacks to
 `Each::of()` directly or use `EachPromise`.
+
+#### Generic PHPDoc Types
+
+`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
+include generic PHPDoc annotations for static analysis tools. The first template
+type represents the fulfillment value and the second represents the rejection
+reason. This is a static-analysis-only change and does not alter runtime
+behavior, but projects with stricter static analysis may see new or different
+diagnostics:
+
+```php
+use GuzzleHttp\Promise\PromiseInterface;
+
+/** @var PromiseInterface<string, \Throwable> */
+$promise = $factory->createPromise();
+
+$value = $promise->wait();
+```
+
+Code that uses unparameterized promise types continues to work and is treated as
+`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
+extends promise classes, or has stricter static analysis, you may need to update
+your PHPDoc annotations to include the generic value and reason types.
 
 #### Recursive Collection Helpers
 
@@ -134,28 +158,6 @@ $promise->then(null, function ($reason): void {
 
 Utils::queue()->run();
 ```
-
-#### Generic PHPDoc Types
-
-`PromiseInterface`, `PromisorInterface`, and the built-in promise classes now
-include generic PHPDoc annotations for static analysis tools. The first template
-type represents the fulfillment value and the second represents the rejection
-reason. This is a static-analysis-only change and does not alter runtime
-behavior:
-
-```php
-use GuzzleHttp\Promise\PromiseInterface;
-
-/** @var PromiseInterface<string, \Throwable> */
-$promise = $factory->createPromise();
-
-$value = $promise->wait();
-```
-
-Code that uses unparameterized promise types continues to work and is treated as
-`PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
-extends promise classes, or has stricter static analysis, you may need to update
-your PHPDoc annotations to include the generic value and reason types.
 
 1.x to 2.0
 ----------
