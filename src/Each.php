@@ -6,6 +6,10 @@ namespace GuzzleHttp\Promise;
 
 final class Each
 {
+    private function __construct()
+    {
+    }
+
     /**
      * Given an iterator that yields promises or values, returns a promise that
      * is fulfilled with a null value when the iterator has been consumed or

@@ -6,6 +6,10 @@ namespace GuzzleHttp\Promise;
 
 final class Is
 {
+    private function __construct()
+    {
+    }
+
     /**
      * Returns true if a promise is pending.
      */
