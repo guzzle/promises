@@ -53,7 +53,7 @@ why the promise cannot be fulfilled.
 
 ### Callbacks
 
-Callbacks are registered with the `then` method by providing an optional 
+Callbacks are registered with the `then` method by providing an optional
 `$onFulfilled` followed by an optional `$onRejected` function.
 
 
@@ -323,9 +323,11 @@ assert('waited' === $promise->wait());
 
 A promise has the following methods:
 
-- `then(callable $onFulfilled, callable $onRejected) : PromiseInterface`
-  
-  Appends fulfillment and rejection handlers to the promise, and returns a new promise resolving to the return value of the called handler.
+- `then(?callable $onFulfilled = null, ?callable $onRejected = null) : PromiseInterface`
+
+  Appends fulfillment and rejection handlers to the promise, and returns a new
+  promise resolving to the return value of the called handler. If a handler is
+  omitted, the original fulfillment value or rejection reason is forwarded.
 
 - `otherwise(callable $onRejected) : PromiseInterface`
   
