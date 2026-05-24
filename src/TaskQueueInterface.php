@@ -14,6 +14,8 @@ interface TaskQueueInterface
     /**
      * Adds a task to the queue that will be executed the next time run is
      * called.
+     *
+     * @param callable(): void $task
      */
     public function add(callable $task): void;
 

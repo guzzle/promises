@@ -54,6 +54,11 @@ Code that uses unparameterized promise types continues to work and is treated as
 extends promise classes, or has stricter static analysis, you may need to update
 your PHPDoc annotations to include the generic value and reason types.
 
+The 3.0 PHPDoc now preserves promise-chain fulfillment and rejection types more
+precisely through `then()` and `otherwise()`. Collection callbacks are also
+documented with optional trailing key and aggregate-promise arguments, so
+callbacks may declare only the arguments they use.
+
 #### Collection Helper Inputs
 
 Promise collection helpers now require iterable inputs. Passing a single promise

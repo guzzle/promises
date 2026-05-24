@@ -16,6 +16,12 @@ class Thennable
         $this->nextPromise = new Promise();
     }
 
+    /**
+     * @param (callable(mixed): mixed)|null $res
+     * @param (callable(mixed): mixed)|null $rej
+     *
+     * @return PromiseInterface<mixed, mixed>
+     */
     public function then(?callable $res = null, ?callable $rej = null): PromiseInterface
     {
         return $this->nextPromise->then($res, $rej);

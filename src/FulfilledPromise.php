@@ -36,6 +36,17 @@ class FulfilledPromise implements PromiseInterface
         $this->value = $value;
     }
 
+    /**
+     * @template TFulfilledValue = never
+     * @template TFulfilledReason = never
+     * @template TRejectedValue = never
+     * @template TRejectedReason = never
+     *
+     * @param (callable(TValue): (TFulfilledValue|PromiseInterface<TFulfilledValue, TFulfilledReason>))|null $onFulfilled Invoked when the promise fulfills.
+     * @param (callable(TReason): (TRejectedValue|PromiseInterface<TRejectedValue, TRejectedReason>))|null   $onRejected  Invoked when the promise is rejected.
+     *
+     * @return ($onFulfilled is null ? self<TValue, TReason> : PromiseInterface<TFulfilledValue, TFulfilledReason|\Throwable>)
+     */
     public function then(
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
@@ -61,6 +72,11 @@ class FulfilledPromise implements PromiseInterface
         return $p;
     }
 
+    /**
+     * @param callable(TReason): mixed $onRejected Invoked when the promise is rejected.
+     *
+     * @return self<TValue, TReason>
+     */
     public function otherwise(callable $onRejected): PromiseInterface
     {
         return $this->then(null, $onRejected);
