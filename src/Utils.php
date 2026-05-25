@@ -301,7 +301,7 @@ final class Utils
      */
     public static function any(iterable $promises): PromiseInterface
     {
-        return self::some(1, $promises)->then(function ($values) {
+        return self::some(1, $promises)->then(function (array $values) {
             return $values[0];
         });
     }
