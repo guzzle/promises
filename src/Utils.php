@@ -271,7 +271,10 @@ final class Utils
                 $rejections[] = $reason;
             }
         )->then(
-            function () use (&$results, &$rejections, $count) {
+            /**
+             * @return list<TValue>
+             */
+            function () use (&$results, &$rejections, $count): array {
                 if (count($results) !== $count) {
                     throw new AggregateException(
                         'Not enough promises to fulfill count',
