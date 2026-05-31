@@ -101,7 +101,7 @@ final class Utils
      */
     public static function inspectAll($promises): array
     {
-        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
+        $promises = self::prepareIterable($promises, __FUNCTION__);
 
         $results = [];
         foreach ($promises as $key => $promise) {
@@ -124,7 +124,7 @@ final class Utils
      */
     public static function unwrap($promises): array
     {
-        self::triggerNonIterableDeprecation($promises, __FUNCTION__);
+        $promises = self::prepareIterable($promises, __FUNCTION__);
 
         $results = [];
         foreach ($promises as $key => $promise) {
