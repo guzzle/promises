@@ -3,11 +3,6 @@
 
 ## 2.5.0 - Upcoming
 
-### Fixed
-
-- Fixed `Utils::inspectAll()` and `Utils::unwrap()` normalizing non-iterable inputs inconsistently with the other
-  collection helpers
-
 ### Deprecated
 
 - Deprecated passing non-iterable inputs to promise collection helpers and `EachPromise`
