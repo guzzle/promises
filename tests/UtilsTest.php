@@ -743,5 +743,4 @@ class UtilsTest extends TestCase
             ['state' => 'fulfilled', 'value' => 'c'],
         ], $results);
     }
-
 }
