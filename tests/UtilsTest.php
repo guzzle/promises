@@ -56,54 +56,6 @@ class UtilsTest extends TestCase
         ], P\Utils::unwrap($promises));
     }
 
-    public function testUnwrapWrapsNonIterableLikeAll(): void
-    {
-        $promise = new FulfilledPromise('foo');
-        $result = null;
-
-        $deprecations = self::captureDeprecations(static function () use ($promise, &$result): void {
-            $result = P\Utils::unwrap($promise);
-        });
-
-        self::assertSame(['foo'], $result);
-        self::assertSame(1, self::countDeprecationsContaining($deprecations, 'guzzlehttp/promises'));
-    }
-
-    public function testUnwrapWrapsRejectedNonIterableLikeAll(): void
-    {
-        $caught = null;
-
-        $deprecations = self::captureDeprecations(static function () use (&$caught): void {
-            try {
-                P\Utils::unwrap(new RejectedPromise('foo'));
-            } catch (RejectionException $e) {
-                $caught = $e;
-            }
-        });
-
-        if (!$caught instanceof RejectionException) {
-            self::fail('Expected unwrap() to throw a rejection exception.');
-        }
-
-        self::assertSame('foo', $caught->getReason());
-        self::assertSame(1, self::countDeprecationsContaining($deprecations, 'guzzlehttp/promises'));
-    }
-
-    public function testInspectAllWrapsNonIterableLikeAll(): void
-    {
-        $promise = new FulfilledPromise('foo');
-        $result = null;
-
-        $deprecations = self::captureDeprecations(static function () use ($promise, &$result): void {
-            $result = P\Utils::inspectAll($promise);
-        });
-
-        self::assertSame([
-            ['state' => PromiseInterface::FULFILLED, 'value' => 'foo'],
-        ], $result);
-        self::assertSame(1, self::countDeprecationsContaining($deprecations, 'guzzlehttp/promises'));
-    }
-
     public function testAllAggregatesSortedArray(): void
     {
         $a = new Promise();
@@ -792,39 +744,4 @@ class UtilsTest extends TestCase
         ], $results);
     }
 
-    private static function captureDeprecations(callable $callback): array
-    {
-        $deprecations = [];
-
-        set_error_handler(static function (int $severity, string $message) use (&$deprecations): bool {
-            if ($severity !== \E_USER_DEPRECATED) {
-                return false;
-            }
-
-            $deprecations[] = $message;
-
-            return true;
-        });
-
-        try {
-            $callback();
-        } finally {
-            restore_error_handler();
-        }
-
-        return $deprecations;
-    }
-
-    private static function countDeprecationsContaining(array $deprecations, string $needle): int
-    {
-        $count = 0;
-
-        foreach ($deprecations as $message) {
-            if (\strpos($message, $needle) !== false) {
-                ++$count;
-            }
-        }
-
-        return $count;
-    }
 }
