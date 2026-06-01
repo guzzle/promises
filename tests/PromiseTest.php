@@ -124,6 +124,21 @@ class PromiseTest extends TestCase
         $p->wait();
     }
 
+    public function testThrowsWhenUnwrapIsRejectedWithError(): void
+    {
+        $error = new \Error('foo');
+        $p = new Promise(function () use (&$p, $error): void {
+            $p->reject($error);
+        });
+
+        try {
+            $p->wait();
+            $this->fail('Expected Error');
+        } catch (\Error $e) {
+            $this->assertSame($error, $e);
+        }
+    }
+
     public function testDoesNotUnwrapExceptionsWhenDisabled(): void
     {
         $p = new Promise(function () use (&$p): void {
@@ -144,6 +159,22 @@ class PromiseTest extends TestCase
             $p->wait();
             $this->fail();
         } catch (\UnexpectedValueException $e) {
+            $this->assertTrue(P\Is::rejected($p));
+        }
+    }
+
+    public function testRejectsSelfWhenWaitThrowsError(): void
+    {
+        $error = new \Error('foo');
+        $p = new Promise(function () use ($error): void {
+            throw $error;
+        });
+
+        try {
+            $p->wait();
+            $this->fail('Expected Error');
+        } catch (\Error $e) {
+            $this->assertSame($error, $e);
             $this->assertTrue(P\Is::rejected($p));
         }
     }

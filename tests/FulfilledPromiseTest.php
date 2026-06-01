@@ -114,6 +114,23 @@ class FulfilledPromiseTest extends TestCase
         }
     }
 
+    public function testReturnsNewRejectedWhenOnFulfilledThrowsError(): void
+    {
+        $p = new FulfilledPromise('a');
+        $error = new \Error('b');
+        $p2 = $p->then(static function () use ($error): void {
+            throw $error;
+        });
+
+        $this->assertNotSame($p, $p2);
+        try {
+            $p2->wait();
+            $this->fail('Expected Error');
+        } catch (\Error $e) {
+            $this->assertSame($error, $e);
+        }
+    }
+
     public function testOtherwiseIsSugarForRejections(): void
     {
         $c = null;
