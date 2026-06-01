@@ -122,6 +122,23 @@ class RejectedPromiseTest extends TestCase
         }
     }
 
+    public function testReturnsNewRejectedWhenOnRejectedThrowsError(): void
+    {
+        $p = new RejectedPromise('a');
+        $error = new \Error('b');
+        $p2 = $p->then(null, static function () use ($error): void {
+            throw $error;
+        });
+
+        $this->assertNotSame($p, $p2);
+        try {
+            $p2->wait();
+            $this->fail('Expected Error');
+        } catch (\Error $e) {
+            $this->assertSame($error, $e);
+        }
+    }
+
     public function testWaitingIsNoOp(): void
     {
         $p = new RejectedPromise('a');
