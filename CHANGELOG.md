@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 2.5.0 - Upcoming
+## 2.5.0 - 2026-06-02
 
 ### Deprecated
 
