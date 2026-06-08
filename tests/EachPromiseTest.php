@@ -406,10 +406,6 @@ class EachPromiseTest extends TestCase
 
     public function testMutexPreventsGeneratorRecursion(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $results = $promises = [];
         for ($i = 0; $i < 20; ++$i) {
             $p = $this->createSelfResolvingPromise($i);
@@ -443,10 +439,6 @@ class EachPromiseTest extends TestCase
 
     public function testIteratorWithSameKey(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $iter = function (): \Generator {
             yield 'foo' => $this->createSelfResolvingPromise(1);
             yield 'foo' => $this->createSelfResolvingPromise(2);

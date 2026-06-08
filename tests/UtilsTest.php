@@ -671,10 +671,6 @@ class UtilsTest extends TestCase
 
     public function testYieldsFromCoroutine(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = P\Coroutine::of(function (): \Generator {
             $value = (yield new FulfilledPromise('a'));
             yield $value.'b';
@@ -686,10 +682,6 @@ class UtilsTest extends TestCase
 
     public function testCanCatchExceptionsInCoroutine(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = P\Coroutine::of(function (): \Generator {
             try {
                 yield new RejectedPromise('a');
@@ -735,10 +727,6 @@ class UtilsTest extends TestCase
 
     public function testCanRejectFromRejectionCallback(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = P\Coroutine::of(function (): \Generator {
             yield new FulfilledPromise(0);
             yield new RejectedPromise('no!');
@@ -754,10 +742,6 @@ class UtilsTest extends TestCase
 
     public function testCanAsyncReject(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $rej = new Promise();
         $promise = P\Coroutine::of(function () use ($rej): \Generator {
             yield new FulfilledPromise(0);
@@ -791,10 +775,6 @@ class UtilsTest extends TestCase
 
     public function testCanCatchAndYieldOtherException(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = P\Coroutine::of(function (): \Generator {
             try {
                 yield new RejectedPromise('a');
@@ -822,10 +802,6 @@ class UtilsTest extends TestCase
 
     public function testLotsOfSynchronousDoesNotBlowStack(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function (int $v) use (&$r): void { $r = $v; });
         P\Utils::queue()->run();
@@ -834,10 +810,6 @@ class UtilsTest extends TestCase
 
     public function testLotsOfSynchronousWaitDoesNotBlowStack(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = $this->createLotsOfSynchronousPromise();
         $promise->then(function (int $v) use (&$r): void { $r = $v; });
         $this->assertSame(999, $promise->wait());
@@ -865,10 +837,6 @@ class UtilsTest extends TestCase
 
     public function testLotsOfTryCatchingDoesNotBlowStack(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function (int $v) use (&$r): void { $r = $v; });
         P\Utils::queue()->run();
@@ -877,10 +845,6 @@ class UtilsTest extends TestCase
 
     public function testLotsOfTryCatchingWaitingDoesNotBlowStack(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promise = $this->createLotsOfFlappingPromise();
         $promise->then(function (int $v) use (&$r): void { $r = $v; });
         $this->assertSame(999, $promise->wait());
@@ -889,10 +853,6 @@ class UtilsTest extends TestCase
 
     public function testAsyncPromisesWithCorrectlyYieldedValues(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promises = [
             new Promise(),
             new Promise(),
@@ -924,10 +884,6 @@ class UtilsTest extends TestCase
 
     public function testYieldFinalWaitablePromise(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $p1 = new Promise(function () use (&$p1): void {
             $p1->resolve('skip me');
         });
@@ -944,10 +900,6 @@ class UtilsTest extends TestCase
 
     public function testCanYieldFinalPendingPromise(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $p1 = new Promise();
         $p2 = new Promise();
         $co = P\Coroutine::of(function () use ($p1, $p2): \Generator {
@@ -963,10 +915,6 @@ class UtilsTest extends TestCase
 
     public function testCanNestYieldsAndFailures(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $p1 = new Promise();
         $p2 = new Promise();
         $p3 = new Promise();
@@ -997,10 +945,6 @@ class UtilsTest extends TestCase
 
     public function testCanYieldErrorsAndSuccessesWithoutRecursion(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $promises = [];
         for ($i = 0; $i < 20; ++$i) {
             $promises[] = new Promise();
@@ -1032,10 +976,6 @@ class UtilsTest extends TestCase
 
     public function testCanWaitOnPromiseAfterFulfilled(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $f = function (): Promise {
             static $i = 0;
             ++$i;
@@ -1062,10 +1002,6 @@ class UtilsTest extends TestCase
 
     public function testCanWaitOnErroredPromises(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $p1 = new Promise(function () use (&$p1): void { $p1->reject('a'); });
         $p2 = new Promise(function () use (&$p2): void { $p2->resolve('b'); });
         $p3 = new Promise(function () use (&$p3): void { $p3->resolve('c'); });
@@ -1095,10 +1031,6 @@ class UtilsTest extends TestCase
 
     public function testCoroutineOtherwiseIntegrationTest(): void
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete('Broken on HHVM.');
-        }
-
         $a = new Promise();
         $b = new Promise();
         $promise = P\Coroutine::of(function () use ($a, $b): \Generator {
