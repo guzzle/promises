@@ -21,12 +21,6 @@ Promises 2.x until your minimum PHP version is raised.
 Guzzle Promises has no runtime package dependencies, so there are no runtime
 package dependency changes beyond PHP.
 
-#### Native PHP Serialization Of Runtime Objects
-
-`Promise`, `TaskQueue`, `EachPromise`, and `Coroutine` no longer support native
-PHP `serialize()` or `unserialize()`. Persist application values instead of
-promise runtime state.
-
 #### Optional Promise Resolution Values
 
 `PromiseInterface::resolve()` now accepts an optional value. Calling `resolve()`
@@ -174,6 +168,12 @@ Utils::queue()->run();
 Static helper classes such as `Create`, `Each`, `Is`, and `Utils` now have
 private constructors. Replace any accidental instantiation with static method
 calls.
+
+#### Native PHP Serialization of Runtime Objects
+
+`Promise`, `TaskQueue`, `EachPromise`, and `Coroutine` no longer support native
+PHP `serialize()` or `unserialize()`. Persist application values instead of
+promise runtime state.
 
 1.x to 2.0
 ----------
