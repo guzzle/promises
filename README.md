@@ -52,12 +52,11 @@ $response = $promise->wait();
 
 ## Documentation
 
-- [Full documentation](docs/index.md)
-- [Quick start](docs/index.md#quick-start)
-- [Synchronous wait](docs/index.md#synchronous-wait)
-- [Promise collection helpers](docs/index.md#promise-collection-helpers)
-- [Promise interoperability](docs/index.md#promise-interoperability)
-- [Upgrade guide](UPGRADING.md)
+- [Quick Start](docs/quickstart.md)
+- [Promise API](docs/api.md)
+- [Promise Interoperability](docs/interop.md)
+- [Implementation Notes](docs/implementation.md)
+- [Upgrade Guide](UPGRADING.md)
 
 ## Security
 
