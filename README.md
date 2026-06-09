@@ -2,7 +2,7 @@
 
 `guzzlehttp/promises` is a small promise library used by Guzzle for asynchronous operations. It implements promise chaining, synchronous waiting, cancellation, and helpers for working with groups of promises.
 
-Most application developers use this package through [`guzzlehttp/guzzle`](https://github.com/guzzle/guzzle) by calling methods such as `requestAsync()`. Install this package directly when you need promise composition without the full HTTP client.
+Most application developers use this package through [`guzzlehttp/guzzle`](https://github.com/guzzle/guzzle/blob/8.0/README.md) by calling methods such as `requestAsync()`. Install this package directly when you need promise composition without the full HTTP client.
 
 ## Installation
 
@@ -22,6 +22,7 @@ composer require guzzlehttp/promises
 
 ```php
 use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\Utils;
 
 $promise = new Promise();
 
@@ -35,6 +36,7 @@ $promise->then(
 );
 
 $promise->resolve('done');
+Utils::queue()->run();
 ```
 
 You can wait for a promise to complete synchronously:
@@ -52,11 +54,12 @@ $response = $promise->wait();
 
 ## Documentation
 
-- [Quick Start](docs/quickstart.md)
-- [Promise API](docs/api.md)
-- [Promise Interoperability](docs/interop.md)
-- [Implementation Notes](docs/implementation.md)
+- [Promise Quick Start](docs/promise-quick-start.md)
+- [Promise API](docs/promise-api.md)
+- [Promise Interoperability](docs/promise-interoperability.md)
+- [Implementation Notes](docs/implementation-notes.md)
 - [Upgrade Guide](UPGRADING.md)
+- [Changelog](CHANGELOG.md)
 
 ## Security
 
