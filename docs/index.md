@@ -43,6 +43,7 @@ composer require guzzlehttp/promises
 |---------|--------------|--------------|
 | 3.x     | Experimental | >=7.4,<8.6   |
 | 2.x     | Latest       | >=7.2.5,<8.6 |
+| 1.x     | End of Life  | >=5.5,<8.3   |
 
 
 ## Quick Start
