@@ -17,6 +17,8 @@ namespace GuzzleHttp\Promise;
  */
 class TaskQueue implements TaskQueueInterface
 {
+    use NonSerializableTrait;
+
     private bool $enableShutdown = true;
     /** @var list<callable(): void> */
     private array $queue = [];

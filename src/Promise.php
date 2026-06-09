@@ -18,6 +18,8 @@ namespace GuzzleHttp\Promise;
  */
 class Promise implements PromiseInterface
 {
+    use NonSerializableTrait;
+
     /** @var self::PENDING|self::FULFILLED|self::REJECTED */
     private string $state = self::PENDING;
 

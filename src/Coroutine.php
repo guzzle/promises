@@ -45,6 +45,8 @@ use Generator;
  */
 final class Coroutine implements PromiseInterface
 {
+    use NonSerializableTrait;
+
     /**
      * @var PromiseInterface<mixed, mixed>|null
      */

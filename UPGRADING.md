@@ -169,6 +169,12 @@ Static helper classes such as `Create`, `Each`, `Is`, and `Utils` now have
 private constructors. Replace any accidental instantiation with static method
 calls.
 
+#### Native PHP Serialization of Runtime Objects
+
+`Promise`, `TaskQueue`, `EachPromise`, and `Coroutine` no longer support native
+PHP `serialize()` or `unserialize()`. Persist application values instead of
+promise runtime state.
+
 1.x to 2.0
 ----------
 
