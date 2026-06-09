@@ -18,6 +18,8 @@ namespace GuzzleHttp\Promise;
  */
 class EachPromise implements PromisorInterface
 {
+    use NonSerializableTrait;
+
     /** @var array<int, PromiseInterface<mixed, mixed>>|null */
     private ?array $pending = [];
 

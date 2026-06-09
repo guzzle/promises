@@ -14,6 +14,7 @@
 
 - Changed `Utils::inspect()` to return actual rejection reasons
 - Changed late rejection callbacks to follow rejected promises
+- Reject native PHP serialization of in-flight runtime objects
 - Made static helper classes non-instantiable
 - Require iterable inputs for promise collection helpers and `EachPromise`
 
