@@ -35,7 +35,7 @@ class Promise implements PromiseInterface
     /** @var list<Promise<mixed, mixed>>|null */
     private ?array $waitList = null;
 
-    /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: (callable|null), 2: (callable|null)}>|null */
+    /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>|null */
     private ?array $handlers = [];
 
     /**
