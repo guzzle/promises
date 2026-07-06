@@ -314,6 +314,6 @@ cancel function settles the promise first.
 ## Related
 
 - [Promise API](promise-api.md)
-- [Promise Interoperability](interop.md)
-- [Implementation Notes](implementation.md)
+- [Promise Interoperability](promise-interoperability.md)
+- [Implementation Notes](implementation-notes.md)
 - [Upgrade Guide](../UPGRADING.md)

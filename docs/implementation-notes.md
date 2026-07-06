@@ -66,6 +66,6 @@ GuzzleHttp\Promise\Utils::queue()->run();
 
 ## Related
 
-- [Quick Start](quickstart.md)
+- [Quick Start](promise-quick-start.md)
 - [Promise API](promise-api.md)
-- [Promise Interoperability](interop.md)
+- [Promise Interoperability](promise-interoperability.md)

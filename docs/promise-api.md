@@ -166,7 +166,7 @@ the promise being waited on.
 
 ## Related
 
-- [Quick Start](quickstart.md)
-- [Promise Interoperability](interop.md)
-- [Implementation Notes](implementation.md)
+- [Quick Start](promise-quick-start.md)
+- [Promise Interoperability](promise-interoperability.md)
+- [Implementation Notes](implementation-notes.md)
 - [Upgrade Guide](../UPGRADING.md)
