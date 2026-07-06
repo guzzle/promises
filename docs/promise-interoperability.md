@@ -73,6 +73,6 @@ $loop->addPeriodicTimer(0.01, [$queue, 'run']);
 
 ## Related
 
-- [Quick Start](quickstart.md)
+- [Quick Start](promise-quick-start.md)
 - [Promise API](promise-api.md)
-- [Implementation Notes](implementation.md)
+- [Implementation Notes](implementation-notes.md)

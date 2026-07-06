@@ -77,6 +77,20 @@ $promise = Each::ofLimit($singlePromise, 2);
 $promise = Each::ofLimit([$singlePromise], 2);
 ```
 
+`IteratorAggregate` inputs are now iterated via `getIterator()`. In 2.x an
+aggregate was treated as a single value and produced one result; in 3.0 its
+entries are consumed individually.
+
+```php
+use GuzzleHttp\Promise\Utils;
+
+$aggregate = new \ArrayObject([$promiseA, $promiseB]);
+
+// 2.x: one result — the ArrayObject itself
+// 3.0: two results — the fulfillment values of $promiseA and $promiseB
+$promise = Utils::all($aggregate);
+```
+
 #### Collection Helper Signatures
 
 `Utils::all()`, `Utils::settle()`, and `Each::of()` now accept trailing optional

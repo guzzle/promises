@@ -17,6 +17,7 @@
 - Reject native PHP serialization of in-flight runtime objects
 - Made static helper classes non-instantiable
 - Require iterable inputs for promise collection helpers and `EachPromise`
+- Iterate `IteratorAggregate` inputs to collection helpers instead of treating them as a single value
 
 ### Fixed
 
