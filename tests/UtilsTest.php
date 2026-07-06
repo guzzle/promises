@@ -92,6 +92,18 @@ class UtilsTest extends TestCase
         $this->assertSame(1, $counter);
     }
 
+    public function testAllRecursivelyHandlesGeneratorInput(): void
+    {
+        $gen = (static function (): \Generator {
+            yield 'a' => new FulfilledPromise(1);
+            yield 'b' => 2;
+        })();
+
+        $result = P\Utils::all($gen, true)->wait();
+
+        $this->assertSame(['a' => 1, 'b' => 2], $result);
+    }
+
     public function testAllThrowsWhenAnyRejected(): void
     {
         $a = new Promise();
