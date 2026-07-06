@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.5.1 - Unreleased
+
+### Fixed
+
+- Fixed recursive `Utils::all()` rejecting generator inputs
+
+
 ## 2.5.0 - 2026-06-02
 
 ### Deprecated
