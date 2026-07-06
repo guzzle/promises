@@ -99,6 +99,18 @@ class UtilsTest extends TestCase
         $this->assertSame(['a' => 1], $result);
     }
 
+    public function testAllRecursivelyHandlesGeneratorInput(): void
+    {
+        $gen = (static function (): \Generator {
+            yield 'a' => new FulfilledPromise(1);
+            yield 'b' => 2;
+        })();
+
+        $result = P\Utils::all($gen, true)->wait();
+
+        $this->assertSame(['a' => 1, 'b' => 2], $result);
+    }
+
     public function testAllRecursivelyIncludesDynamicallyAddedFulfilledPromise(): void
     {
         $promises = new \ArrayIterator();
@@ -456,6 +468,21 @@ class UtilsTest extends TestCase
 
         $this->assertSame([
             'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 1],
+        ], $result);
+    }
+
+    public function testSettleRecursivelyHandlesGeneratorInput(): void
+    {
+        $gen = (static function (): \Generator {
+            yield 'a' => new FulfilledPromise(1);
+            yield 'b' => new RejectedPromise('bad');
+        })();
+
+        $result = P\Utils::settle($gen, true)->wait();
+
+        $this->assertSame([
+            'a' => ['state' => PromiseInterface::FULFILLED, 'value' => 1],
+            'b' => ['state' => PromiseInterface::REJECTED, 'reason' => 'bad'],
         ], $result);
     }
 
