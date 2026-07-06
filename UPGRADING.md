@@ -114,10 +114,11 @@ $promise = Utils::settle($promises, true);
 ```
 
 When `$recursive` is true, collection helpers continue taking passes over the
-collection until no new entries are found and no visible promises remain pending.
-This is intended for rewindable mutable collections such as `ArrayIterator`.
-If recursive mode needs to observe values added after the first pass, replace
-one-shot generators with a rewindable mutable collection.
+collection until no new entries are found and no visible promises remain
+pending. This is intended for rewindable mutable collections such as
+`ArrayIterator`. Generators are safe to pass, but they cannot be traversed
+again once consumed, so recursive mode degrades to a single pass; use a
+rewindable mutable collection when recursion needs to observe added values.
 
 #### Promise Inspection
 

@@ -367,6 +367,12 @@ final class Utils
      */
     private static function shouldRecurse(iterable $promises, array $results): bool
     {
+        // A consumed generator cannot be traversed again, so a recursive
+        // pass has nothing further to observe.
+        if ($promises instanceof \Generator) {
+            return false;
+        }
+
         foreach ($promises as $key => $promise) {
             if (!array_key_exists($key, $results)) {
                 return true;

@@ -55,4 +55,23 @@ class CreateTest extends TestCase
         $iter = new \ArrayIterator();
         $this->assertSame($iter, P\Create::iterFor($iter));
     }
+
+    public function testIterForIteratesIteratorAggregate(): void
+    {
+        $result = P\Create::iterFor(new \ArrayObject(['a' => 1, 'b' => 2]));
+
+        $this->assertSame(['a' => 1, 'b' => 2], iterator_to_array($result));
+    }
+
+    public function testIterForIteratesGeneratorBackedAggregate(): void
+    {
+        $aggregate = new class implements \IteratorAggregate {
+            public function getIterator(): \Generator
+            {
+                yield 'a' => 1;
+            }
+        };
+
+        $this->assertSame(['a' => 1], iterator_to_array(P\Create::iterFor($aggregate)));
+    }
 }
