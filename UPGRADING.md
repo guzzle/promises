@@ -18,8 +18,9 @@ PHP `^7.2.5 || ^8.0`.
 If your application still supports PHP 7.2 or 7.3, continue using Guzzle
 Promises 2.x until your minimum PHP version is raised.
 
-Guzzle Promises has no runtime package dependencies, so there are no runtime
-package dependency changes beyond PHP.
+Guzzle Promises 3.0 has no runtime package dependencies beyond PHP. It removes
+the 2.x runtime dependency on `symfony/deprecation-contracts`; require that
+package directly if your application uses it.
 
 #### Optional Promise Resolution Values
 
@@ -53,19 +54,19 @@ Code that uses unparameterized promise types continues to work and is treated as
 `PromiseInterface<mixed, mixed>`. If your project implements promise interfaces,
 extends promise classes, or has stricter static analysis, you may need to update
 your PHPDoc annotations to include the generic value and reason types. The
-expanded PHPDoc also preserves promise-chain fulfillment and rejection types more
-precisely through `then()` and `otherwise()`, and documents collection callbacks
-with value or reason, key, and aggregate-promise arguments so callbacks may
-declare only the arguments they use.
+expanded PHPDoc also preserves promise-chain fulfillment and rejection types
+more precisely through `then()` and `otherwise()`, and documents collection
+callbacks with value or reason, key, and aggregate-promise arguments so
+callbacks may declare only the arguments they use.
 
 #### Collection Helper Inputs
 
 Promise collection helpers now require iterable inputs. Passing a single promise
 or scalar value directly now throws a `TypeError`.
 
-Wrap single promises or values in an array before passing them to `Create::iterFor()`,
-`Each::of()`, `Each::ofLimit()`, `Each::ofLimitAll()`, `EachPromise`, or the
-`Utils` collection helpers.
+Wrap single promises or values in an array before passing them to
+`Create::iterFor()`, `Each::of()`, `Each::ofLimit()`, `Each::ofLimitAll()`,
+`EachPromise`, or the `Utils` collection helpers.
 
 ```php
 use GuzzleHttp\Promise\Each;
@@ -154,9 +155,15 @@ $result = Utils::inspect(new RejectedPromise($reason));
 assert($result['reason'] === $reason);
 ```
 
-Cancelled promises now inspect with a `CancellationException` reason. If you need
-the string reason from a `RejectionException` or subclass, call `getReason()` on
-the exception.
+Cancelled promises now inspect with a `CancellationException` reason. If you
+need the string reason from a `RejectionException` or subclass, call
+`getReason()` on the exception.
+
+`Utils::inspect()` still reports wait-function failures as rejection reasons
+when the wait function does not settle the promise. If the wait function
+settles the promise and then throws, `inspect()` reports the settled
+fulfillment or rejection state; direct `Promise::wait()` calls continue to
+throw that late exception.
 
 #### Late Rejection Callbacks
 

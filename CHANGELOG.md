@@ -13,6 +13,7 @@
 ### Changed
 
 - Changed `Utils::inspect()` to return actual rejection reasons
+- Changed `Utils::inspect()` to prefer the settled state over late wait function exceptions
 - Changed late rejection callbacks to follow rejected promises
 - Reject native PHP serialization of in-flight runtime objects
 - Made static helper classes non-instantiable
