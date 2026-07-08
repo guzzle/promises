@@ -85,13 +85,13 @@ Utils::queue()->run();
 queuing promise work.
 
 - `Utils::queue(?TaskQueueInterface $assign = null) : TaskQueueInterface` returns the global task queue, or assigns a replacement queue when `$assign` is provided.
-- `Utils::task(callable $task) : PromiseInterface` adds a task to the global queue and returns a promise fulfilled or rejected with the task result.
+- `Utils::task(callable $task) : PromiseInterface` adds a task to the global queue and returns a promise that is fulfilled or rejected with the task result.
 - `Utils::inspect(PromiseInterface $promise) : array` waits for one promise to settle and returns an inspection array with `state` and either `value` or `reason`.
 - `Utils::inspectAll(iterable $promises) : array` inspects each promise and returns inspection arrays keyed like the input iterable.
 - `Utils::unwrap(iterable $promises) : array` waits on all promises and returns fulfilled values, throwing if any promise rejects.
 - `Utils::all(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with all values, or rejected when any input rejects.
 - `Utils::settle(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with inspection arrays after all inputs settle.
-- `Utils::some(int $count, iterable $promises) : PromiseInterface` fulfills with the first `$count` fulfilled values in resolution order, or rejects with `AggregateException` if too few fulfill.
+- `Utils::some(int $count, iterable $promises) : PromiseInterface` fulfills with the values of the first `$count` promises to fulfill, in the order they appear in the input, or rejects with `AggregateException` if too few fulfill.
 - `Utils::any(iterable $promises) : PromiseInterface` fulfills with the first fulfilled value, or rejects with `AggregateException` if none fulfill.
 
 `Utils::all()` and `Utils::settle()` accept `['concurrency' => 5]` or
