@@ -29,7 +29,7 @@
 - Dropped support for PHP 7.2 and 7.3
 
 
-## 2.5.1 - Unreleased
+## 2.5.1 - 2026-07-08
 
 ### Fixed
 
