@@ -3,7 +3,8 @@
 This document describes implementation details that explain observable behavior
 in `guzzlehttp/promises`, especially queue-based callback execution, iterative
 resolution, and why `Promise` also acts as the deferred value. Application code
-usually only needs the [Promise Quick Start](promise-quick-start.md) and [Promise API](promise-api.md).
+usually only needs the [Promise Quick Start](promise-quick-start.md) and
+[Promise API](promise-api.md).
 
 ## Iterative Resolution and Chaining
 

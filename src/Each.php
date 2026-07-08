@@ -15,12 +15,12 @@ final class Each
      * is fulfilled with a null value when the iterator has been consumed or
      * the aggregate promise has been fulfilled or rejected.
      *
-     * $onFulfilled is a function that accepts the fulfilled value, iterator
-     * index, and the aggregate promise. The callback can invoke any necessary
+     * $onFulfilled is a function that accepts the fulfilled value, iterable
+     * key, and the aggregate promise. The callback can invoke any necessary
      * side effects and choose to resolve or reject the aggregate if needed.
      *
-     * $onRejected is a function that accepts the rejection reason, iterator
-     * index, and the aggregate promise. The callback can invoke any necessary
+     * $onRejected is a function that accepts the rejection reason, iterable
+     * key, and the aggregate promise. The callback can invoke any necessary
      * side effects and choose to resolve or reject the aggregate if needed.
      *
      * The config array accepts a concurrency option matching {@see ofLimit}.
@@ -66,7 +66,7 @@ final class Each
      *
      * $concurrency may be an integer or a function that accepts the number of
      * pending promises and returns a numeric concurrency limit value to allow
-     * for dynamic a concurrency size.
+     * for a dynamic concurrency size.
      *
      * @template TKey of array-key
      * @template TValue
@@ -89,9 +89,7 @@ final class Each
     }
 
     /**
-     * Like limit, but ensures that no promise in the given $iterable argument
-     * is rejected. If any promise is rejected, then the aggregate promise is
-     * rejected with the encountered rejection.
+     * Like ofLimit, but rejects the aggregate promise on the first rejection.
      *
      * @template TKey of array-key
      * @template TValue
