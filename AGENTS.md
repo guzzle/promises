@@ -26,6 +26,10 @@
   where they are accepted and we need to cast to a string, we should branch on
   `\is_finite($value)`, using `(string) $value` for the finite case and
   `\is_nan($value) ? 'NAN' : ($value > 0 ? 'INF' : '-INF')` otherwise.
+- Never call `strtolower()`, `strtoupper()`, `strcasecmp()`, `stripos()`, or
+  other locale-sensitive case functions; fold ASCII case with
+  `strtr($value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')`
+  and its inverse instead.
 - Changes in behavior need a `CHANGELOG.md` entry in the unreleased section of
   the target branch and an `UPGRADING.md` note when the behavior differs between
   major versions.
