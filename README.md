@@ -19,9 +19,9 @@ composer require guzzlehttp/promises
 
 | Version | Status       | PHP Version  |
 |---------|--------------|--------------|
-| 3.x     | Experimental | >=7.4,<8.6   |
-| 2.x     | Latest       | >=7.2.5,<8.6 |
-| 1.x     | End of Life  | >=5.5,<8.3   |
+| 3.0     | Latest       | >=7.4,<8.6   |
+| 2.5     | Maintenance  | >=7.2.5,<8.6 |
+| 1.5     | End of Life  | >=5.5,<8.3   |
 
 ## Quick Start
 

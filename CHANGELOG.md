@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 3.0.0 - Unreleased
+## 3.0.0 - 2026-07-20
 
 ### Added
 
@@ -19,10 +19,7 @@
 - Made static helper classes non-instantiable
 - Require iterable inputs for promise collection helpers and `EachPromise`
 - Iterate `IteratorAggregate` inputs to collection helpers instead of treating them as a single value
-
-### Fixed
-
-- Fixed recursive `Utils::all()` handling of dynamically-added settled values and raw values
+- Improved recursive `Utils::all()` handling of dynamically-added settled values and raw values
 
 ### Removed
 
