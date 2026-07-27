@@ -438,6 +438,38 @@ class EachPromiseTest extends TestCase
         $this->assertCount(20, $results);
     }
 
+    public function testWaitSettlesAggregateWhenWindowDrainedWhileIteratorLocked(): void
+    {
+        $each = new EachPromise((function () {
+            for ($i = 0; $i < 2; ++$i) {
+                yield new Promise(function (): void {
+                });
+            }
+        })(), ['concurrency' => 1]);
+
+        $aggregate = $each->promise();
+
+        // step() skips both checkIfFinished() and refillPending() when
+        // advanceIterator() reports the iterator as locked, so draining the
+        // last pending promise there leaves the window empty while the
+        // iterator is still valid. Nothing is then left to settle the
+        // aggregate, and its wait function used to return without doing so,
+        // making Promise::waitIfPending() reject it with "Invoking the wait
+        // callback did not resolve the promise".
+        \Closure::bind(function (): void {
+            $this->mutex = true;
+            $this->step(0);
+            $this->mutex = false;
+        }, $each, EachPromise::class)();
+
+        $this->assertSame([], PropertyHelper::get($each, 'pending'));
+        $this->assertTrue(P\Is::pending($aggregate));
+
+        $aggregate->wait();
+
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+    }
+
     public function testIteratorWithSameKey(): void
     {
         if (defined('HHVM_VERSION')) {

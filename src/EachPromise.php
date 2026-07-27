@@ -123,16 +123,42 @@ class EachPromise implements PromisorInterface
     {
         $this->mutex = false;
         $this->aggregate = new Promise(function (): void {
-            if ($this->checkIfFinished()) {
-                return;
-            }
-            reset($this->pending);
-            // Consume a potentially fluctuating list of promises while
-            // ensuring that indexes are maintained (precluding array_shift).
-            while ($promise = current($this->pending)) {
-                next($this->pending);
-                $promise->wait();
-                if (Is::settled($this->aggregate)) {
+            while (true) {
+                if ($this->checkIfFinished()) {
+                    return;
+                }
+                reset($this->pending);
+                // Consume a potentially fluctuating list of promises while
+                // ensuring that indexes are maintained (precluding array_shift).
+                while ($promise = current($this->pending)) {
+                    next($this->pending);
+                    $promise->wait();
+                    if (Is::settled($this->aggregate)) {
+                        return;
+                    }
+                }
+
+                if ($this->pending) {
+                    return;
+                }
+
+                // The window is empty while the aggregate is still pending, so
+                // returning now would leave nothing able to settle it and
+                // Promise::waitIfPending() would reject the aggregate with
+                // "Invoking the wait callback did not resolve the promise".
+                // step() leaves this state behind when it drains the last
+                // pending promise while advanceIterator() is locked, because
+                // the lock makes it skip both checkIfFinished() and
+                // refillPending(). The lock is released by the time the wait
+                // function runs, so drain queued work and refill the window
+                // before giving up.
+                Utils::queue()->run();
+
+                if (!$this->checkIfFinished()) {
+                    $this->refillPending();
+                }
+
+                if (!$this->pending) {
                     return;
                 }
             }
@@ -259,6 +285,9 @@ class EachPromise implements PromisorInterface
         }
     }
 
+    /**
+     * @phpstan-impure
+     */
     private function checkIfFinished(): bool
     {
         if (!$this->pending && !$this->iterable->valid()) {
