@@ -140,10 +140,7 @@ class EachPromise implements PromisorInterface
                         return;
                     }
                 }
-                // The sweep stopped early; re-sweep whatever remains.
-                if ($this->pending) {
-                    continue;
-                }
+                // Refill and re-sweep; give up only when nothing remains.
                 $this->refillPending();
                 if (!$this->pending) {
                     return;
