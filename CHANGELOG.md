@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.5.2 - Upcoming
+
+### Fixed
+
+- Fixed `EachPromise` abandoning its aggregate when steps run while the iterator is locked
+
+
 ## 2.5.1 - 2026-07-08
 
 ### Fixed

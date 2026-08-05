@@ -485,4 +485,85 @@ class EachPromiseTest extends TestCase
         $this->assertSame(['a', 'c', 'b', 'd'], $called);
         $this->assertTrue(P\Is::fulfilled($p));
     }
+
+    public function testWaitSettlesAggregateWhenStepsRunWhileIteratorIsLocked(): void
+    {
+        // A targeted wait that settles a whole batch of transfers at once.
+        $batch = [];
+        $settleBatch = static function () use (&$batch): void {
+            foreach ($batch as $promise) {
+                $promise->resolve('done');
+            }
+            P\Utils::queue()->run();
+        };
+        $a = new Promise($settleBatch);
+        $b = new Promise($settleBatch);
+        $c = new Promise($settleBatch);
+        $batch = [$a, $b, $c];
+
+        // The drains run inside next(), so steps run while the iterator
+        // mutex is held.
+        $iterator = (static function () use ($a, $b, $c): \Generator {
+            yield $a;
+            yield $b;
+            yield $c;
+            P\Utils::queue()->run();
+            yield new RejectedPromise('failed to sign');
+            P\Utils::queue()->run();
+        })();
+
+        $fulfilled = $rejected = 0;
+        $each = new EachPromise($iterator, [
+            'concurrency' => 3,
+            'fulfilled' => static function () use (&$fulfilled): void {
+                ++$fulfilled;
+            },
+            'rejected' => static function () use (&$rejected): void {
+                ++$rejected;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+        $this->assertNull($aggregate->wait());
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(3, $fulfilled);
+        $this->assertSame(1, $rejected);
+    }
+
+    public function testQueueRunSettlesAggregateWhenStepsRunWhileIteratorIsLocked(): void
+    {
+        $a = new Promise();
+        $b = new Promise();
+        $c = new Promise();
+
+        $iterator = (static function () use ($a, $b, $c): \Generator {
+            yield $a;
+            yield $b;
+            yield $c;
+            P\Utils::queue()->run();
+            yield new RejectedPromise('failed to sign');
+            P\Utils::queue()->run();
+        })();
+
+        $fulfilled = $rejected = 0;
+        $each = new EachPromise($iterator, [
+            'concurrency' => 3,
+            'fulfilled' => static function () use (&$fulfilled): void {
+                ++$fulfilled;
+            },
+            'rejected' => static function () use (&$rejected): void {
+                ++$rejected;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+        $a->resolve('a');
+        $b->resolve('b');
+        $c->resolve('c');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(3, $fulfilled);
+        $this->assertSame(1, $rejected);
+    }
 }
