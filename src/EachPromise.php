@@ -140,11 +140,9 @@ class EachPromise implements PromisorInterface
                         return;
                     }
                 }
-                // Recover if steps that ran while the iterator was locked
-                // drained the window without settling the aggregate.
-                Utils::queue()->run();
-                if (Is::settled($this->aggregate) || $this->checkIfFinished()) {
-                    return;
+                // The sweep stopped early; re-sweep whatever remains.
+                if ($this->pending) {
+                    continue;
                 }
                 $this->refillPending();
                 if (!$this->pending) {
