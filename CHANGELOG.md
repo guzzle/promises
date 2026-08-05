@@ -3,6 +3,11 @@
 
 ## 3.0.1 - Upcoming
 
+### Changed
+
+- Changed the default `TReason` of `FulfilledPromise` and `Create::promiseFor()` to `never`
+- Changed the default `TValue` of `RejectedPromise` and `Create::rejectionFor()` to `never`
+
 ### Fixed
 
 - Fixed `EachPromise` abandoning its aggregate when the pending window drains unsettled
