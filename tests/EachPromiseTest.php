@@ -561,4 +561,27 @@ class EachPromiseTest extends TestCase
         $this->assertSame(3, $fulfilled);
         $this->assertSame(1, $rejected);
     }
+
+    public function testWaitRefillsAWindowReopenedByCallableConcurrency(): void
+    {
+        $calls = 0;
+        $fulfilled = [];
+        $each = new EachPromise(
+            [new FulfilledPromise('a'), new FulfilledPromise('b')],
+            [
+                // Closed at promise() time, reopens when asked again.
+                'concurrency' => static function () use (&$calls): int {
+                    return ++$calls > 1 ? 2 : 0;
+                },
+                'fulfilled' => static function (string $value) use (&$fulfilled): void {
+                    $fulfilled[] = $value;
+                },
+            ]
+        );
+
+        $aggregate = $each->promise();
+        $this->assertNull($aggregate->wait());
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(['a', 'b'], $fulfilled);
+    }
 }
