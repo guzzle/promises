@@ -480,4 +480,169 @@ class EachPromiseTest extends TestCase
         $this->assertSame(['a', 'c', 'b', 'd'], $called);
         $this->assertTrue(P\Is::fulfilled($p));
     }
+
+    public function testWaitSettlesAggregateWhenStepsRunWhileIteratorIsLocked(): void
+    {
+        // A targeted wait that settles a whole batch of transfers at once.
+        $batch = [];
+        $settleBatch = static function () use (&$batch): void {
+            foreach ($batch as $promise) {
+                $promise->resolve('done');
+            }
+            P\Utils::queue()->run();
+        };
+        $a = new Promise($settleBatch);
+        $b = new Promise($settleBatch);
+        $c = new Promise($settleBatch);
+        $batch = [$a, $b, $c];
+
+        // The drains run inside next(), so steps run while the iterator
+        // mutex is held.
+        $iterator = (static function () use ($a, $b, $c): \Generator {
+            yield $a;
+            yield $b;
+            yield $c;
+            P\Utils::queue()->run();
+            yield new RejectedPromise('failed to sign');
+            P\Utils::queue()->run();
+        })();
+
+        $fulfilled = $rejected = 0;
+        $each = new EachPromise($iterator, [
+            'concurrency' => 3,
+            'fulfilled' => static function () use (&$fulfilled): void {
+                ++$fulfilled;
+            },
+            'rejected' => static function () use (&$rejected): void {
+                ++$rejected;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+        $this->assertNull($aggregate->wait());
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(3, $fulfilled);
+        $this->assertSame(1, $rejected);
+    }
+
+    public function testQueueRunSettlesAggregateWhenStepsRunWhileIteratorIsLocked(): void
+    {
+        $a = new Promise();
+        $b = new Promise();
+        $c = new Promise();
+
+        $iterator = (static function () use ($a, $b, $c): \Generator {
+            yield $a;
+            yield $b;
+            yield $c;
+            P\Utils::queue()->run();
+            yield new RejectedPromise('failed to sign');
+            P\Utils::queue()->run();
+        })();
+
+        $fulfilled = $rejected = 0;
+        $each = new EachPromise($iterator, [
+            'concurrency' => 3,
+            'fulfilled' => static function () use (&$fulfilled): void {
+                ++$fulfilled;
+            },
+            'rejected' => static function () use (&$rejected): void {
+                ++$rejected;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+        $a->resolve('a');
+        $b->resolve('b');
+        $c->resolve('c');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(3, $fulfilled);
+        $this->assertSame(1, $rejected);
+    }
+
+    public function testWaitRefillsAWindowReopenedByCallableConcurrency(): void
+    {
+        $calls = 0;
+        $fulfilled = [];
+        $each = new EachPromise(
+            [$this->createSelfResolvingPromise('a'), $this->createSelfResolvingPromise('b')],
+            [
+                // Closed at promise() time, reopens when asked again.
+                'concurrency' => static function () use (&$calls): int {
+                    return ++$calls > 1 ? 2 : 0;
+                },
+                'fulfilled' => static function (string $value) use (&$fulfilled): void {
+                    $fulfilled[] = $value;
+                },
+            ]
+        );
+
+        $aggregate = $each->promise();
+        $this->assertNull($aggregate->wait());
+        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertSame(['a', 'b'], $fulfilled);
+    }
+
+    public function testDoesNotWaitAChildAdmittedBeforeTheIteratorThrows(): void
+    {
+        $calls = 0;
+        $waited = false;
+        $child = new Promise(static function () use (&$waited): void {
+            $waited = true;
+        });
+
+        $iterator = (static function () use ($child): \Generator {
+            yield $child;
+            throw new \OutOfBoundsException('iterator failed');
+        })();
+
+        $each = new EachPromise($iterator, [
+            'concurrency' => static function () use (&$calls): int {
+                return ++$calls > 1 ? 2 : 0;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+
+        try {
+            $aggregate->wait();
+            $this->fail('Expected the iterator exception to reject the aggregate.');
+        } catch (\OutOfBoundsException $e) {
+            $this->assertSame('iterator failed', $e->getMessage());
+        }
+
+        $this->assertFalse($waited);
+    }
+
+    public function testAdmitsNothingAfterTheConcurrencyCallableSettlesTheAggregate(): void
+    {
+        $produced = 0;
+        $aggregate = null;
+
+        $iterator = (static function () use (&$produced): \Generator {
+            while (true) {
+                ++$produced;
+                yield new FulfilledPromise('item');
+            }
+        })();
+
+        $each = new EachPromise($iterator, [
+            'concurrency' => static function () use (&$aggregate): int {
+                if ($aggregate !== null) {
+                    $aggregate->resolve('short-circuit');
+
+                    return 5;
+                }
+
+                return 0;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+
+        $this->assertSame('short-circuit', $aggregate->wait());
+        $this->assertSame(1, $produced);
+    }
 }
