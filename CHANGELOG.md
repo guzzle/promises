@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 2.5.2 - Upcoming
+## 2.5.2 - 2026-08-05
 
 ### Fixed
 
