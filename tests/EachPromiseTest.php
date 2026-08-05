@@ -572,7 +572,7 @@ class EachPromiseTest extends TestCase
         $calls = 0;
         $fulfilled = [];
         $each = new EachPromise(
-            [new FulfilledPromise('a'), new FulfilledPromise('b')],
+            [$this->createSelfResolvingPromise('a'), $this->createSelfResolvingPromise('b')],
             [
                 // Closed at promise() time, reopens when asked again.
                 'concurrency' => static function () use (&$calls): int {
@@ -588,5 +588,66 @@ class EachPromiseTest extends TestCase
         $this->assertNull($aggregate->wait());
         $this->assertTrue(P\Is::fulfilled($aggregate));
         $this->assertSame(['a', 'b'], $fulfilled);
+    }
+
+    public function testDoesNotWaitAChildAdmittedBeforeTheIteratorThrows(): void
+    {
+        $calls = 0;
+        $waited = false;
+        $child = new Promise(static function () use (&$waited): void {
+            $waited = true;
+        });
+
+        $iterator = (static function () use ($child): \Generator {
+            yield $child;
+            throw new \OutOfBoundsException('iterator failed');
+        })();
+
+        $each = new EachPromise($iterator, [
+            'concurrency' => static function () use (&$calls): int {
+                return ++$calls > 1 ? 2 : 0;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+
+        try {
+            $aggregate->wait();
+            $this->fail('Expected the iterator exception to reject the aggregate.');
+        } catch (\OutOfBoundsException $e) {
+            $this->assertSame('iterator failed', $e->getMessage());
+        }
+
+        $this->assertFalse($waited);
+    }
+
+    public function testAdmitsNothingAfterTheConcurrencyCallableSettlesTheAggregate(): void
+    {
+        $produced = 0;
+        $aggregate = null;
+
+        $iterator = (static function () use (&$produced): \Generator {
+            while (true) {
+                ++$produced;
+                yield new FulfilledPromise('item');
+            }
+        })();
+
+        $each = new EachPromise($iterator, [
+            'concurrency' => static function () use (&$aggregate): int {
+                if ($aggregate !== null) {
+                    $aggregate->resolve('short-circuit');
+
+                    return 5;
+                }
+
+                return 0;
+            },
+        ]);
+
+        $aggregate = $each->promise();
+
+        $this->assertSame('short-circuit', $aggregate->wait());
+        $this->assertSame(1, $produced);
     }
 }

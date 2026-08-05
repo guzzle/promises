@@ -142,7 +142,7 @@ class EachPromise implements PromisorInterface
                 }
                 // Refill and re-sweep; give up only when nothing remains.
                 $this->refillPending();
-                if (!$this->pending) {
+                if (Is::settled($this->aggregate) || !$this->pending) {
                     return;
                 }
             }
@@ -172,6 +172,10 @@ class EachPromise implements PromisorInterface
         $concurrency = is_callable($this->concurrency)
             ? ($this->concurrency)(count($this->pending))
             : $this->concurrency;
+        // The callable can settle the aggregate; admit nothing more.
+        if (Is::settled($this->aggregate)) {
+            return;
+        }
         $concurrency = max($concurrency - count($this->pending), 0);
         // Concurrency may be set to 0 to disallow new promises.
         if (!$concurrency) {
