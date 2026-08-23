@@ -62,7 +62,16 @@ interface PromiseInterface
      * The three states can be checked against the constants defined on
      * PromiseInterface: PENDING, FULFILLED, and REJECTED.
      *
+     * The state describes how this promise was settled, not the eventual
+     * outcome: a promise that was resolved with another promise, directly or
+     * by returning one from a then() handler, reports FULFILLED while the
+     * inner promise may still be pending, and wait() can still throw if the
+     * inner promise rejects. Poll the state only on promises settled with
+     * plain values, or call wait() first.
+     *
      * @return self::PENDING|self::FULFILLED|self::REJECTED
+     *
+     * @see https://github.com/guzzle/promises/issues/101
      */
     public function getState(): string;
 
@@ -71,7 +80,8 @@ interface PromiseInterface
      *
      * @param TValue|PromiseInterface<TValue, TReason>|null $value
      *
-     * @throws \RuntimeException if the promise is already resolved.
+     * @throws \LogicException if the promise is already settled with a
+     *                         conflicting resolution.
      */
     public function resolve($value = null): void;
 
@@ -80,7 +90,8 @@ interface PromiseInterface
      *
      * @param TReason $reason
      *
-     * @throws \RuntimeException if the promise is already resolved.
+     * @throws \LogicException if the promise is already settled with a
+     *                         conflicting resolution.
      */
     public function reject($reason): void;
 

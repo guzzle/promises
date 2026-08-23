@@ -50,6 +50,14 @@ You can wait for a promise to complete synchronously:
 $value = $promise->wait();
 ```
 
+A promise's `getState()` describes how it was settled, not the eventual
+outcome: a promise that was resolved with another promise, directly or by
+returning one from a `then()` handler, reports `fulfilled` while the inner
+promise may still be pending, and `wait()` can still throw if the inner
+promise rejects. Poll the state only on promises settled with plain values,
+or call `wait()` first (see
+[guzzle/promises#101](https://github.com/guzzle/promises/issues/101)).
+
 When using Guzzle HTTP requests, asynchronous methods return
 `GuzzleHttp\Promise\PromiseInterface` instances:
 
