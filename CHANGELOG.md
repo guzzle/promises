@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.5.3 - Upcoming
+
+### Added
+
+- Added support for PHP 8.6
+
+
 ## 2.5.2 - 2026-08-05
 
 ### Fixed
