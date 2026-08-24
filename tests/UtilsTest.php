@@ -674,6 +674,22 @@ class UtilsTest extends TestCase
         ], P\Utils::inspect($p->then()));
     }
 
+    public function testInspectReturnsOutcomeOfAdoptedPromiseWhoseWaitFunctionThrowsAfterSettling(): void
+    {
+        $inner = new Promise(function () use (&$inner): void {
+            $inner->resolve('foo');
+
+            throw new \RuntimeException('bar');
+        });
+        $promise = new Promise();
+        $promise->resolve($inner);
+
+        $this->assertSame([
+            'state' => 'fulfilled',
+            'value' => 'foo',
+        ], P\Utils::inspect($promise));
+    }
+
     public function testReturnsTrampoline(): void
     {
         $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
@@ -708,6 +724,15 @@ class UtilsTest extends TestCase
         $promise = P\Utils::task(function (): string { return 'a'; });
         $this->assertSame('a', $promise->wait());
         $tramp->run();
+    }
+
+    public function testDoesNotRunThunkOfPromiseAdoptingAnotherPromise(): void
+    {
+        $called = false;
+        $promise = P\Utils::task(function () use (&$called): void { $called = true; });
+        $promise->resolve(new Promise());
+        P\Utils::queue()->run();
+        $this->assertFalse($called);
     }
 
     public function testYieldsFromCoroutine(): void

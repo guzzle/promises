@@ -101,7 +101,7 @@ class EachPromise implements PromisorInterface
             $this->refillPending();
             if (!$this->pending) {
                 Utils::queue()->add(function (): void {
-                    if (!$this->aggregate || State::isSettled($this->aggregate)) {
+                    if (!$this->aggregate || $this->aggregate->isResolved()) {
                         return;
                     }
 
@@ -133,13 +133,13 @@ class EachPromise implements PromisorInterface
                 while ($promise = current($this->pending)) {
                     next($this->pending);
                     $promise->wait();
-                    if (State::isSettled($this->aggregate)) {
+                    if ($this->aggregate->isResolved()) {
                         return;
                     }
                 }
                 // Refill and re-sweep; give up only when nothing remains.
                 $this->refillPending();
-                if (State::isSettled($this->aggregate) || !$this->pending) {
+                if ($this->aggregate->isResolved() || !$this->pending) {
                     return;
                 }
             }
@@ -170,7 +170,7 @@ class EachPromise implements PromisorInterface
             ? ($this->concurrency)(count($this->pending))
             : $this->concurrency;
         // The callable can settle the aggregate; admit nothing more.
-        if (State::isSettled($this->aggregate)) {
+        if ($this->aggregate->isResolved()) {
             return;
         }
         $concurrency = max($concurrency - count($this->pending), 0);
@@ -254,7 +254,7 @@ class EachPromise implements PromisorInterface
         // Run the completion check that locked steps skipped.
         if ($this->stepWhileLocked) {
             $this->stepWhileLocked = false;
-            if (!State::isSettled($this->aggregate)) {
+            if (!$this->aggregate->isResolved()) {
                 $this->checkIfFinished();
             }
         }
@@ -265,7 +265,7 @@ class EachPromise implements PromisorInterface
     private function step(int $idx): void
     {
         // If the promise was already resolved, then ignore this step.
-        if (State::isSettled($this->aggregate)) {
+        if ($this->aggregate->isResolved()) {
             return;
         }
 

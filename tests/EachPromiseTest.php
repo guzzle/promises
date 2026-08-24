@@ -151,6 +151,26 @@ class EachPromiseTest extends TestCase
         $this->assertSame(1, $called);
     }
 
+    public function testStopsIteratingWhenResolvedWithPendingPromise(): void
+    {
+        $consumed = [];
+        $iter = function () use (&$consumed): \Generator {
+            foreach (['a', 'b', 'c'] as $value) {
+                $consumed[] = $value;
+                yield $this->createSelfResolvingPromise($value);
+            }
+        };
+        $pending = $this->createSelfResolvingPromise('foo');
+        $each = new EachPromise($iter(), [
+            'concurrency' => 1,
+            'fulfilled' => function (string $value, int $idx, Promise $aggregate) use ($pending): void {
+                $aggregate->resolve($pending);
+            },
+        ]);
+        $this->assertSame('foo', $each->promise()->wait());
+        $this->assertSame(['a'], $consumed);
+    }
+
     public function testLimitsPendingPromises(): void
     {
         $pending = [new Promise(), new Promise(), new Promise(), new Promise()];

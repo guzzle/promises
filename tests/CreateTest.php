@@ -91,6 +91,30 @@ class CreateTest extends TestCase
         $this->assertSame('foo', P\Create::promiseFor($thenable)->wait());
     }
 
+    public function testRejectsPromiseForThenableWithItsThenableReason(): void
+    {
+        $thenable = new class {
+            /** @var callable|null */
+            public $onRejected;
+
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                $this->onRejected = $onRejected;
+            }
+        };
+        $reason = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+            }
+        };
+
+        $p = P\Create::promiseFor($thenable);
+        ($thenable->onRejected)($reason);
+
+        $this->assertTrue(P\State::isRejected($p));
+        $this->assertSame($reason, P\Utils::inspect($p)['reason']);
+    }
+
     public function testReturnsRejection(): void
     {
         $p = P\Create::rejectionFor('fail');
@@ -98,11 +122,12 @@ class CreateTest extends TestCase
         $this->assertSame('fail', PropertyHelper::get($p, 'reason'));
     }
 
-    public function testReturnsPromisesAsIsInRejectionFor(): void
+    public function testRefusesPromisesInRejectionFor(): void
     {
-        $a = new Promise();
-        $b = P\Create::rejectionFor($a);
-        $this->assertSame($a, $b);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('You cannot reject a promise with another promise.');
+
+        P\Create::rejectionFor(new Promise());
     }
 
     public function testIterForReturnsIterator(): void

@@ -4,8 +4,9 @@ Guzzle Promises Upgrade Guide
 3.x to 4.0
 ----------
 
-Guzzle Promises 4.0 is a major release that raises the minimum PHP version and
-removes the deprecated `Is` class.
+Guzzle Promises 4.0 is a major release that raises the minimum PHP version,
+makes the promise state model conform to Promises/A+, and removes the deprecated
+`Is` class.
 
 #### PHP Version and Dependencies
 
@@ -18,6 +19,53 @@ until your minimum PHP version is raised.
 Guzzle Promises 4.0 has no runtime package dependencies beyond PHP. It removes
 the runtime dependency on `symfony/deprecation-contracts` that 3.1 reintroduced;
 require that package directly if your application uses it.
+
+#### Promise State Adoption
+
+`resolve()` with a promise or other thenable, including returning one from a
+`then()` handler, no longer settles the promise immediately. The promise stays
+pending and adopts the thenable's eventual state (Promises/A+ Section 2.3.2), so
+`getState()` reports `fulfilled` or `rejected` only once the final outcome is
+known. The state of an already-settled promise is adopted synchronously. Code
+that polls `getState()` on chained promises observes `pending` where 3.x
+reported a settled state. Resolutions arriving while a promise adopts another
+promise are ignored instead of throwing. Once the promise has settled, resolving
+it again with the promise it adopted throws a `LogicException`, because it now
+holds that promise's value; 3.x ignored the repeated call. Cancelling an
+adopting promise now cancels the adopted promise and takes the outcome that
+produces, falling back to a `CancellationException` while the adopted promise is
+still pending.
+
+A promise keeps its own handlers while it adopts another promise, where 3.x
+moved them onto that promise. The handlers attached to the adopted promise
+before it settles, including those attached after the adoption, therefore all
+run before those of the adopting promise, unless one of them runs the task
+queue, as waiting on a pending promise does; 3.x interleaved them. The handlers
+of the adopting promise are queued when those of the adopted promise run, one
+turn of the task queue later than in 3.x, so they also run after any task that
+was already queued. The order of the handlers attached to any one promise is
+unchanged.
+
+#### Foreign Thenables
+
+A promise adopts a foreign thenable through the full Promises/A+ resolution
+procedure (Section 2.3.3), and `Create::promiseFor()` now wraps a foreign
+thenable the same way. A thenable that the foreign thenable fulfills with is
+adopted in turn, where 3.x passed it to handlers as a value. Waiting on the
+promise calls the thenable's `wait()` method with `false`, where the promise
+returned by `Create::promiseFor()` called it with `true` in 3.x. Waiting on a
+promise that adopts a thenable with no `wait()` method rejects it with "Invoking
+the wait callback did not resolve the promise" when running the task queue does
+not settle it.
+
+#### Rejection Reasons
+
+Rejection reasons are never adopted. `reject()` and `Create::rejectionFor()`
+throw an `InvalidArgumentException` for a promise or other thenable reason,
+where 3.x silently adopted the promise's eventual state. A reason that a foreign
+thenable rejects with is passed on as it is, even when it is a thenable.
+Resolving or rejecting a promise with itself now rejects it with a `TypeError`
+instead of throwing a `LogicException`.
 
 #### Removed Is Class
 
