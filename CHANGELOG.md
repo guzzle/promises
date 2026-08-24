@@ -5,7 +5,7 @@
 
 ### Added
 
-- Added PHP 8.6 to the supported and tested versions
+- Added support for PHP 8.6
 
 
 ## 3.0.1 - 2026-08-05
