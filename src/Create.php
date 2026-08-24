@@ -56,7 +56,7 @@ final class Create
     public static function rejectionFor($reason): PromiseInterface
     {
         if ($reason instanceof PromiseInterface) {
-            return $reason;
+            throw new \InvalidArgumentException('You cannot reject a promise with another promise.');
         }
 
         return new RejectedPromise($reason);

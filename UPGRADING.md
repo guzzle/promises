@@ -1,6 +1,31 @@
 Guzzle Promises Upgrade Guide
 =============================
 
+3.x to 4.0
+----------
+
+Guzzle Promises 4.0 makes the promise state model conform to Promises/A+.
+
+#### Promise State Adoption
+
+`resolve()` with a promise or other thenable, including returning one from a
+`then()` handler, no longer settles the promise immediately. The promise stays
+pending and adopts the thenable's eventual state (Promises/A+ Section 2.3.2),
+so `getState()` reports `fulfilled` or `rejected` only once the final outcome
+is known. The state of an already-settled promise is adopted synchronously.
+Code that polls `getState()` on chained promises observes `pending` where 3.x
+reported a settled state; `wait()` and `then()` behave as before. Resolutions
+arriving while a promise adopts another promise are ignored instead of
+throwing, and cancelling an adopting promise now cancels the adopted promise.
+
+#### Rejection Reasons
+
+Rejection reasons are never adopted. `reject()` and `Create::rejectionFor()`
+throw an `InvalidArgumentException` for a promise or other thenable reason,
+where 3.x silently adopted the promise's eventual state. Resolving or
+rejecting a promise with itself now rejects it with a `TypeError` instead of
+throwing a `LogicException`.
+
 2.x to 3.0
 ----------
 

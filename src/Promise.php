@@ -29,6 +29,14 @@ class Promise implements PromiseInterface
     /** @var (callable(): void)|null */
     private $cancelFn;
 
+    /**
+     * Thenable this promise is locked to while it adopts the thenable's
+     * eventual state (Promises/A+ 2.3.2). While set, the promise is
+     * "resolved but pending": it stays pending and ignores further calls
+     * to resolve() and reject() (Promises/A+ 2.3.3.3.3).
+     */
+    private ?object $adopted = null;
+
     /** @var (callable(bool): void)|null */
     private $waitFn;
 
@@ -83,12 +91,30 @@ class Promise implements PromiseInterface
 
         // It's either cancelled or rejected, so return a rejected promise
         // and immediately invoke any callbacks.
-        $rejection = Create::rejectionFor($this->result);
+        if (!is_object($this->result) || !method_exists($this->result, 'then')) {
+            $rejection = Create::rejectionFor($this->result);
 
-        /** @var PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)> $promise */
-        $promise = $onRejected ? $rejection->then(null, $onRejected) : $rejection;
+            /** @var PromiseInterface<($onFulfilled is null ? TValue : TFulfilledValue)|($onRejected is null ? never : TRejectedValue), ($onFulfilled is null ? never : TFulfilledReason|\Throwable)|($onRejected is null ? TReason : TRejectedReason|\Throwable)> $promise */
+            $promise = $onRejected ? $rejection->then(null, $onRejected) : $rejection;
 
-        return $promise;
+            return $promise;
+        }
+
+        // The reason is a thenable rejection reason adopted verbatim from
+        // another implementation; it is passed to handlers verbatim as well,
+        // as rejection reasons are never adopted.
+        if (!$onRejected) {
+            return $this;
+        }
+
+        $queue = Utils::queue();
+        $p = new Promise([$queue, 'run']);
+        $reason = $this->result;
+        $queue->add(static function () use ($p, $reason, $onFulfilled, $onRejected): void {
+            self::callHandler(2, $reason, [$p, $onFulfilled, $onRejected]);
+        });
+
+        return $p;
     }
 
     /**
@@ -108,9 +134,6 @@ class Promise implements PromiseInterface
     {
         $this->waitIfPending();
 
-        if ($this->result instanceof PromiseInterface) {
-            return $this->result->wait($unwrap);
-        }
         if ($unwrap) {
             if ($this->state === self::FULFILLED) {
                 return $this->result;
@@ -134,6 +157,16 @@ class Promise implements PromiseInterface
         }
 
         $this->waitFn = $this->waitList = null;
+
+        // Cancelling a promise that adopted another thenable's state also
+        // cancels the adopted thenable and unlocks this promise so that the
+        // rejection below can take effect.
+        if (null !== $adopted = $this->adopted) {
+            $this->adopted = null;
+            if (method_exists($adopted, 'cancel')) {
+                $adopted->cancel();
+            }
+        }
 
         if ($this->cancelFn) {
             $fn = $this->cancelFn;
@@ -164,6 +197,13 @@ class Promise implements PromiseInterface
 
     private function settle(string $state, $value): void
     {
+        if ($this->adopted !== null) {
+            // The promise already adopts the state of another thenable, so
+            // its fate is locked and further resolutions are ignored
+            // (Promises/A+ 2.3.3.3.3).
+            return;
+        }
+
         if ($this->state !== self::PENDING) {
             // Ignore calls with the same resolution.
             if ($state === $this->state && $value === $this->result) {
@@ -175,9 +215,34 @@ class Promise implements PromiseInterface
         }
 
         if ($value === $this) {
-            throw new \LogicException('Cannot fulfill or reject a promise with itself');
+            // Reject with a \TypeError instead (Promises/A+ 2.3.1).
+            $state = self::REJECTED;
+            $value = new \TypeError('Cannot fulfill or reject a promise with itself');
         }
 
+        if (is_object($value) && method_exists($value, 'then')) {
+            if ($state === self::REJECTED) {
+                throw new \InvalidArgumentException('You cannot reject a promise with another promise.');
+            }
+
+            // Resolving with a thenable does not settle the promise. Instead
+            // the promise stays pending and adopts the thenable's eventual
+            // state (Promises/A+ 2.3.2).
+            $this->adopt($value);
+
+            return;
+        }
+
+        $this->settleWith($state, $value);
+    }
+
+    /**
+     * Settles the promise with a resolution that already passed the
+     * resolution procedure: the value of a fulfillment is never a thenable,
+     * and a rejection reason stays verbatim (Promises/A+ 2.3.2.3).
+     */
+    private function settleWith(string $state, $value): void
+    {
         // Clear out the state of the promise but stash the handlers.
         $this->state = $state;
         $this->result = $value;
@@ -185,39 +250,82 @@ class Promise implements PromiseInterface
         $this->handlers = null;
         $this->waitList = $this->waitFn = null;
         $this->cancelFn = null;
+        $this->adopted = null;
 
         if (!$handlers) {
             return;
         }
 
-        // If the value was not a settled promise or a thenable, then resolve
-        // it in the task queue using the correct ID.
-        if (!is_object($value) || !method_exists($value, 'then')) {
-            $id = $state === self::FULFILLED ? 1 : 2;
-            // It's a success, so resolve the handlers in the queue.
-            Utils::queue()->add(static function () use ($id, $value, $handlers): void {
-                foreach ($handlers as $handler) {
-                    self::callHandler($id, $value, $handler);
-                }
-            });
-        } elseif ($value instanceof Promise && Is::pending($value)) {
-            // We can just merge our handlers onto the next promise.
-            $value->handlers = array_merge($value->handlers, $handlers);
-        } else {
-            // Resolve the handlers when the forwarded promise is resolved.
-            $value->then(
-                static function ($value) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(1, $value, $handler);
-                    }
-                },
-                static function ($reason) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(2, $reason, $handler);
-                    }
-                }
-            );
+        $id = $state === self::FULFILLED ? 1 : 2;
+        Utils::queue()->add(static function () use ($id, $value, $handlers): void {
+            foreach ($handlers as $handler) {
+                self::callHandler($id, $value, $handler);
+            }
+        });
+    }
+
+    /**
+     * Locks this promise to a thenable so that it adopts the thenable's
+     * eventual state (Promises/A+ 2.3.2), staying pending until it settles.
+     *
+     * The state of an already-settled promise is adopted synchronously:
+     * Promises/A+ only observes state through then() callbacks, which stay
+     * asynchronous.
+     */
+    private function adopt(object $thenable): void
+    {
+        if ($thenable instanceof FulfilledPromise) {
+            $this->settleWith(self::FULFILLED, $thenable->value());
+
+            return;
         }
+
+        if ($thenable instanceof RejectedPromise) {
+            $this->settleWith(self::REJECTED, $thenable->reason());
+
+            return;
+        }
+
+        if ($thenable instanceof self && $thenable->state !== self::PENDING) {
+            $this->settleWith($thenable->state, $thenable->result);
+
+            return;
+        }
+
+        $this->adopted = $thenable;
+        // The resolver has committed to the thenable, so the original wait
+        // and cancel functions no longer apply; waiting and cancellation are
+        // forwarded to the adopted thenable instead.
+        $this->waitFn = $this->waitList = null;
+        $this->cancelFn = null;
+
+        if ($thenable instanceof self) {
+            // Merge the handlers onto the adopted promise behind a marker
+            // entry that settles this promise first, keeping dispatch as flat
+            // as merging handlers onto the next promise did before adoption.
+            $thenable->handlers[] = [$this, null, null, true];
+            if ($this->handlers) {
+                $thenable->handlers = array_merge($thenable->handlers, $this->handlers);
+            }
+            $this->handlers = [];
+
+            return;
+        }
+
+        $thenable->then(
+            function ($value) use ($thenable): void {
+                if ($this->adopted === $thenable) {
+                    $this->adopted = null;
+                    $this->settleWith(self::FULFILLED, $value);
+                }
+            },
+            function ($reason) use ($thenable): void {
+                if ($this->adopted === $thenable) {
+                    $this->adopted = null;
+                    $this->settleWith(self::REJECTED, $reason);
+                }
+            }
+        );
     }
 
     /**
@@ -231,6 +339,17 @@ class Promise implements PromiseInterface
     {
         /** @var PromiseInterface<mixed, mixed> $promise */
         $promise = $handler[0];
+
+        if (isset($handler[3])) {
+            // Adoption marker: the promise adopts this settlement directly,
+            // unless cancellation already unlocked it.
+            if ($promise instanceof self && $promise->adopted !== null) {
+                $promise->adopted = null;
+                $promise->settleWith($index === 1 ? self::FULFILLED : self::REJECTED, $value);
+            }
+
+            return;
+        }
 
         // The promise may have been cancelled or resolved before placing
         // this thunk in the queue.
@@ -269,7 +388,7 @@ class Promise implements PromiseInterface
             $this->invokeWaitFn();
         } elseif ($this->waitList) {
             $this->invokeWaitList();
-        } else {
+        } elseif ($this->adopted === null) {
             // If there's no wait function, then reject the promise.
             $this->reject('Cannot wait on a promise that has '
                 .'no internal wait function. You must provide a wait '
@@ -279,8 +398,26 @@ class Promise implements PromiseInterface
 
         Utils::queue()->run();
 
+        // Waiting on a promise that adopted a thenable's state waits on the
+        // thenable, repeatedly in case the thenable settles with yet another
+        // thenable that is adopted in turn. The promise is pending as long
+        // as it is locked to an adopted thenable.
+        while (null !== $adopted = $this->adopted) {
+            if (!method_exists($adopted, 'wait')) {
+                break;
+            }
+            $adopted->wait(false);
+            Utils::queue()->run();
+            if ($this->adopted === $adopted) {
+                // Waiting on the adopted thenable did not settle it.
+                break;
+            }
+        }
+
         /** @psalm-suppress RedundantCondition */
         if ($this->state === self::PENDING) {
+            // Unlock the promise so that the rejection can take effect.
+            $this->adopted = null;
             $this->reject('Invoking the wait callback did not resolve the promise');
         }
     }
@@ -292,7 +429,7 @@ class Promise implements PromiseInterface
             $this->waitFn = null;
             $wfn(true);
         } catch (\Throwable $reason) {
-            if ($this->state === self::PENDING) {
+            if ($this->state === self::PENDING && $this->adopted === null) {
                 // The promise has not been resolved yet, so reject the promise
                 // with the exception.
                 $this->reject($reason);
@@ -310,14 +447,10 @@ class Promise implements PromiseInterface
         $this->waitList = null;
 
         foreach ($waitList as $result) {
-            do {
-                $result->waitIfPending();
-                $result = $result->result;
-            } while ($result instanceof Promise);
-
-            if ($result instanceof PromiseInterface) {
-                $result->wait(false);
-            }
+            // A settled promise never holds another promise as its result:
+            // fulfillment values are adopted and thenable rejection reasons
+            // are refused, so there is no result chain to follow.
+            $result->waitIfPending();
         }
     }
 }

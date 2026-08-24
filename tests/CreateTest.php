@@ -43,11 +43,12 @@ class CreateTest extends TestCase
         $this->assertSame('fail', PropertyHelper::get($p, 'reason'));
     }
 
-    public function testReturnsPromisesAsIsInRejectionFor(): void
+    public function testRefusesPromisesInRejectionFor(): void
     {
-        $a = new Promise();
-        $b = P\Create::rejectionFor($a);
-        $this->assertSame($a, $b);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('You cannot reject a promise with another promise.');
+
+        P\Create::rejectionFor(new Promise());
     }
 
     public function testIterForReturnsIterator(): void

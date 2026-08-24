@@ -37,6 +37,18 @@ class RejectedPromise implements PromiseInterface
     }
 
     /**
+     * Returns the rejection reason.
+     *
+     * @return TReason
+     *
+     * @internal
+     */
+    public function reason()
+    {
+        return $this->reason;
+    }
+
+    /**
      * @template TFulfilledValue = never
      * @template TFulfilledReason = never
      * @template TRejectedValue = never
