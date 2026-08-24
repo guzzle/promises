@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 3.0.2 - Upcoming
+
+### Added
+
+- Added PHP 8.6 to the supported and tested versions
+
+
 ## 3.0.1 - 2026-08-05
 
 ### Changed
