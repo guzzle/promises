@@ -5,7 +5,7 @@
 
 ### Added
 
-- Added PHP 8.6 to the tested versions
+- Added support for PHP 8.6
 
 
 ## 2.5.2 - 2026-08-05
