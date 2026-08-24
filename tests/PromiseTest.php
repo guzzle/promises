@@ -239,12 +239,144 @@ class PromiseTest extends TestCase
             $p3->resolve('Whoop');
         });
         $p2 = new Promise(function () use (&$p2, $p3): void {
-            $p2->reject($p3);
+            $p2->resolve($p3);
         });
         $p = new Promise(function () use (&$p, $p2): void {
-            $p->reject($p2);
+            $p->resolve($p2);
         });
         $this->assertSame('Whoop', $p->wait());
+    }
+
+    public function testCannotRejectWithAPromise(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('You cannot reject a promise with another promise.');
+
+        $p = new Promise();
+        $p->reject(new Promise());
+    }
+
+    public function testRemainsPendingWhenResolvedWithPendingPromise(): void
+    {
+        $p = new Promise();
+        $inner = new Promise();
+        $p->resolve($inner);
+
+        $this->assertTrue(P\Is::pending($p));
+
+        $inner->resolve('foo');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertSame('foo', $p->wait());
+    }
+
+    public function testNeverReportsFulfilledWhenResolvedWithPromiseThatLaterRejects(): void
+    {
+        $p = new Promise();
+        $inner = new Promise();
+        $p->resolve($inner);
+
+        $this->assertTrue(P\Is::pending($p));
+
+        $inner->reject('bar');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::rejected($p));
+
+        try {
+            $p->wait();
+            $this->fail();
+        } catch (RejectionException $e) {
+            $this->assertSame('bar', $e->getReason());
+        }
+    }
+
+    public function testAdoptsStateOfSettledPromiseSynchronously(): void
+    {
+        $p = new Promise();
+        $p->resolve(new FulfilledPromise('foo'));
+
+        // A+ only observes state through then() callbacks, so the state of an
+        // already-settled promise can be adopted without a queue tick.
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertSame('foo', $p->wait());
+
+        $r = new Promise();
+        $r->resolve(new RejectedPromise('bar'));
+
+        $this->assertTrue(P\Is::rejected($r));
+    }
+
+    public function testIgnoresResolutionsWhileAdoptingStateOfAnotherPromise(): void
+    {
+        $p = new Promise();
+        $inner = new Promise();
+        $p->resolve($inner);
+        $p->resolve('other');
+        $p->reject('nope');
+
+        $inner->resolve('kept');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertSame('kept', $p->wait());
+    }
+
+    public function testCancelsAdoptedPromiseWhenCancelled(): void
+    {
+        $p = new Promise();
+        $inner = new Promise();
+        $p->resolve($inner);
+        $p->cancel();
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::rejected($p));
+        $this->assertTrue(P\Is::rejected($inner));
+    }
+
+    public function testAdoptsStateOfDuckTypedThenable(): void
+    {
+        $thenable = new class {
+            /** @var callable|null */
+            public $onFulfilled;
+
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                $this->onFulfilled = $onFulfilled;
+            }
+        };
+
+        $p = new Promise();
+        $p->resolve($thenable);
+
+        $this->assertTrue(P\Is::pending($p));
+
+        ($thenable->onFulfilled)('foo');
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertSame('foo', $p->wait());
+    }
+
+    public function testDispatchesHandlersAttachedBeforeAdoption(): void
+    {
+        $p = new Promise();
+        $results = [];
+        $p->then(static function ($value) use (&$results): void {
+            $results[] = 'first:'.$value;
+        });
+
+        $inner = new Promise();
+        $p->resolve($inner);
+        $p->then(static function ($value) use (&$results): void {
+            $results[] = 'second:'.$value;
+        });
+
+        $inner->resolve('foo');
+        P\Utils::queue()->run();
+
+        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertSame(['first:foo', 'second:foo'], $results);
     }
 
     public function testWaitsOnAPromiseChainEvenWhenNotUnwrapped(): void
@@ -789,22 +921,34 @@ class PromiseTest extends TestCase
         $this->assertSame(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
 
-    public function testCannotResolveWithSelf(): void
+    public function testRejectsWithTypeErrorWhenResolvedWithSelf(): void
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot fulfill or reject a promise with itself');
-
         $p = new Promise();
         $p->resolve($p);
+
+        $this->assertTrue(P\Is::rejected($p));
+
+        try {
+            $p->wait();
+            $this->fail();
+        } catch (\TypeError $e) {
+            $this->assertSame('Cannot fulfill or reject a promise with itself', $e->getMessage());
+        }
     }
 
-    public function testCannotRejectWithSelf(): void
+    public function testRejectsWithTypeErrorWhenRejectedWithSelf(): void
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Cannot fulfill or reject a promise with itself');
-
         $p = new Promise();
         $p->reject($p);
+
+        $this->assertTrue(P\Is::rejected($p));
+
+        try {
+            $p->wait();
+            $this->fail();
+        } catch (\TypeError $e) {
+            $this->assertSame('Cannot fulfill or reject a promise with itself', $e->getMessage());
+        }
     }
 
     public function testDoesNotBlowStackWhenWaitingOnNestedThens(): void

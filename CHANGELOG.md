@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## 4.0.0 - Upcoming
+
+### Changed
+
+- Adopt the state of a promise used as a resolution, staying pending until that promise settles
+- Refuse promises as rejection reasons with an `InvalidArgumentException` instead of adopting them
+- Refuse promises in `Create::rejectionFor()` instead of returning them as-is
+- Reject with a `TypeError` instead of throwing when a promise is resolved or rejected with itself
+- Ignore resolutions of a promise while it adopts the state of another promise
+- Forward cancellation to the adopted promise when a promise adopting one is cancelled
+
 ## 3.0.1 - 2026-08-05
 
 ### Changed

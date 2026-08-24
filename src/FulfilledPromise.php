@@ -37,6 +37,18 @@ class FulfilledPromise implements PromiseInterface
     }
 
     /**
+     * Returns the fulfillment value.
+     *
+     * @return TValue
+     *
+     * @internal
+     */
+    public function value()
+    {
+        return $this->value;
+    }
+
+    /**
      * @template TFulfilledValue = never
      * @template TFulfilledReason = never
      * @template TRejectedValue = never

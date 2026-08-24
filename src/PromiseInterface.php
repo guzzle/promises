@@ -62,12 +62,11 @@ interface PromiseInterface
      * The three states can be checked against the constants defined on
      * PromiseInterface: PENDING, FULFILLED, and REJECTED.
      *
-     * The state describes how this promise was settled, not the eventual
-     * outcome: a promise that was resolved with another promise, directly or
-     * by returning one from a then() handler, reports FULFILLED while the
-     * inner promise may still be pending, and wait() can still throw if the
-     * inner promise rejects. Poll the state only on promises settled with
-     * plain values, or call wait() first.
+     * A promise that was resolved with another promise, directly or by
+     * returning one from a then() handler, adopts that promise's state: it
+     * stays PENDING until the other promise settles (Promises/A+ 2.3.2), so
+     * FULFILLED and REJECTED always describe the final outcome and wait()
+     * settles accordingly without further work.
      *
      * @return self::PENDING|self::FULFILLED|self::REJECTED
      *
@@ -77,6 +76,9 @@ interface PromiseInterface
 
     /**
      * Resolve the promise with the given value, or with null if no value is given.
+     *
+     * Resolving with a promise or other thenable makes this promise adopt
+     * its eventual state, staying pending until it settles.
      *
      * @param TValue|PromiseInterface<TValue, TReason>|null $value
      *
@@ -90,8 +92,10 @@ interface PromiseInterface
      *
      * @param TReason $reason
      *
-     * @throws \LogicException if the promise is already settled with a
-     *                         conflicting resolution.
+     * @throws \InvalidArgumentException if the reason is a promise or other
+     *                                   thenable.
+     * @throws \LogicException           if the promise is already settled with a
+     *                                   conflicting resolution.
      */
     public function reject($reason): void;
 
