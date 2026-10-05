@@ -37,7 +37,10 @@
     "autoload": {
         "psr-4": {
             "GuzzleHttp\\Promise\\": "src/"
-        }
+        },
+        "files": [
+            "src/Is.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

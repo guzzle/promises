@@ -5,3 +5,4 @@ parameters:
     level: 5
     paths:
         - src
+        - is_php86.php

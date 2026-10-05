@@ -2,43 +2,11 @@
 
 declare(strict_types=1);
 
-namespace GuzzleHttp\Promise;
+(function (): void {
+    $original = error_reporting();
+    error_reporting($original & ~E_DEPRECATED);
 
-final class Is
-{
-    private function __construct()
-    {
-    }
+    require __DIR__.'/../is_php86.php';
 
-    /**
-     * Returns true if a promise is pending.
-     */
-    public static function pending(PromiseInterface $promise): bool
-    {
-        return $promise->getState() === PromiseInterface::PENDING;
-    }
-
-    /**
-     * Returns true if a promise is fulfilled or rejected.
-     */
-    public static function settled(PromiseInterface $promise): bool
-    {
-        return $promise->getState() !== PromiseInterface::PENDING;
-    }
-
-    /**
-     * Returns true if a promise is fulfilled.
-     */
-    public static function fulfilled(PromiseInterface $promise): bool
-    {
-        return $promise->getState() === PromiseInterface::FULFILLED;
-    }
-
-    /**
-     * Returns true if a promise is rejected.
-     */
-    public static function rejected(PromiseInterface $promise): bool
-    {
-        return $promise->getState() === PromiseInterface::REJECTED;
-    }
-}
+    error_reporting($original);
+})();
