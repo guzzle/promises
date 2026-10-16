@@ -41,7 +41,7 @@ final class Utils
             $queue = new TaskQueue();
         }
 
-        return ExecutionContext::queue($queue);
+        return ContextualTaskQueue::route($queue);
     }
 
     /**

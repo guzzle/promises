@@ -31,11 +31,6 @@ final class ExecutionContext
 
     private static int $mode = self::ISOLATE;
 
-    /** @var \WeakMap<object, ExecutionContextState>|null */
-    private static $states;
-
-    private static ?ContextualTaskQueue $queue = null;
-
     private function __construct()
     {
     }
@@ -62,8 +57,7 @@ final class ExecutionContext
 
         self::$provider = $provider;
         self::$mode = $mode;
-        self::$states = $provider === null ? null : new \WeakMap();
-        self::$queue = null;
+        ExecutionContextState::reset($provider !== null);
     }
 
     /**
@@ -109,7 +103,7 @@ final class ExecutionContext
             throw new \LogicException('Cannot register a finalizer outside a managed execution context.');
         }
 
-        self::state($context)->finalizers[] = $finalizer;
+        ExecutionContextState::forContext($context)->finalizers[] = $finalizer;
     }
 
     /**
@@ -127,121 +121,10 @@ final class ExecutionContext
      */
     public static function finish(object $context): void
     {
-        $state = self::$states[$context] ?? null;
+        $state = ExecutionContextState::find($context);
 
-        if ($state === null || $state->finishing) {
-            return;
+        if ($state !== null) {
+            $state->finish();
         }
-
-        $state->finishing = true;
-        $failure = null;
-
-        try {
-            do {
-                while ($finalizer = array_shift($state->finalizers)) {
-                    try {
-                        $finalizer();
-                    } catch (\Throwable $e) {
-                        $failure = $failure ?? $e;
-                    }
-                }
-
-                try {
-                    $state->queue()->run();
-                } catch (\Throwable $e) {
-                    $failure = $failure ?? $e;
-                }
-            } while ($state->hasPendingWork());
-        } finally {
-            $state->finished = true;
-        }
-
-        if ($failure !== null) {
-            throw $failure;
-        }
-    }
-
-    /**
-     * Returns the task queue for the current execution context.
-     *
-     * @internal
-     */
-    public static function queue(TaskQueueInterface $global): TaskQueueInterface
-    {
-        if (self::$provider === null) {
-            return $global;
-        }
-
-        if (self::$queue === null) {
-            self::$queue = new ContextualTaskQueue($global);
-        } else {
-            self::$queue->setGlobal($global);
-        }
-
-        return self::$queue;
-    }
-
-    /**
-     * Determines if the given context has been finished and has not used
-     * promises since.
-     *
-     * @internal
-     */
-    public static function isFinished(object $context): bool
-    {
-        $state = self::$states[$context] ?? null;
-
-        return $state !== null && $state->finished;
-    }
-
-    /**
-     * Returns the task queue of the given execution context, which may be a
-     * context other than the current one.
-     *
-     * @internal
-     */
-    public static function queueFor(object $context): TaskQueue
-    {
-        return self::state($context)->queue();
-    }
-
-    /**
-     * Returns the state for a context, creating it on first use.
-     *
-     * A finalizing provider registers its finalizer for the context that is
-     * running, so the finalizer is registered the first time the state is
-     * used from inside its own context. A finished context that uses its state
-     * again gets new state, so it is finished again.
-     *
-     * @internal
-     */
-    public static function state(object $context): ExecutionContextState
-    {
-        $state = self::$states[$context] ?? null;
-        $running = $context === self::current();
-
-        if ($state === null || ($state->finished && $running)) {
-            $state = new ExecutionContextState();
-            self::$states[$context] = $state;
-        }
-
-        if ($state->registered || !$running) {
-            return $state;
-        }
-
-        $state->registered = true;
-
-        if (self::$provider instanceof FinalizingExecutionContextProviderInterface) {
-            $reference = \WeakReference::create($context);
-            self::$provider->onFinish(static function () use ($reference): void {
-                $context = $reference->get();
-
-                if ($context !== null) {
-                    ExecutionContext::finish($context);
-                }
-            });
-        }
-
-        return $state;
     }
 }

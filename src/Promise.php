@@ -88,7 +88,7 @@ class Promise implements PromiseInterface
             if ($p->owner !== null) {
                 // The handler runs in the context that owns $p, so make sure
                 // finishing that context drains what is queued for it.
-                ExecutionContext::state($p->owner->get());
+                ExecutionContextState::forContext($p->owner->get());
             }
 
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
@@ -367,8 +367,8 @@ class Promise implements PromiseInterface
             ? self::groupByOwner($handlers)
             : [$handlers, []];
 
-        foreach ($foreign as [$context, $owned]) {
-            ExecutionContext::queueFor($context)->add(static function () use ($index, $value, $owned): void {
+        foreach ($foreign as [$contextQueue, $owned]) {
+            $contextQueue->add(static function () use ($index, $value, $owned): void {
                 self::callHandlers($index, $value, $owned);
             });
         }
@@ -390,12 +390,12 @@ class Promise implements PromiseInterface
 
     /**
      * Splits handlers into those that run in the current context and those
-     * owned by other live contexts, dropping handlers of finished or ended
-     * contexts.
+     * grouped by the task queue of the other live context that owns them,
+     * dropping handlers of finished or ended contexts.
      *
      * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
      *
-     * @return array{0: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>, 1: array<int, array{0: object, 1: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>}>}
+     * @return array{0: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>, 1: array<int, array{0: TaskQueue, 1: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>}>}
      */
     private static function groupByOwner(array $handlers): array
     {
@@ -418,13 +418,15 @@ class Promise implements PromiseInterface
                 continue;
             }
 
-            if (ExecutionContext::isFinished($context)) {
+            $contextQueue = ExecutionContextState::queueFor($context);
+
+            if ($contextQueue === null) {
                 // The owning context has been finished and drains nothing.
                 continue;
             }
 
-            $foreign[spl_object_id($context)][0] = $context;
-            $foreign[spl_object_id($context)][1][] = $handler;
+            $foreign[spl_object_id($contextQueue)][0] = $contextQueue;
+            $foreign[spl_object_id($contextQueue)][1][] = $handler;
         }
 
         return [$local, $foreign];

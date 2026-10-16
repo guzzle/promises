@@ -3,20 +3,20 @@ parameters:
 		-
 			message: '#^Access to offset object on an unknown class WeakMap\.$#'
 			identifier: class.notFound
-			count: 3
-			path: src/ExecutionContext.php
+			count: 1
+			path: src/ExecutionContextState.php
 
 		-
 			message: '#^Instantiated class WeakMap not found\.$#'
 			identifier: class.notFound
 			count: 1
-			path: src/ExecutionContext.php
+			path: src/ExecutionContextState.php
 
 		-
-			message: '#^Property GuzzleHttp\\Promise\\ExecutionContext\:\:\$states has unknown class WeakMap as its type\.$#'
+			message: '#^Property GuzzleHttp\\Promise\\ExecutionContextState\:\:\$states has unknown class WeakMap as its type\.$#'
 			identifier: class.notFound
 			count: 1
-			path: src/ExecutionContext.php
+			path: src/ExecutionContextState.php
 
 		-
 			message: '#^Call to static method getCurrent\(\) on an unknown class Fiber\.$#'

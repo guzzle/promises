@@ -15,16 +15,32 @@ final class ContextualTaskQueue implements TaskQueueInterface
 {
     use NonSerializableTrait;
 
+    private static ?self $instance = null;
+
     private TaskQueueInterface $global;
 
-    public function __construct(TaskQueueInterface $global)
+    private function __construct(TaskQueueInterface $global)
     {
         $this->global = $global;
     }
 
-    public function setGlobal(TaskQueueInterface $global): void
+    /**
+     * Returns the given global queue, or a queue that routes tasks to the
+     * current execution context when a provider is configured.
+     */
+    public static function route(TaskQueueInterface $global): TaskQueueInterface
     {
-        $this->global = $global;
+        if (ExecutionContext::provider() === null) {
+            return $global;
+        }
+
+        if (self::$instance === null) {
+            self::$instance = new self($global);
+        } else {
+            self::$instance->global = $global;
+        }
+
+        return self::$instance;
     }
 
     public function isEmpty(): bool
@@ -61,6 +77,6 @@ final class ContextualTaskQueue implements TaskQueueInterface
     {
         $context = ExecutionContext::current();
 
-        return $context === null ? $this->global : ExecutionContext::state($context)->queue();
+        return $context === null ? $this->global : ExecutionContextState::forContext($context)->queue();
     }
 }

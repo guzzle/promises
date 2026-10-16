@@ -7,6 +7,7 @@ namespace GuzzleHttp\Promise\Tests;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\CrossContextException;
 use GuzzleHttp\Promise\ExecutionContext;
+use GuzzleHttp\Promise\ExecutionContextState;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
 use PHPUnit\Framework\TestCase;
@@ -254,7 +255,7 @@ class ExecutionContextOwnershipTest extends TestCase
     {
         $ranIn = [];
         $this->provider->in($this->other, function () use (&$ranIn): void {
-            ExecutionContext::queueFor($this->owner)->add(function () use (&$ranIn): void {
+            ExecutionContextState::queueFor($this->owner)->add(function () use (&$ranIn): void {
                 $ranIn[] = $this->provider->current;
             });
         });
