@@ -227,6 +227,28 @@ class ExecutionContextTest extends TestCase
         $this->assertSame(1, $calls);
     }
 
+    public function testFinishingAContextFromItsOwnFinalizerDoesNothing(): void
+    {
+        $context = new \stdClass();
+        $events = [];
+
+        $this->provider->in($context, static function () use ($context, &$events): void {
+            ExecutionContext::onFinish(static function () use ($context, &$events): void {
+                ExecutionContext::finish($context);
+                $events[] = 'first';
+            });
+            ExecutionContext::onFinish(static function () use (&$events): void {
+                $events[] = 'second';
+            });
+        });
+
+        $this->provider->in($context, static function () use ($context): void {
+            ExecutionContext::finish($context);
+        });
+
+        $this->assertSame(['first', 'second'], $events);
+    }
+
     public function testFinishedContextsThatUsePromisesAgainAreFinishedAgain(): void
     {
         $context = new \stdClass();
