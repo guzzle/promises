@@ -120,6 +120,10 @@ final class ExecutionContext
      * from inside the context being finished, so that callbacks keep running
      * in the context that owns them. Calling it again for the same context is
      * harmless.
+     *
+     * Once a context is finished, callbacks that other contexts queue for it
+     * are dropped. If the context uses promises again, for example in a later
+     * shutdown callback, Guzzle tracks it as a new context.
      */
     public static function finish(object $context): void
     {
@@ -149,9 +153,7 @@ final class ExecutionContext
                 }
             } while ($state->hasPendingWork());
         } finally {
-            if (self::$states !== null) {
-                unset(self::$states[$context]);
-            }
+            $state->finished = true;
         }
 
         if ($failure !== null) {
@@ -180,6 +182,19 @@ final class ExecutionContext
     }
 
     /**
+     * Determines if the given context has been finished and has not used
+     * promises since.
+     *
+     * @internal
+     */
+    public static function isFinished(object $context): bool
+    {
+        $state = self::$states[$context] ?? null;
+
+        return $state !== null && $state->finished;
+    }
+
+    /**
      * Returns the task queue of the given execution context, which may be a
      * context other than the current one.
      *
@@ -195,20 +210,22 @@ final class ExecutionContext
      *
      * A finalizing provider registers its finalizer for the context that is
      * running, so the finalizer is registered the first time the state is
-     * used from inside its own context.
+     * used from inside its own context. A finished context that uses its state
+     * again gets new state, so it is finished again.
      *
      * @internal
      */
     public static function state(object $context): ExecutionContextState
     {
         $state = self::$states[$context] ?? null;
+        $running = $context === self::current();
 
-        if ($state === null) {
+        if ($state === null || ($state->finished && $running)) {
             $state = new ExecutionContextState();
             self::$states[$context] = $state;
         }
 
-        if ($state->registered || $context !== self::current()) {
+        if ($state->registered || !$running) {
             return $state;
         }
 

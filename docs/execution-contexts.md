@@ -137,7 +137,8 @@ The promise that `then()` returns is owned by the context that called `then()`,
 and its callbacks run in that context. When another context settles the promise,
 the callbacks are queued for the registering context, which runs them the next
 time it drains its task queue, such as while it waits or when it is finished.
-Callbacks registered by a context that has ended are dropped.
+Callbacks registered by a context that has been finished or has ended are
+dropped.
 
 A context that registers callbacks on a promise that another context settles
 must drain its own task queue to run them, for example by waiting on the promise
@@ -173,6 +174,10 @@ Runtimes call this when a context ends, unless their provider registers
 finalizers through `FinalizingExecutionContextProviderInterface`. Call it from
 inside the context being finished, so that callbacks keep running in the
 context that owns them. Calling it again for the same context is harmless.
+
+Once a context is finished, callbacks that other contexts queue for it are
+dropped. If the context uses promises again, for example in a later shutdown
+callback, Guzzle tracks it as a new context.
 
 `FinalizingExecutionContextProviderInterface::onFinish()`: Registers a callback
 that the runtime invokes, inside the current context, when that context ends.

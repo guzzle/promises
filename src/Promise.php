@@ -354,8 +354,9 @@ class Promise implements PromiseInterface
      *
      * In strict mode, handlers whose promise another live context owns are
      * queued for that context, which registered them, and handlers whose
-     * owning context has ended are dropped, because nothing may settle their
-     * promises any more. Other handlers run here, queued when $queue is true.
+     * owning context has been finished or has ended are dropped, because
+     * nothing would run them any more. Other handlers run here, queued when
+     * $queue is true.
      *
      * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
      * @param mixed                                                                              $value
@@ -389,7 +390,8 @@ class Promise implements PromiseInterface
 
     /**
      * Splits handlers into those that run in the current context and those
-     * owned by other live contexts, dropping handlers of ended contexts.
+     * owned by other live contexts, dropping handlers of finished or ended
+     * contexts.
      *
      * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
      *
@@ -413,6 +415,11 @@ class Promise implements PromiseInterface
             if ($context === $current) {
                 $local[] = $handler;
 
+                continue;
+            }
+
+            if (ExecutionContext::isFinished($context)) {
+                // The owning context has been finished and drains nothing.
                 continue;
             }
 

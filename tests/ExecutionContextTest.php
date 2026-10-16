@@ -227,6 +227,29 @@ class ExecutionContextTest extends TestCase
         $this->assertSame(1, $calls);
     }
 
+    public function testFinishedContextsThatUsePromisesAgainAreFinishedAgain(): void
+    {
+        $context = new \stdClass();
+        $ran = false;
+        $this->provider->in($context, static function (): void {
+            P\Utils::queue()->add(static function (): void {});
+        });
+        $this->provider->end($context);
+
+        $this->provider->in($context, static function () use (&$ran): void {
+            P\Utils::queue()->add(static function () use (&$ran): void {
+                $ran = true;
+            });
+        });
+
+        $this->assertCount(1, $this->provider->finalizers[spl_object_id($context)]);
+        $this->assertFalse($ran);
+
+        $this->provider->end($context);
+
+        $this->assertTrue($ran);
+    }
+
     public function testFinalizersRequireAManagedContext(): void
     {
         $this->expectException(\LogicException::class);

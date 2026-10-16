@@ -18,6 +18,9 @@ final class ExecutionContextState
 
     public bool $finishing = false;
 
+    /** Whether the context has been finished, so work queued for it is dropped. */
+    public bool $finished = false;
+
     /** Whether the provider has been asked to finish this context. */
     public bool $registered = false;
 

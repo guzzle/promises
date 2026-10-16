@@ -252,17 +252,11 @@ class ExecutionContextOwnershipTest extends TestCase
 
     public function testQueuingWorkForAnotherContextDoesNotFinishItHere(): void
     {
-        $promise = new Promise();
         $ranIn = [];
-        $this->provider->in($this->owner, function () use ($promise, &$ranIn): void {
-            $promise->then(function () use (&$ranIn): void {
+        $this->provider->in($this->other, function () use (&$ranIn): void {
+            ExecutionContext::queueFor($this->owner)->add(function () use (&$ranIn): void {
                 $ranIn[] = $this->provider->current;
             });
-        });
-        $this->provider->end($this->owner);
-
-        $this->provider->in($this->other, static function () use ($promise): void {
-            $promise->resolve('value');
         });
         $this->provider->end($this->other);
 
@@ -294,6 +288,35 @@ class ExecutionContextOwnershipTest extends TestCase
 
         $promise->resolve('value');
         P\Utils::queue()->run();
+
+        $this->assertSame(['unmanaged'], $ran);
+    }
+
+    public function testCallbacksOfFinishedContextsAreDropped(): void
+    {
+        $promise = new Promise();
+        $ran = [];
+        $callback = static function () use (&$ran): void {
+            $ran[] = 'finished';
+        };
+        $reference = \WeakReference::create($callback);
+        $this->provider->in($this->owner, static function () use ($promise, $callback): void {
+            $promise->then($callback);
+        });
+        unset($callback);
+        $promise->then(static function () use (&$ran): void {
+            $ran[] = 'unmanaged';
+        });
+        $this->provider->end($this->owner);
+
+        $promise->resolve('value');
+        P\Utils::queue()->run();
+
+        $this->assertNull($reference->get());
+
+        $this->provider->in($this->owner, static function (): void {
+            P\Utils::queue()->run();
+        });
 
         $this->assertSame(['unmanaged'], $ran);
     }
