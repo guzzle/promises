@@ -56,7 +56,8 @@ fiber as an execution context.
 
 Code running outside any fiber is not inside a managed context. Fibers do not
 notify Guzzle when they end, so schedulers should call
-`ExecutionContext::finish()` for a fiber before discarding it.
+`ExecutionContext::finish(\Fiber::getCurrent())` as the last step inside each
+fiber, because finishing a context runs its callbacks in that context.
 
 Requires PHP 8.1 or newer.
 
@@ -126,7 +127,9 @@ the adopted promise settles.
 | Resolving with the pending promise or coroutine | Rejected | Allowed |
 
 Rejected operations throw `GuzzleHttp\Promise\CrossContextException` without
-changing the promise.
+changing the promise. Guzzle cannot see inside promises from other libraries,
+so resolving with one that waits on another context's pending promise is not
+rejected.
 
 `CrossContextException`: Thrown in strict execution context mode when pending
 work is used from an execution context that does not own it.

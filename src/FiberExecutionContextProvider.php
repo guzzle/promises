@@ -9,7 +9,8 @@ namespace GuzzleHttp\Promise;
  *
  * Code running outside any fiber is not inside a managed context. Fibers do
  * not notify Guzzle when they end, so schedulers should call
- * ExecutionContext::finish() for a fiber before discarding it.
+ * ExecutionContext::finish(\Fiber::getCurrent()) as the last step inside each
+ * fiber, because finishing a context runs its callbacks in that context.
  *
  * Requires PHP 8.1 or newer.
  */
