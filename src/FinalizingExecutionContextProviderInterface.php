@@ -15,8 +15,9 @@ interface FinalizingExecutionContextProviderInterface extends ExecutionContextPr
      * Registers a callback that the runtime invokes, inside the current
      * context, when that context ends.
      *
-     * Guzzle calls this at most once for each context, the first time it
-     * keeps state for that context.
+     * Guzzle calls this the first time it keeps state for a context from
+     * inside that context, and again if the context uses promises after it
+     * was finished.
      *
      * @param callable(): void $finalizer
      */

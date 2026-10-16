@@ -182,8 +182,8 @@ callback, Guzzle tracks it as a new context.
 `FinalizingExecutionContextProviderInterface::onFinish()`: Registers a callback
 that the runtime invokes, inside the current context, when that context ends.
 
-Guzzle calls this at most once for each context, the first time it keeps state
-for that context.
+Guzzle calls this the first time it keeps state for a context from inside that
+context, and again if the context uses promises after it was finished.
 
 If a context ends without being finished, its queued callbacks are discarded
 together with the context.
