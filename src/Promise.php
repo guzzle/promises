@@ -84,6 +84,9 @@ class Promise implements PromiseInterface
 
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);
+            // Whoever settles this promise also settles the child, so the
+            // child shares its owner, or its lack of one.
+            $p->owner = $this->owner;
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
             $p->waitList = $this->waitList;
             $p->waitList[] = $this;

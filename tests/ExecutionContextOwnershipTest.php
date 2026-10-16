@@ -193,6 +193,26 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame(PromiseInterface::FULFILLED, $promise->getState());
     }
 
+    public function testChildrenOfUnrestrictedPromisesAreUnrestricted(): void
+    {
+        $promise = new Promise();
+        $ranIn = [];
+        $record = function () use (&$ranIn): void {
+            $ranIn[] = $this->provider->current;
+        };
+
+        $this->provider->in($this->owner, static function () use ($promise, $record): void {
+            $promise->then($record);
+        });
+        $this->provider->in($this->other, static function () use ($promise, $record): void {
+            $promise->then($record);
+            $promise->resolve('value');
+            P\Utils::queue()->run();
+        });
+
+        $this->assertSame([$this->other, $this->other], $ranIn);
+    }
+
     public function testIsolateModeDoesNotRejectCrossContextUse(): void
     {
         ExecutionContext::setProvider($this->provider, ExecutionContext::ISOLATE);

@@ -131,9 +131,10 @@ changing the promise.
 `CrossContextException`: Thrown in strict execution context mode when pending
 work is used from an execution context that does not own it.
 
-If the owning context ends while a promise is still pending, every other
-context is rejected, because nothing can settle the promise any more. Promises
-created outside managed contexts are not restricted.
+If the owning context ends while a promise is still pending, every other context
+is rejected, because nothing can settle the promise any more. Promises created
+outside managed contexts are not restricted, and neither are the promises that
+`then()` returns for them while they are pending.
 
 `Coroutine`, `EachPromise`, `Each`, and the `Utils` helpers create Guzzle
 promises internally, so they follow the same rules. A `Coroutine` checks
