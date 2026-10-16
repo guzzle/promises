@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Added
+
+- Added execution context providers that keep task queues per fiber or coroutine
+- Added `ExecutionContext::onFinish()` and `ExecutionContext::finish()` to cancel and drain work when a context ends
+
+
 ## 3.1.0 - 2026-10-18
 
 ### Added

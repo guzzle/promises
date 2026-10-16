@@ -163,6 +163,10 @@ fulfilled value, and rejections are thrown into the generator.
 process shutdown unless disabled, and `wait()` drains the queue while resolving
 the promise being waited on.
 
+When several fibers or coroutines share a process, configure an execution
+context provider so that each context keeps its own task queue. See
+[Execution Contexts](execution-contexts.md).
+
 ## Exceptions
 
 - `RejectionException` is thrown by `wait()` when a rejected promise has a non-throwable reason. The original reason is available through `getReason()`.
@@ -173,5 +177,6 @@ the promise being waited on.
 
 - [Quick Start](promise-quick-start.md)
 - [Promise Interoperability](promise-interoperability.md)
+- [Execution Contexts](execution-contexts.md)
 - [Implementation Notes](implementation-notes.md)
 - [Upgrade Guide](../UPGRADING.md)

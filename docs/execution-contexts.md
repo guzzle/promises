@@ -1,0 +1,119 @@
+# Execution Contexts
+
+Guzzle promises run their callbacks through a task queue. By default there is
+one task queue for the whole process, which is correct when one execution
+context drives all promise work. Runtimes that interleave several execution
+contexts in one process, such as native PHP fibers, coroutine schedulers built
+on fibers, or coroutine extensions, need each context to keep its own work.
+Otherwise, a context that drains the queue runs callbacks that another context
+scheduled, and those callbacks observe the wrong request, tenant, or
+transaction.
+
+An execution context provider tells Guzzle which context is running. With a
+provider configured, Guzzle keeps task queues per context. Without a provider,
+nothing changes.
+
+## Providers
+
+Implement `GuzzleHttp\Promise\ExecutionContextProviderInterface`:
+
+```php
+public function current(): ?object;
+```
+
+Returns an object identifying the current execution context, or null when the
+caller is not inside a managed context.
+
+The returned object must be the same instance for every call within one
+context, must differ between contexts that are alive at the same time, and must
+become unreachable once the context has ended, so that state keyed by it can be
+released.
+
+Guzzle keeps per-context state in weak maps keyed by this object and only holds
+weak references to it elsewhere, so a context's state is released together with
+the context. Integer identifiers, such as coroutine IDs, cannot be used because
+they cannot be weak keys.
+
+Configure the provider with `ExecutionContext::setProvider()`:
+
+Sets the provider that identifies the current execution context, or removes it
+when null is given.
+
+Configure the provider once while bootstrapping the process, before promises
+are created. Removing or replacing the provider discards the state kept for
+existing contexts. Providers require PHP 8.0 or newer.
+
+```php
+use GuzzleHttp\Promise\ExecutionContext;
+
+ExecutionContext::setProvider($provider);
+```
+
+### Coroutine Extensions
+
+Coroutine extensions usually expose a per-coroutine object that satisfies the
+provider requirements. For example, a provider for Swoole can return the
+coroutine context object and register finalizers with `defer()`:
+
+```php
+use GuzzleHttp\Promise\FinalizingExecutionContextProviderInterface;
+use Swoole\Coroutine;
+
+final class SwooleExecutionContextProvider implements FinalizingExecutionContextProviderInterface
+{
+    public function current(): ?object
+    {
+        return Coroutine::getCid() > 0 ? Coroutine::getContext() : null;
+    }
+
+    public function onFinish(callable $finalizer): void
+    {
+        Coroutine::defer($finalizer);
+    }
+}
+```
+
+Guzzle does not ship providers for extensions. Verify that the object you return
+meets the requirements above for the runtime version you use.
+
+## Task Queues
+
+`Utils::queue()`: When an execution context provider is configured, the
+returned queue routes tasks to the queue of the current execution context, and
+the global queue is used only outside managed contexts.
+
+A queue assigned with `Utils::queue($queue)` becomes the global queue. Callbacks
+run in the context that settled their promise. Waiting from one context on a
+promise whose callbacks are queued in another context cannot drain that queue,
+so the wait rejects the promise.
+
+## Finishing Contexts
+
+`ExecutionContext::onFinish()`: Registers a callback to run when the current
+execution context is finished.
+
+Finalizers run before the context's task queue is drained, so work they cancel
+can still run its rejection callbacks in the same context.
+
+`ExecutionContext::finish()`: Runs the given context's finalizers and drains
+its task queue.
+
+Runtimes call this when a context ends, unless their provider registers
+finalizers through `FinalizingExecutionContextProviderInterface`. Call it from
+inside the context being finished, so that callbacks keep running in the
+context that owns them. Calling it again for the same context is harmless.
+
+`FinalizingExecutionContextProviderInterface::onFinish()`: Registers a callback
+that the runtime invokes, inside the current context, when that context ends.
+
+Guzzle calls this at most once for each context, the first time it keeps state
+for that context.
+
+If a context ends without being finished, its queued callbacks are discarded
+together with the context.
+
+## Related
+
+- [Promise API](promise-api.md)
+- [Promise Interoperability](promise-interoperability.md)
+- [Implementation Notes](implementation-notes.md)

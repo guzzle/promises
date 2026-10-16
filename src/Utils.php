@@ -23,7 +23,13 @@ final class Utils
      * }
      * </code>
      *
+     * When an execution context provider is configured, the returned queue
+     * routes tasks to the queue of the current execution context, and the
+     * global queue is used only outside managed contexts.
+     *
      * @param TaskQueueInterface|null $assign Optionally specify a new queue instance.
+     *
+     * @see ExecutionContext::setProvider()
      */
     public static function queue(?TaskQueueInterface $assign = null): TaskQueueInterface
     {
@@ -35,7 +41,7 @@ final class Utils
             $queue = new TaskQueue();
         }
 
-        return $queue;
+        return ExecutionContext::queue($queue);
     }
 
     /**
