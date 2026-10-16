@@ -39,6 +39,13 @@ class Promise implements PromiseInterface
     private ?array $handlers = [];
 
     /**
+     * The execution context that owns this promise in strict mode.
+     *
+     * @var \WeakReference<object>|null
+     */
+    private ?\WeakReference $owner = null;
+
+    /**
      * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.
      * @param (callable(): void)|null     $cancelFn Fn that when invoked cancels the promise.
      */
@@ -48,6 +55,14 @@ class Promise implements PromiseInterface
     ) {
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
+
+        if (ExecutionContext::isStrict()) {
+            $context = ExecutionContext::current();
+
+            if ($context !== null) {
+                $this->owner = \WeakReference::create($context);
+            }
+        }
     }
 
     /**
@@ -65,6 +80,8 @@ class Promise implements PromiseInterface
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
     ): PromiseInterface {
+        $this->assertUsableInCurrentContext('then');
+
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
@@ -106,6 +123,7 @@ class Promise implements PromiseInterface
 
     public function wait(bool $unwrap = true)
     {
+        $this->assertUsableInCurrentContext('wait');
         $this->waitIfPending();
 
         if ($this->result instanceof PromiseInterface) {
@@ -133,6 +151,7 @@ class Promise implements PromiseInterface
             return;
         }
 
+        $this->assertUsableInCurrentContext('cancel');
         $this->waitFn = $this->waitList = null;
 
         if ($this->cancelFn) {
@@ -154,12 +173,106 @@ class Promise implements PromiseInterface
 
     public function resolve($value = null): void
     {
+        $this->assertSettleableInCurrentContext('resolve', $value);
         $this->settle(self::FULFILLED, $value);
     }
 
     public function reject($reason): void
     {
+        $this->assertSettleableInCurrentContext('reject', $reason);
         $this->settle(self::REJECTED, $reason);
+    }
+
+    /**
+     * Rejects settlement from another context and adoption of a pending
+     * promise owned by another context.
+     *
+     * @param mixed $value
+     */
+    private function assertSettleableInCurrentContext(string $operation, $value): void
+    {
+        if ($this->state !== self::PENDING) {
+            return;
+        }
+
+        $this->assertUsableInCurrentContext($operation);
+
+        if ($value instanceof Coroutine) {
+            $value = $value->_getResult();
+        }
+
+        if ($value instanceof Promise) {
+            $value->assertUsableInCurrentContext('adopt');
+        }
+    }
+
+    /**
+     * @internal
+     *
+     * @param PromiseInterface<mixed, mixed> $promise
+     */
+    public static function _assertUsableInCurrentContext(PromiseInterface $promise, string $operation): void
+    {
+        if ($promise instanceof self) {
+            $promise->assertUsableInCurrentContext($operation);
+        }
+    }
+
+    /**
+     * Rejects use of this promise from a context that does not own it while
+     * the promise, or a promise it has adopted, is still pending.
+     */
+    private function assertUsableInCurrentContext(string $operation): void
+    {
+        if ($this->owner === null) {
+            return;
+        }
+
+        $owner = $this->owner->get();
+
+        if ($owner !== null && $owner === ExecutionContext::current()) {
+            return;
+        }
+
+        if (!$this->isUnsettled()) {
+            return;
+        }
+
+        $action = $operation === 'adopt' ? 'adopt' : "call {$operation}() on";
+
+        throw new CrossContextException($owner === null
+            ? "Cannot {$action} a pending promise whose execution context has ended. Settle or cancel promises before their context ends."
+            : "Cannot {$action} a pending promise owned by another execution context. Create and settle promises in one context, and share only settled results.");
+    }
+
+    /**
+     * Determines if this promise or any promise it has adopted is pending.
+     */
+    private function isUnsettled(): bool
+    {
+        $promise = $this;
+        $seen = [];
+
+        while (true) {
+            if ($promise->state === self::PENDING) {
+                return true;
+            }
+
+            $result = $promise->result;
+
+            if (!$result instanceof Promise) {
+                return $result instanceof PromiseInterface && $result->getState() === self::PENDING;
+            }
+
+            $id = spl_object_id($result);
+
+            if (isset($seen[$id])) {
+                return false;
+            }
+
+            $seen[$id] = true;
+            $promise = $result;
+        }
     }
 
     private function settle(string $state, $value): void

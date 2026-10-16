@@ -145,11 +145,25 @@ final class Coroutine implements PromiseInterface
 
     public function cancel(): void
     {
+        // The current promise can come from another library, so ownership is
+        // checked before anything is cancelled.
+        Promise::_assertUsableInCurrentContext($this->result, 'cancel');
+
         if (isset($this->currentPromise)) {
             $this->currentPromise->cancel();
         }
 
         $this->result->cancel();
+    }
+
+    /**
+     * @internal
+     *
+     * @return Promise<TValue, TReason>
+     */
+    public function _getResult(): PromiseInterface
+    {
+        return $this->result;
     }
 
     private function nextCoroutine($yielded): void

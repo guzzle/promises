@@ -15,7 +15,21 @@ namespace GuzzleHttp\Promise;
  */
 final class ExecutionContext
 {
+    /**
+     * Route task queues per context, without restricting cross-context use of
+     * pending promises.
+     */
+    public const ISOLATE = 1;
+
+    /**
+     * Route task queues per context, and reject cross-context use of pending
+     * promises with a CrossContextException.
+     */
+    public const STRICT = 2;
+
     private static ?ExecutionContextProviderInterface $provider = null;
+
+    private static int $mode = self::ISOLATE;
 
     /** @var \WeakMap<object, ExecutionContextState>|null */
     private static $states;
@@ -33,14 +47,21 @@ final class ExecutionContext
      * Configure the provider once while bootstrapping the process, before
      * promises are created. Removing or replacing the provider discards the
      * state kept for existing contexts. Providers require PHP 8.0 or newer.
+     *
+     * @param int $mode ExecutionContext::ISOLATE or ExecutionContext::STRICT.
      */
-    public static function setProvider(?ExecutionContextProviderInterface $provider): void
+    public static function setProvider(?ExecutionContextProviderInterface $provider, int $mode = self::ISOLATE): void
     {
+        if ($mode !== self::ISOLATE && $mode !== self::STRICT) {
+            throw new \InvalidArgumentException('The execution context mode must be ExecutionContext::ISOLATE or ExecutionContext::STRICT.');
+        }
+
         if ($provider !== null && \PHP_VERSION_ID < 80000) {
             throw new \RuntimeException('Execution context providers require PHP 8.0 or newer.');
         }
 
         self::$provider = $provider;
+        self::$mode = $mode;
         self::$states = $provider === null ? null : new \WeakMap();
         self::$queue = null;
     }
@@ -61,6 +82,14 @@ final class ExecutionContext
     public static function current(): ?object
     {
         return self::$provider === null ? null : self::$provider->current();
+    }
+
+    /**
+     * Determines if cross-context use of pending work is rejected.
+     */
+    public static function isStrict(): bool
+    {
+        return self::$mode === self::STRICT && self::$provider !== null;
     }
 
     /**

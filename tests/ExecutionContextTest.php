@@ -38,6 +38,14 @@ class ExecutionContextTest extends TestCase
         $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
         $this->assertSame(P\Utils::queue(), P\Utils::queue());
         $this->assertNull(ExecutionContext::current());
+        $this->assertFalse(ExecutionContext::isStrict());
+    }
+
+    public function testRejectsUnknownModes(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        ExecutionContext::setProvider($this->provider, 3);
     }
 
     public function testTasksStayInTheContextThatQueuedThem(): void

@@ -10,8 +10,8 @@ scheduled, and those callbacks observe the wrong request, tenant, or
 transaction.
 
 An execution context provider tells Guzzle which context is running. With a
-provider configured, Guzzle keeps task queues per context. Without a provider,
-nothing changes.
+provider configured, Guzzle keeps task queues per context and can reject
+cross-context use of pending promises. Without a provider, nothing changes.
 
 ## Providers
 
@@ -46,7 +46,7 @@ existing contexts. Providers require PHP 8.0 or newer.
 ```php
 use GuzzleHttp\Promise\ExecutionContext;
 
-ExecutionContext::setProvider($provider);
+ExecutionContext::setProvider($provider, ExecutionContext::ISOLATE);
 ```
 
 ### Coroutine Extensions
@@ -76,6 +76,18 @@ final class SwooleExecutionContextProvider implements FinalizingExecutionContext
 Guzzle does not ship providers for extensions. Verify that the object you return
 meets the requirements above for the runtime version you use.
 
+## Modes
+
+`ExecutionContext::ISOLATE`: Route task queues per context, without restricting
+cross-context use of pending promises.
+
+`ExecutionContext::STRICT`: Route task queues per context, and reject
+cross-context use of pending promises with a `CrossContextException`.
+
+Choose `STRICT` when the runtime can suspend a context in the middle of
+transport work, as coroutine extensions with I/O hooks do. Fiber runtimes that
+intentionally wait on promises from other fibers can use `ISOLATE`.
+
 ## Task Queues
 
 `Utils::queue()`: When an execution context provider is configured, the
@@ -85,7 +97,37 @@ the global queue is used only outside managed contexts.
 A queue assigned with `Utils::queue($queue)` becomes the global queue. Callbacks
 run in the context that settled their promise. Waiting from one context on a
 promise whose callbacks are queued in another context cannot drain that queue,
-so the wait rejects the promise.
+so the wait rejects the promise. Use `STRICT` mode to report this misuse with a
+clear error instead.
+
+## Ownership in Strict Mode
+
+In strict mode, a promise created inside a managed context is owned by that
+context. A promise that has adopted a pending promise counts as pending until
+the adopted promise settles.
+
+| Operation from another context | Pending promise | Settled promise |
+| --- | --- | --- |
+| `then()` and `otherwise()` | Rejected | Allowed, callbacks run in the calling context |
+| `wait()` | Rejected | Allowed |
+| `resolve()` and `reject()` | Rejected | Unchanged behavior |
+| `cancel()` | Rejected | Unchanged behavior |
+| Resolving with the pending promise or coroutine | Rejected | Allowed |
+
+Rejected operations throw `GuzzleHttp\Promise\CrossContextException` without
+changing the promise.
+
+`CrossContextException`: Thrown in strict execution context mode when pending
+work is used from an execution context that does not own it.
+
+If the owning context ends while a promise is still pending, every other
+context is rejected, because nothing can settle the promise any more. Promises
+created outside managed contexts are not restricted.
+
+`Coroutine`, `EachPromise`, `Each`, and the `Utils` helpers create Guzzle
+promises internally, so they follow the same rules. A `Coroutine` checks
+ownership before it cancels the promise it is waiting on, because that promise
+can come from another library.
 
 ## Finishing Contexts
 
