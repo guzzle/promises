@@ -5,3 +5,5 @@ parameters:
     level: 5
     paths:
         - src
+    bootstrapFiles:
+        - tests/bootstrap-phpstan.php
