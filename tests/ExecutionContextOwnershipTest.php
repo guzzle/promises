@@ -213,6 +213,46 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame([$this->other, $this->other], $ranIn);
     }
 
+    public function testResolvingWithAForeignPromiseBehindAnotherLibraryLeavesThePromiseUnchanged(): void
+    {
+        $foreign = $this->provider->in($this->other, static fn (): Promise => new Promise());
+        $wrapper = new class($foreign) extends Thennable {
+            private Promise $inner;
+
+            public function __construct(Promise $inner)
+            {
+                parent::__construct();
+                $this->inner = $inner;
+            }
+
+            public function then(?callable $res = null, ?callable $rej = null): PromiseInterface
+            {
+                return $this->inner->then($res, $rej);
+            }
+        };
+        $promise = $this->provider->in($this->owner, static function (): Promise {
+            $promise = new Promise();
+            $promise->then(static function (): void {});
+
+            return $promise;
+        });
+
+        try {
+            $this->provider->in($this->owner, static function () use ($promise, $wrapper): void {
+                $promise->resolve($wrapper);
+            });
+            $this->fail('Settling with a promise that refused its callbacks succeeded.');
+        } catch (CrossContextException $e) {
+            $this->assertTrue(P\Is::pending($promise));
+        }
+
+        $this->assertCount(1, PropertyHelper::get($promise, 'handlers'));
+        $this->provider->in($this->owner, static function () use ($promise): void {
+            $promise->resolve('value');
+        });
+        $this->assertSame('value', $this->provider->in($this->owner, static fn () => $promise->wait()));
+    }
+
     public function testIsolateModeDoesNotRejectCrossContextUse(): void
     {
         ExecutionContext::setProvider($this->provider, ExecutionContext::ISOLATE);

@@ -127,9 +127,10 @@ the adopted promise settles.
 | Resolving with the pending promise or coroutine | Rejected | Allowed |
 
 Rejected operations throw `GuzzleHttp\Promise\CrossContextException` without
-changing the promise. Guzzle cannot see inside promises from other libraries,
-so resolving with one that waits on another context's pending promise is not
-rejected.
+changing the promise. Guzzle cannot see inside promises from other libraries. If
+one refuses the callbacks of a promise resolved with it, for example because its
+`then()` forwards to another context's pending promise, the exception is thrown
+and the promise is left unchanged.
 
 `CrossContextException`: Thrown in strict execution context mode when pending
 work is used from an execution context that does not own it.

@@ -295,6 +295,9 @@ class Promise implements PromiseInterface
         }
 
         // Clear out the state of the promise but stash the handlers.
+        $waitList = $this->waitList;
+        $waitFn = $this->waitFn;
+        $cancelFn = $this->cancelFn;
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
@@ -321,18 +324,32 @@ class Promise implements PromiseInterface
             $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
-            $value->then(
-                static function ($value) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(1, $value, $handler);
+            try {
+                $value->then(
+                    static function ($value) use ($handlers): void {
+                        foreach ($handlers as $handler) {
+                            self::callHandler(1, $value, $handler);
+                        }
+                    },
+                    static function ($reason) use ($handlers): void {
+                        foreach ($handlers as $handler) {
+                            self::callHandler(2, $reason, $handler);
+                        }
                     }
-                },
-                static function ($reason) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(2, $reason, $handler);
-                    }
-                }
-            );
+                );
+            } catch (\Throwable $e) {
+                // The value refused the callbacks, so leave this promise as it
+                // was. A promise from another library can refuse them when it
+                // waits on another context's pending promise.
+                $this->state = self::PENDING;
+                $this->result = null;
+                $this->handlers = $handlers;
+                $this->waitList = $waitList;
+                $this->waitFn = $waitFn;
+                $this->cancelFn = $cancelFn;
+
+                throw $e;
+            }
         }
     }
 
