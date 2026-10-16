@@ -49,6 +49,17 @@ use GuzzleHttp\Promise\ExecutionContext;
 ExecutionContext::setProvider($provider, ExecutionContext::ISOLATE);
 ```
 
+### Fibers
+
+`GuzzleHttp\Promise\FiberExecutionContextProvider`: Treats each native PHP
+fiber as an execution context.
+
+Code running outside any fiber is not inside a managed context. Fibers do not
+notify Guzzle when they end, so schedulers should call
+`ExecutionContext::finish()` for a fiber before discarding it.
+
+Requires PHP 8.1 or newer.
+
 ### Coroutine Extensions
 
 Coroutine extensions usually expose a per-coroutine object that satisfies the

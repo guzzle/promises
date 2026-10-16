@@ -8,6 +8,7 @@
 - Added execution context providers that keep task queues per fiber or coroutine
 - Added strict execution context mode that rejects cross-context use of pending promises with `CrossContextException`
 - Added `ExecutionContext::onFinish()` and `ExecutionContext::finish()` to cancel and drain work when a context ends
+- Added `FiberExecutionContextProvider` for native PHP fibers
 
 
 ## 3.1.0 - 2026-10-18

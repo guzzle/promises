@@ -17,3 +17,9 @@ parameters:
 			identifier: class.notFound
 			count: 1
 			path: src/ExecutionContext.php
+
+		-
+			message: '#^Call to static method getCurrent\(\) on an unknown class Fiber\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/FiberExecutionContextProvider.php
