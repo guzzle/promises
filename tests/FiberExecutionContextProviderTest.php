@@ -64,9 +64,9 @@ class FiberExecutionContextProviderTest extends TestCase
         $this->assertSame([1 => $a, 2 => $a], $ranIn);
     }
 
-    public function testStrictModeRejectsWaitingOnAnotherFibersPendingPromise(): void
+    public function testWaitingOnAnotherFibersPendingPromiseIsRejected(): void
     {
-        ExecutionContext::setProvider(new FiberExecutionContextProvider(), ExecutionContext::STRICT);
+        ExecutionContext::setProvider(new FiberExecutionContextProvider());
         $promise = null;
 
         $a = new \Fiber(static function () use (&$promise): void {

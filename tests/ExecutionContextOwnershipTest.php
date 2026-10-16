@@ -29,7 +29,7 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->provider = new TestExecutionContextProvider();
         $this->owner = new \stdClass();
         $this->other = new \stdClass();
-        ExecutionContext::setProvider($this->provider, ExecutionContext::STRICT);
+        ExecutionContext::setProvider($this->provider);
     }
 
     protected function tearDown(): void
@@ -360,19 +360,6 @@ class ExecutionContextOwnershipTest extends TestCase
             $promise->resolve('value');
         });
         $this->assertSame('value', $this->provider->in($this->owner, static fn () => $promise->wait()));
-    }
-
-    public function testIsolateModeDoesNotRejectCrossContextUse(): void
-    {
-        ExecutionContext::setProvider($this->provider, ExecutionContext::ISOLATE);
-        $promise = $this->provider->in($this->owner, static fn (): Promise => new Promise());
-
-        $this->provider->in($this->other, static function () use ($promise): void {
-            $promise->then(static function (): void {});
-            $promise->resolve('value');
-        });
-
-        $this->assertSame(PromiseInterface::FULFILLED, $promise->getState());
     }
 
     public function testCoroutinesAreProtectedThroughTheirPromise(): void

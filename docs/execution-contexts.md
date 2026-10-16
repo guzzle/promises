@@ -10,7 +10,7 @@ scheduled, and those callbacks observe the wrong request, tenant, or
 transaction.
 
 An execution context provider tells Guzzle which context is running. With a
-provider configured, Guzzle keeps task queues per context and can reject
+provider configured, Guzzle keeps task queues per context and rejects
 cross-context use of pending promises. Without a provider, nothing changes.
 
 ## Providers
@@ -39,6 +39,10 @@ Configure the provider with `ExecutionContext::setProvider()`:
 Sets the provider that identifies the current execution context, or removes it
 when null is given.
 
+With a provider configured, Guzzle keeps a task queue for each context and
+rejects use of a pending promise from a context that does not own it with a
+`CrossContextException`.
+
 Configure the provider once while bootstrapping the process, before promises
 are created. Removing or replacing the provider discards the state kept for
 existing contexts. Providers require PHP 8.0 or newer.
@@ -46,7 +50,7 @@ existing contexts. Providers require PHP 8.0 or newer.
 ```php
 use GuzzleHttp\Promise\ExecutionContext;
 
-ExecutionContext::setProvider($provider, ExecutionContext::ISOLATE);
+ExecutionContext::setProvider($provider);
 ```
 
 ### Fibers
@@ -88,17 +92,6 @@ final class SwooleExecutionContextProvider implements FinalizingExecutionContext
 Guzzle does not ship providers for extensions. Verify that the object you return
 meets the requirements above for the runtime version you use.
 
-## Modes
-
-`ExecutionContext::ISOLATE`: Route task queues per context, without restricting
-cross-context use of pending promises.
-
-`ExecutionContext::STRICT`: Route task queues per context, and reject
-cross-context use of pending promises with a `CrossContextException`.
-
-Choose `STRICT` when the runtime can suspend a context in the middle of
-transport work, as coroutine extensions with I/O hooks do. Fiber runtimes that
-intentionally wait on promises from other fibers can use `ISOLATE`.
 
 ## Task Queues
 
@@ -106,18 +99,13 @@ intentionally wait on promises from other fibers can use `ISOLATE`.
 returned queue routes tasks to the queue of the current execution context, and
 the global queue is used only outside managed contexts.
 
-A queue assigned with `Utils::queue($queue)` becomes the global queue. In
-isolate mode, callbacks run in the context that settled their promise. Waiting
-from one context on a promise whose callbacks are queued in another context
-cannot drain that queue, so the wait rejects the promise. Use `STRICT` mode to
-report this misuse with a clear error instead. In strict mode, callbacks run in
-the context that registered them.
+A queue assigned with `Utils::queue($queue)` becomes the global queue.
 
-## Ownership in Strict Mode
+## Ownership
 
-In strict mode, a promise created inside a managed context is owned by that
-context. A promise that has adopted a pending promise counts as pending until
-the adopted promise settles.
+A promise created inside a managed context is owned by that context. A promise
+that has adopted a pending promise counts as pending until the adopted promise
+settles.
 
 | Operation from another context | Pending promise | Settled promise |
 | --- | --- | --- |
@@ -146,8 +134,8 @@ that `then()` returned, or on a promise that depends on it. Blocking on anything
 else does not run them, so a context that waits on a channel or lock that one of
 those callbacks would release never resumes.
 
-`CrossContextException`: Thrown in strict execution context mode when pending
-work is used from an execution context that does not own it.
+`CrossContextException`: Thrown when pending work is used from an execution
+context that does not own it.
 
 If the owning context ends while a promise is still pending, every other context
 is rejected, because nothing can settle the promise any more. Promises created

@@ -38,14 +38,6 @@ class ExecutionContextTest extends TestCase
         $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
         $this->assertSame(P\Utils::queue(), P\Utils::queue());
         $this->assertNull(ExecutionContext::current());
-        $this->assertFalse(ExecutionContext::isStrict());
-    }
-
-    public function testRejectsUnknownModes(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        ExecutionContext::setProvider($this->provider, 3);
     }
 
     public function testTasksStayInTheContextThatQueuedThem(): void
@@ -117,16 +109,6 @@ class ExecutionContextTest extends TestCase
         });
 
         $this->assertSame([1 => $a, 2 => $a], $ranIn);
-    }
-
-    public function testWaitingOnWorkQueuedInAnotherContextRejects(): void
-    {
-        $promise = $this->provider->in(new \stdClass(), static fn () => P\Create::promiseFor(1)->then(static fn (int $v): int => $v + 1));
-
-        $this->expectException(P\RejectionException::class);
-        $this->expectExceptionMessage('Invoking the wait callback did not resolve the promise');
-
-        $this->provider->in(new \stdClass(), static fn () => $promise->wait());
     }
 
     public function testFinishRunsFinalizersBeforeDrainingTheQueue(): void

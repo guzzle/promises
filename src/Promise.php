@@ -39,7 +39,7 @@ class Promise implements PromiseInterface
     private ?array $handlers = [];
 
     /**
-     * The execution context that owns this promise in strict mode.
+     * The execution context that owns this promise.
      *
      * @var \WeakReference<object>|null
      */
@@ -56,12 +56,10 @@ class Promise implements PromiseInterface
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
 
-        if (ExecutionContext::isStrict()) {
-            $context = ExecutionContext::current();
+        $context = ExecutionContext::current();
 
-            if ($context !== null) {
-                $this->owner = \WeakReference::create($context);
-            }
+        if ($context !== null) {
+            $this->owner = \WeakReference::create($context);
         }
     }
 
@@ -352,9 +350,9 @@ class Promise implements PromiseInterface
     /**
      * Runs handlers in the context that owns the promise each one settles.
      *
-     * In strict mode, handlers whose promise another live context owns are
-     * queued for that context, which registered them, and handlers whose
-     * owning context has been finished or has ended are dropped, because
+     * With a provider configured, handlers whose promise another live context
+     * owns are queued for that context, which registered them, and handlers
+     * whose owning context has been finished or has ended are dropped, because
      * nothing would run them any more. Other handlers run here, queued when
      * $queue is true.
      *
@@ -363,7 +361,7 @@ class Promise implements PromiseInterface
      */
     private static function dispatch(int $index, $value, array $handlers, bool $queue): void
     {
-        [$local, $foreign] = ExecutionContext::isStrict()
+        [$local, $foreign] = ExecutionContext::provider() !== null
             ? self::groupByOwner($handlers)
             : [$handlers, []];
 

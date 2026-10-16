@@ -172,7 +172,7 @@ context provider so that each context keeps its own task queue. See
 - `RejectionException` is thrown by `wait()` when a rejected promise has a non-throwable reason. The original reason is available through `getReason()`.
 - `AggregateException` extends `RejectionException` and is used by `Utils::some()` and `Utils::any()` when too few promises fulfill.
 - `CancellationException` extends `RejectionException` and is used as the rejection reason for cancelled promises.
-- `CrossContextException` extends `LogicException` and is thrown in strict execution context mode when pending work is used from an execution context that does not own it.
+- `CrossContextException` extends `LogicException` and is thrown when pending work is used from an execution context that does not own it.
 
 ## Related
 
