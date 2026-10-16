@@ -180,10 +180,22 @@ final class ExecutionContext
     }
 
     /**
+     * Returns the task queue of the given execution context, which may be a
+     * context other than the current one.
+     *
+     * @internal
+     */
+    public static function queueFor(object $context): TaskQueue
+    {
+        return self::state($context)->queue();
+    }
+
+    /**
      * Returns the state for a context, creating it on first use.
      *
-     * Only call this for the current context, because a finalizing provider
-     * registers its finalizer for the context that is running.
+     * A finalizing provider registers its finalizer for the context that is
+     * running, so the finalizer is registered the first time the state is
+     * used from inside its own context.
      *
      * @internal
      */
@@ -191,12 +203,16 @@ final class ExecutionContext
     {
         $state = self::$states[$context] ?? null;
 
-        if ($state !== null) {
+        if ($state === null) {
+            $state = new ExecutionContextState();
+            self::$states[$context] = $state;
+        }
+
+        if ($state->registered || $context !== self::current()) {
             return $state;
         }
 
-        $state = new ExecutionContextState();
-        self::$states[$context] = $state;
+        $state->registered = true;
 
         if (self::$provider instanceof FinalizingExecutionContextProviderInterface) {
             $reference = \WeakReference::create($context);

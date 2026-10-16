@@ -18,6 +18,9 @@ final class ExecutionContextState
 
     public bool $finishing = false;
 
+    /** Whether the provider has been asked to finish this context. */
+    public bool $registered = false;
+
     private ?TaskQueue $taskQueue = null;
 
     public function queue(): TaskQueue

@@ -106,11 +106,12 @@ intentionally wait on promises from other fibers can use `ISOLATE`.
 returned queue routes tasks to the queue of the current execution context, and
 the global queue is used only outside managed contexts.
 
-A queue assigned with `Utils::queue($queue)` becomes the global queue. Callbacks
-run in the context that settled their promise. Waiting from one context on a
-promise whose callbacks are queued in another context cannot drain that queue,
-so the wait rejects the promise. Use `STRICT` mode to report this misuse with a
-clear error instead.
+A queue assigned with `Utils::queue($queue)` becomes the global queue. In
+isolate mode, callbacks run in the context that settled their promise. Waiting
+from one context on a promise whose callbacks are queued in another context
+cannot drain that queue, so the wait rejects the promise. Use `STRICT` mode to
+report this misuse with a clear error instead. In strict mode, callbacks run in
+the context that registered them.
 
 ## Ownership in Strict Mode
 
@@ -132,13 +133,19 @@ one refuses the callbacks of a promise resolved with it, for example because its
 `then()` forwards to another context's pending promise, the exception is thrown
 and the promise is left unchanged.
 
+The promise that `then()` returns is owned by the context that called `then()`,
+and its callbacks run in that context. When another context settles the promise,
+the callbacks are queued for the registering context, which runs them the next
+time it drains its task queue, such as while it waits or when it is finished.
+Callbacks registered by a context that has ended are dropped.
+
 `CrossContextException`: Thrown in strict execution context mode when pending
 work is used from an execution context that does not own it.
 
 If the owning context ends while a promise is still pending, every other context
 is rejected, because nothing can settle the promise any more. Promises created
-outside managed contexts are not restricted, and neither are the promises that
-`then()` returns for them while they are pending.
+outside managed contexts are not restricted, but calling `then()` on them from a
+managed context returns a promise that context owns.
 
 `Coroutine`, `EachPromise`, `Each`, and the `Utils` helpers create Guzzle
 promises internally, so they follow the same rules. A `Coroutine` checks

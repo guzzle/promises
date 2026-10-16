@@ -84,9 +84,13 @@ class Promise implements PromiseInterface
 
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);
-            // Whoever settles this promise also settles the child, so the
-            // child shares its owner, or its lack of one.
-            $p->owner = $this->owner;
+
+            if ($p->owner !== null) {
+                // The handler runs in the context that owns $p, so make sure
+                // finishing that context drains what is queued for it.
+                ExecutionContext::state($p->owner->get());
+            }
+
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
             $p->waitList = $this->waitList;
             $p->waitList[] = $this;
@@ -314,11 +318,7 @@ class Promise implements PromiseInterface
         if (!is_object($value) || !method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
-            Utils::queue()->add(static function () use ($id, $value, $handlers): void {
-                foreach ($handlers as $handler) {
-                    self::callHandler($id, $value, $handler);
-                }
-            });
+            self::dispatch($id, $value, $handlers, true);
         } elseif ($value instanceof Promise && State::isPending($value)) {
             // We can just merge our handlers onto the next promise.
             $value->handlers = array_merge($value->handlers, $handlers);
@@ -327,14 +327,10 @@ class Promise implements PromiseInterface
             try {
                 $value->then(
                     static function ($value) use ($handlers): void {
-                        foreach ($handlers as $handler) {
-                            self::callHandler(1, $value, $handler);
-                        }
+                        self::dispatch(1, $value, $handlers, false);
                     },
                     static function ($reason) use ($handlers): void {
-                        foreach ($handlers as $handler) {
-                            self::callHandler(2, $reason, $handler);
-                        }
+                        self::dispatch(2, $reason, $handlers, false);
                     }
                 );
             } catch (\Throwable $e) {
@@ -350,6 +346,91 @@ class Promise implements PromiseInterface
 
                 throw $e;
             }
+        }
+    }
+
+    /**
+     * Runs handlers in the context that owns the promise each one settles.
+     *
+     * In strict mode, handlers whose promise another live context owns are
+     * queued for that context, which registered them, and handlers whose
+     * owning context has ended are dropped, because nothing may settle their
+     * promises any more. Other handlers run here, queued when $queue is true.
+     *
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     * @param mixed                                                                              $value
+     */
+    private static function dispatch(int $index, $value, array $handlers, bool $queue): void
+    {
+        [$local, $foreign] = ExecutionContext::isStrict()
+            ? self::groupByOwner($handlers)
+            : [$handlers, []];
+
+        foreach ($foreign as [$context, $owned]) {
+            ExecutionContext::queueFor($context)->add(static function () use ($index, $value, $owned): void {
+                self::callHandlers($index, $value, $owned);
+            });
+        }
+
+        if ($local === []) {
+            return;
+        }
+
+        if (!$queue) {
+            self::callHandlers($index, $value, $local);
+
+            return;
+        }
+
+        Utils::queue()->add(static function () use ($index, $value, $local): void {
+            self::callHandlers($index, $value, $local);
+        });
+    }
+
+    /**
+     * Splits handlers into those that run in the current context and those
+     * owned by other live contexts, dropping handlers of ended contexts.
+     *
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     *
+     * @return array{0: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>, 1: array<int, array{0: object, 1: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>}>}
+     */
+    private static function groupByOwner(array $handlers): array
+    {
+        $current = ExecutionContext::current();
+        $local = [];
+        $foreign = [];
+
+        foreach ($handlers as $handler) {
+            $owner = $handler[0] instanceof self ? $handler[0]->owner : null;
+            $context = $owner === null ? $current : $owner->get();
+
+            if ($owner !== null && $context === null) {
+                // The owning context has ended.
+                continue;
+            }
+
+            if ($context === $current) {
+                $local[] = $handler;
+
+                continue;
+            }
+
+            $foreign[spl_object_id($context)][0] = $context;
+            $foreign[spl_object_id($context)][1][] = $handler;
+        }
+
+        return [$local, $foreign];
+    }
+
+    /**
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     * @param mixed                                                                              $value
+     */
+    private static function callHandlers(int $index, $value, array $handlers): void
+    {
+        foreach ($handlers as $handler) {
+            self::callHandler($index, $value, $handler);
         }
     }
 

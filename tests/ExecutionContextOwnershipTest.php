@@ -193,7 +193,7 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame(PromiseInterface::FULFILLED, $promise->getState());
     }
 
-    public function testChildrenOfUnrestrictedPromisesAreUnrestricted(): void
+    public function testCallbacksRunInTheContextThatRegisteredThem(): void
     {
         $promise = new Promise();
         $ranIn = [];
@@ -201,16 +201,101 @@ class ExecutionContextOwnershipTest extends TestCase
             $ranIn[] = $this->provider->current;
         };
 
-        $this->provider->in($this->owner, static function () use ($promise, $record): void {
-            $promise->then($record);
-        });
+        $owned = $this->provider->in($this->owner, static fn () => $promise->then($record));
         $this->provider->in($this->other, static function () use ($promise, $record): void {
             $promise->then($record);
             $promise->resolve('value');
             P\Utils::queue()->run();
         });
 
-        $this->assertSame([$this->other, $this->other], $ranIn);
+        $this->assertSame([$this->other], $ranIn);
+        $this->assertTrue(P\Is::pending($owned));
+
+        $this->provider->in($this->owner, static function (): void {
+            P\Utils::queue()->run();
+        });
+
+        $this->assertSame([$this->other, $this->owner], $ranIn);
+        $this->assertTrue(P\Is::fulfilled($owned));
+    }
+
+    public function testAggregatesOfPromisesSettledElsewhereCompleteInTheirContext(): void
+    {
+        $first = new Promise();
+        $second = new Promise();
+        $all = $this->provider->in($this->owner, static fn () => P\Utils::all([$first, $second]));
+
+        $this->provider->in($this->other, static function () use ($first, $second): void {
+            $first->resolve('a');
+            $second->resolve('b');
+            P\Utils::queue()->run();
+        });
+
+        $this->assertSame(['a', 'b'], $this->provider->in($this->owner, static fn () => $all->wait()));
+    }
+
+    public function testFinishingAContextRunsCallbacksQueuedForIt(): void
+    {
+        $promise = new Promise();
+        $ranIn = null;
+        $this->provider->in($this->owner, function () use ($promise, &$ranIn): void {
+            $promise->then(function () use (&$ranIn): void {
+                $ranIn = $this->provider->current;
+            });
+        });
+
+        $promise->resolve('value');
+        $this->provider->end($this->owner);
+
+        $this->assertSame($this->owner, $ranIn);
+    }
+
+    public function testQueuingWorkForAnotherContextDoesNotFinishItHere(): void
+    {
+        $promise = new Promise();
+        $ranIn = [];
+        $this->provider->in($this->owner, function () use ($promise, &$ranIn): void {
+            $promise->then(function () use (&$ranIn): void {
+                $ranIn[] = $this->provider->current;
+            });
+        });
+        $this->provider->end($this->owner);
+
+        $this->provider->in($this->other, static function () use ($promise): void {
+            $promise->resolve('value');
+        });
+        $this->provider->end($this->other);
+
+        $this->assertSame([], $ranIn);
+
+        $this->provider->in($this->owner, static function (): void {
+            P\Utils::queue()->run();
+        });
+
+        $this->assertSame([$this->owner], $ranIn);
+    }
+
+    public function testCallbacksOfEndedContextsAreDropped(): void
+    {
+        $promise = new Promise();
+        $context = new \stdClass();
+        $ran = [];
+        $this->provider->in($context, static function () use ($promise, &$ran): void {
+            $promise->then(static function () use (&$ran): void {
+                $ran[] = 'ended';
+            });
+        });
+        $promise->then(static function () use (&$ran): void {
+            $ran[] = 'unmanaged';
+        });
+        $this->provider->finalizers = [];
+        unset($context);
+        gc_collect_cycles();
+
+        $promise->resolve('value');
+        P\Utils::queue()->run();
+
+        $this->assertSame(['unmanaged'], $ran);
     }
 
     public function testResolvingWithAForeignPromiseBehindAnotherLibraryLeavesThePromiseUnchanged(): void
