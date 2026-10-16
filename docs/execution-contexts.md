@@ -139,6 +139,12 @@ the callbacks are queued for the registering context, which runs them the next
 time it drains its task queue, such as while it waits or when it is finished.
 Callbacks registered by a context that has ended are dropped.
 
+A context that registers callbacks on a promise that another context settles
+must drain its own task queue to run them, for example by waiting on the promise
+that `then()` returned, or on a promise that depends on it. Blocking on anything
+else does not run them, so a context that waits on a channel or lock that one of
+those callbacks would release never resumes.
+
 `CrossContextException`: Thrown in strict execution context mode when pending
 work is used from an execution context that does not own it.
 
