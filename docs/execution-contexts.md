@@ -119,7 +119,8 @@ Rejected operations throw `GuzzleHttp\Promise\CrossContextException` without
 changing the promise. Guzzle cannot see inside promises from other libraries. If
 one refuses the callbacks of a promise resolved with it, for example because its
 `then()` forwards to another context's pending promise, the exception is thrown
-and the promise is left unchanged.
+and the promise is left unchanged. If it calls the callbacks before throwing,
+the exception is thrown and the promise stays settled.
 
 The promise that `then()` returns is owned by the context that called `then()`,
 and its callbacks run in that context. When another context settles the promise,

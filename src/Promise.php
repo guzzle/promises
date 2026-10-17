@@ -322,16 +322,26 @@ class Promise implements PromiseInterface
             $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
+            $calledBack = false;
+
             try {
                 $value->then(
-                    static function ($value) use ($handlers): void {
+                    static function ($value) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
                         self::dispatch(1, $value, $handlers, false);
                     },
-                    static function ($reason) use ($handlers): void {
+                    static function ($reason) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
                         self::dispatch(2, $reason, $handlers, false);
                     }
                 );
             } catch (\Throwable $e) {
+                // A value that called back before throwing has already settled
+                // the handlers' promises, so this promise stays settled.
+                if ($calledBack) {
+                    throw $e;
+                }
+
                 // The value refused the callbacks, so leave this promise as it
                 // was. A promise from another library can refuse them when it
                 // waits on another context's pending promise.
