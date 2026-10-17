@@ -143,6 +143,11 @@ is rejected, because nothing can settle the promise any more. Promises created
 outside managed contexts are not restricted, but calling `then()` on them from a
 managed context returns a promise that context owns.
 
+While one context runs the wait function of a promise, waiting on that promise
+from another context, directly or through a promise that depends on it, throws a
+`CrossContextException` and leaves both promises unchanged. This applies to
+promises that no context owns as well.
+
 `Coroutine`, `EachPromise`, `Each`, and the `Utils` helpers create Guzzle
 promises internally, so they follow the same rules. A `Coroutine` checks
 ownership before it cancels the promise it is waiting on, because that promise

@@ -45,6 +45,12 @@ class Promise implements PromiseInterface
      */
     private ?\WeakReference $owner = null;
 
+    /** Whether the wait function is running. */
+    private bool $waiting = false;
+
+    /** The execution context running the wait function, if any. */
+    private ?object $waitingContext = null;
+
     /**
      * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.
      * @param (callable(): void)|null     $cancelFn Fn that when invoked cancels the promise.
@@ -496,6 +502,10 @@ class Promise implements PromiseInterface
     {
         if ($this->state !== self::PENDING) {
             return;
+        } elseif ($this->waiting && $this->waitingContext !== ExecutionContext::current()) {
+            // The wait function belongs to the waiting context, which settles
+            // the promise when it returns.
+            throw new CrossContextException('Cannot call wait() on a promise that another execution context is waiting on. Wait in one context and share the settled result.');
         } elseif ($this->waitFn) {
             $this->invokeWaitFn();
         } elseif ($this->waitList) {
@@ -521,6 +531,8 @@ class Promise implements PromiseInterface
         try {
             $wfn = $this->waitFn;
             $this->waitFn = null;
+            $this->waiting = true;
+            $this->waitingContext = ExecutionContext::current();
             $wfn(true);
         } catch (\Throwable $reason) {
             if ($this->state === self::PENDING) {
@@ -532,6 +544,9 @@ class Promise implements PromiseInterface
                 // the application.
                 throw $reason;
             }
+        } finally {
+            $this->waiting = false;
+            $this->waitingContext = null;
         }
     }
 
@@ -540,15 +555,22 @@ class Promise implements PromiseInterface
         $waitList = $this->waitList;
         $this->waitList = null;
 
-        foreach ($waitList as $result) {
-            do {
-                $result->waitIfPending();
-                $result = $result->result;
-            } while ($result instanceof Promise);
+        try {
+            foreach ($waitList as $result) {
+                do {
+                    $result->waitIfPending();
+                    $result = $result->result;
+                } while ($result instanceof Promise);
 
-            if ($result instanceof PromiseInterface) {
-                $result->wait(false);
+                if ($result instanceof PromiseInterface) {
+                    $result->wait(false);
+                }
             }
+        } catch (CrossContextException $e) {
+            // Nothing on the list was changed, so a later wait can use it.
+            $this->waitList = $waitList;
+
+            throw $e;
         }
     }
 }

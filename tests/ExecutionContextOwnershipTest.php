@@ -362,6 +362,63 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame('value', $this->provider->in($this->owner, static fn () => $promise->wait()));
     }
 
+    public function testWaitingOnAPromiseThatAnotherContextIsWaitingOnIsRejected(): void
+    {
+        $attempt = null;
+        $promise = new Promise(function () use (&$promise, &$attempt): void {
+            try {
+                $this->provider->in($this->other, static fn () => $promise->wait());
+            } catch (CrossContextException $e) {
+                $attempt = $e;
+            }
+
+            $promise->resolve('value');
+        });
+
+        $value = $this->provider->in($this->owner, static fn () => $promise->wait());
+
+        $this->assertInstanceOf(CrossContextException::class, $attempt);
+        $this->assertStringContainsString('another execution context is waiting on', $attempt->getMessage());
+        $this->assertSame('value', $value);
+    }
+
+    public function testWaitingThroughAPromiseThatAnotherContextIsWaitingOnKeepsTheDependentWaitable(): void
+    {
+        $attempt = null;
+        $child = null;
+        $promise = new Promise(function () use (&$promise, &$child, &$attempt): void {
+            try {
+                $this->provider->in($this->other, static fn () => $child->wait());
+            } catch (CrossContextException $e) {
+                $attempt = $e;
+            }
+
+            $promise->resolve('value');
+        });
+        $child = $this->provider->in($this->other, static fn () => $promise->then(static fn (string $value): string => $value.'!'));
+
+        $this->provider->in($this->owner, static fn () => $promise->wait());
+
+        $this->assertInstanceOf(CrossContextException::class, $attempt);
+        $this->assertSame('value!', $this->provider->in($this->other, static fn () => $child->wait()));
+    }
+
+    public function testAPromiseDoesNotKeepTheContextThatWaitedOnItAlive(): void
+    {
+        $context = new \stdClass();
+        $reference = \WeakReference::create($context);
+        $promise = new Promise(function () use (&$promise): void {
+            $promise->resolve('value');
+        });
+
+        $this->provider->in($context, static fn () => $promise->wait());
+        $this->provider->finalizers = [];
+        unset($context);
+        gc_collect_cycles();
+
+        $this->assertNull($reference->get());
+    }
+
     public function testCoroutinesAreProtectedThroughTheirPromise(): void
     {
         $pending = $this->provider->in($this->owner, static fn (): Promise => new Promise());
