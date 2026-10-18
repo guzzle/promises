@@ -19,7 +19,7 @@ class EachTest extends TestCase
 
         $p->resolve('a');
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::fulfilled($aggregate));
+        $this->assertTrue(P\State::isFulfilled($aggregate));
     }
 
     public function testEachLimitAllRejectsOnFailure(): void
@@ -28,7 +28,7 @@ class EachTest extends TestCase
         $aggregate = P\Each::ofLimitAll($p, 2);
 
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::rejected($aggregate));
+        $this->assertTrue(P\State::isRejected($aggregate));
 
         $result = P\Utils::inspect($aggregate);
         $this->assertSame('b', $result['reason']);
