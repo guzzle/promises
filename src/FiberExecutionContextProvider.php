@@ -12,6 +12,9 @@ namespace GuzzleHttp\Promise;
  * ExecutionContext::finish(\Fiber::getCurrent()) as the last step inside each
  * fiber, because finishing a context runs its callbacks in that context.
  *
+ * This provider identifies fibers; it does not schedule them or make blocking
+ * I/O nonblocking.
+ *
  * Requires PHP 8.1 or newer.
  */
 final class FiberExecutionContextProvider implements ExecutionContextProviderInterface

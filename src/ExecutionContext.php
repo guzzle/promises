@@ -91,8 +91,8 @@ final class ExecutionContext
      * harmless.
      *
      * Once a context is finished, callbacks that other contexts queue for it
-     * are dropped. If the context uses promises again, for example in a later
-     * shutdown callback, Guzzle tracks it as a new context.
+     * are dropped until it uses promises again, for example in a later
+     * shutdown callback. Callbacks already dropped are not replayed.
      */
     public static function finish(object $context): void
     {
