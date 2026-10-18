@@ -54,7 +54,7 @@ final class Utils
         $promise = new Promise([$queue, 'run']);
         $queue->add(function () use ($task, $promise): void {
             try {
-                if (Is::pending($promise)) {
+                if (State::isPending($promise)) {
                     $promise->resolve($task());
                 }
             } catch (\Throwable $e) {
@@ -106,7 +106,7 @@ final class Utils
                 return $settled;
             }
 
-            if (Is::settled($promise)) {
+            if (State::isSettled($promise)) {
                 try {
                     self::queue()->run();
                 } catch (\Throwable $queueError) {
@@ -209,7 +209,7 @@ final class Utils
                 $results[$idx] = $value;
             },
             function ($reason, $idx, PromiseInterface $aggregate): void {
-                if (Is::pending($aggregate)) {
+                if (State::isPending($aggregate)) {
                     $aggregate->reject($reason);
                 }
             },
@@ -260,7 +260,7 @@ final class Utils
         $promise = Each::of(
             $promises,
             function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
-                if (Is::settled($p)) {
+                if (State::isSettled($p)) {
                     return;
                 }
                 $results[$idx] = $value;
@@ -380,7 +380,7 @@ final class Utils
                 return true;
             }
 
-            if ($promise instanceof PromiseInterface && Is::pending($promise)) {
+            if ($promise instanceof PromiseInterface && State::isPending($promise)) {
                 return true;
             }
         }

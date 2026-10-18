@@ -115,14 +115,19 @@ implementation and by callers that need to normalize values.
 - `Create::exceptionFor($reason) : Throwable` returns throwable reasons as-is, or wraps non-throwable reasons in `RejectionException`.
 - `Create::iterFor(iterable $value) : Iterator` returns an iterator for arrays, iterators, iterator aggregates, and traversables.
 
-## Is
+## State
 
-`GuzzleHttp\Promise\Is` provides readable state checks:
+`GuzzleHttp\Promise\State` provides readable state checks:
 
-- `Is::pending(PromiseInterface $promise) : bool`
-- `Is::settled(PromiseInterface $promise) : bool`
-- `Is::fulfilled(PromiseInterface $promise) : bool`
-- `Is::rejected(PromiseInterface $promise) : bool`
+- `State::isPending(PromiseInterface $promise) : bool`
+- `State::isSettled(PromiseInterface $promise) : bool`
+- `State::isFulfilled(PromiseInterface $promise) : bool`
+- `State::isRejected(PromiseInterface $promise) : bool`
+
+`GuzzleHttp\Promise\Is` is deprecated because PHP 8.6 deprecates `is` as a class
+name, and will be removed in Guzzle Promises 4.0. Replace `Is::pending()`,
+`Is::settled()`, `Is::fulfilled()`, and `Is::rejected()` with the matching
+`State` methods.
 
 ## Each and EachPromise
 

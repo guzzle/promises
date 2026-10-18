@@ -320,7 +320,7 @@ class UtilsTest extends TestCase
         $a->reject('bad');
         $b->resolve('good');
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::rejected($d));
+        $this->assertTrue(P\State::isRejected($d));
         $d->then(null, function (AggregateException $reason) use (&$called): void {
             $called = $reason;
         });
@@ -395,7 +395,7 @@ class UtilsTest extends TestCase
         $c->resolve('c');
         $a->reject('a');
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::fulfilled($d));
+        $this->assertTrue(P\State::isFulfilled($d));
         $d->then(function (array $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
         $this->assertSame([
@@ -720,7 +720,7 @@ class UtilsTest extends TestCase
         });
         $promise->then(function (string $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::fulfilled($promise));
+        $this->assertTrue(P\State::isFulfilled($promise));
         $this->assertSame('ab', $result);
     }
 
@@ -796,7 +796,7 @@ class UtilsTest extends TestCase
         });
         $promise->otherwise(function (\Exception $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::rejected($promise));
+        $this->assertTrue(P\State::isRejected($promise));
         $this->assertStringContainsString('foo', $result->getMessage());
     }
 
@@ -812,7 +812,7 @@ class UtilsTest extends TestCase
         });
         $promise->otherwise(function (RejectionException $value) use (&$result): void { $result = $value; });
         P\Utils::queue()->run();
-        $this->assertTrue(P\Is::rejected($promise));
+        $this->assertTrue(P\State::isRejected($promise));
         $this->assertStringContainsString('foo', $result->getMessage());
     }
 
