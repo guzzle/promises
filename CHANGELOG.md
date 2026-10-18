@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 2.6.0 - Upcoming
+## 2.6.0 - 2026-10-18
 
 ### Added
 
