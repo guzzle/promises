@@ -322,7 +322,7 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame(['unmanaged'], $ran);
     }
 
-    public function testResolvingWithAForeignPromiseBehindAnotherLibraryLeavesThePromiseUnchanged(): void
+    public function testForeignThenableRefusalDoesNotRollBackSettlement(): void
     {
         $foreign = $this->provider->in($this->other, static fn (): Promise => new Promise());
         $wrapper = new class($foreign) extends Thennable {
@@ -352,14 +352,10 @@ class ExecutionContextOwnershipTest extends TestCase
             });
             $this->fail('Settling with a promise that refused its callbacks succeeded.');
         } catch (CrossContextException $e) {
-            $this->assertTrue(P\Is::pending($promise));
+            $this->assertTrue(P\Is::fulfilled($promise));
         }
 
-        $this->assertCount(1, PropertyHelper::get($promise, 'handlers'));
-        $this->provider->in($this->owner, static function () use ($promise): void {
-            $promise->resolve('value');
-        });
-        $this->assertSame('value', $this->provider->in($this->owner, static fn () => $promise->wait()));
+        $this->assertTrue(P\Is::pending($foreign));
     }
 
     public function testWaitingOnAPromiseThatAnotherContextIsWaitingOnIsRejected(): void

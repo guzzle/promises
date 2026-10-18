@@ -105,4 +105,22 @@ class FiberExecutionContextProviderTest extends TestCase
         $fiber->resume();
         $this->assertTrue($ran);
     }
+
+    public function testSuspendedWaitDoesNotKeepAnAbandonedFiberAlive(): void
+    {
+        ExecutionContext::setProvider(new FiberExecutionContextProvider());
+        $promise = new Promise(static function (): void {
+            \Fiber::suspend();
+        });
+        $fiber = new \Fiber(static function () use ($promise): void {
+            $promise->wait();
+        });
+        $reference = \WeakReference::create($fiber);
+
+        $fiber->start();
+        unset($fiber);
+        gc_collect_cycles();
+
+        $this->assertNull($reference->get());
+    }
 }

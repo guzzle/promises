@@ -48,8 +48,12 @@ class Promise implements PromiseInterface
     /** Whether the wait function is running. */
     private bool $waiting = false;
 
-    /** The execution context running the wait function, if any. */
-    private ?object $waitingContext = null;
+    /**
+     * The execution context running the wait function, if any.
+     *
+     * @var \WeakReference<object>|null
+     */
+    private ?\WeakReference $waitingContext = null;
 
     /**
      * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.
@@ -303,9 +307,6 @@ class Promise implements PromiseInterface
         }
 
         // Clear out the state of the promise but stash the handlers.
-        $waitList = $this->waitList;
-        $waitFn = $this->waitFn;
-        $cancelFn = $this->cancelFn;
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
@@ -328,38 +329,14 @@ class Promise implements PromiseInterface
             $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
-            $calledBack = false;
-
-            try {
-                $value->then(
-                    static function ($value) use ($handlers, &$calledBack): void {
-                        $calledBack = true;
-                        self::dispatch(1, $value, $handlers, false);
-                    },
-                    static function ($reason) use ($handlers, &$calledBack): void {
-                        $calledBack = true;
-                        self::dispatch(2, $reason, $handlers, false);
-                    }
-                );
-            } catch (\Throwable $e) {
-                // A value that called back before throwing has already settled
-                // the handlers' promises, so this promise stays settled.
-                if ($calledBack) {
-                    throw $e;
+            $value->then(
+                static function ($value) use ($handlers): void {
+                    self::dispatch(1, $value, $handlers, false);
+                },
+                static function ($reason) use ($handlers): void {
+                    self::dispatch(2, $reason, $handlers, false);
                 }
-
-                // The value refused the callbacks, so leave this promise as it
-                // was. A promise from another library can refuse them when it
-                // waits on another context's pending promise.
-                $this->state = self::PENDING;
-                $this->result = null;
-                $this->handlers = $handlers;
-                $this->waitList = $waitList;
-                $this->waitFn = $waitFn;
-                $this->cancelFn = $cancelFn;
-
-                throw $e;
-            }
+            );
         }
     }
 
@@ -368,9 +345,9 @@ class Promise implements PromiseInterface
      *
      * With a provider configured, handlers whose promise another live context
      * owns are queued for that context, which registered them, and handlers
-     * whose owning context has been finished or has ended are dropped, because
-     * nothing would run them any more. Other handlers run here, queued when
-     * $queue is true.
+     * whose owning context has ended are dropped. A finished context drops
+     * incoming handlers until it uses promises again. Other handlers run here,
+     * queued when $queue is true.
      *
      * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
      * @param mixed                                                                              $value
@@ -405,7 +382,8 @@ class Promise implements PromiseInterface
     /**
      * Splits handlers into those that run in the current context and those
      * grouped by the task queue of the other live context that owns them,
-     * dropping handlers of finished or ended contexts.
+     * dropping handlers of ended contexts or contexts that have been finished
+     * and have not used promises since.
      *
      * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
      *
@@ -502,7 +480,7 @@ class Promise implements PromiseInterface
     {
         if ($this->state !== self::PENDING) {
             return;
-        } elseif ($this->waiting && $this->waitingContext !== ExecutionContext::current()) {
+        } elseif ($this->waiting && ($this->waitingContext === null ? null : $this->waitingContext->get()) !== ExecutionContext::current()) {
             // The wait function belongs to the waiting context, which settles
             // the promise when it returns.
             throw new CrossContextException('Cannot call wait() on a promise that another execution context is waiting on. Wait in one context and share the settled result.');
@@ -532,7 +510,10 @@ class Promise implements PromiseInterface
             $wfn = $this->waitFn;
             $this->waitFn = null;
             $this->waiting = true;
-            $this->waitingContext = ExecutionContext::current();
+            $context = ExecutionContext::current();
+            $this->waitingContext = $context === null ? null : \WeakReference::create($context);
+            // Do not retain the context while its wait function is suspended.
+            unset($context);
             $wfn(true);
         } catch (\Throwable $reason) {
             if ($this->state === self::PENDING) {

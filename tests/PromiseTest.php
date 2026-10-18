@@ -807,28 +807,25 @@ class PromiseTest extends TestCase
         $p->reject($p);
     }
 
-    public function testAThenableThatCallsBackBeforeThrowingLeavesThePromiseSettled(): void
+    public function testAThenableThatThrowsLeavesThePromiseSettled(): void
     {
         $thenable = new class {
             public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
             {
-                $onFulfilled('value');
-
-                throw new \RuntimeException('Failed after calling back.');
+                throw new \RuntimeException('Failed before calling back.');
             }
         };
-        $p = new Promise();
-        $child = $p->then(static fn (string $value): string => $value.'!');
+        $promise = new Promise();
+        $promise->then(static function (): void {});
 
         try {
-            $p->resolve($thenable);
+            $promise->resolve($thenable);
             $this->fail('The thenable did not throw.');
         } catch (\RuntimeException $e) {
-            $this->assertSame('Failed after calling back.', $e->getMessage());
+            $this->assertSame('Failed before calling back.', $e->getMessage());
         }
 
-        $this->assertSame(PromiseInterface::FULFILLED, $p->getState());
-        $this->assertSame('value!', $child->wait());
+        $this->assertSame(PromiseInterface::FULFILLED, $promise->getState());
     }
 
     public function testDoesNotBlowStackWhenWaitingOnNestedThens(): void
