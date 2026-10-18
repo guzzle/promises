@@ -95,7 +95,7 @@ class EachTest extends TestCase
         P\Utils::queue()->run();
         $this->assertTrue(P\State::isRejected($aggregate));
 
-        $result = P\Utils::inspect($aggregate);
+        $result = P\Await::inspect($aggregate);
         $this->assertSame('b', $result['reason']);
     }
 }

@@ -81,48 +81,21 @@ final class Utils
      * @param PromiseInterface<TValue, TReason> $promise Promise to inspect.
      *
      * @return array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}|array{state: PromiseInterface::PENDING}
+     *
+     * @deprecated Utils::inspect() will be removed in guzzlehttp/promises:4.0.
+     *             Use Await::inspect() instead.
      */
     public static function inspect(PromiseInterface $promise): array
     {
-        $result = null;
-        $getResult = static function () use (&$result): ?array {
-            return $result;
-        };
-
-        $inspection = $promise->then(
-            static function ($value) use (&$result): void {
-                $result = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
-            },
-            static function ($reason) use (&$result): void {
-                $result = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
-            }
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::inspect() instead.',
+            __METHOD__,
+            Await::class
         );
 
-        try {
-            $inspection->wait(false);
-        } catch (\Throwable $e) {
-            $settled = $getResult();
-            if (null !== $settled) {
-                return $settled;
-            }
-
-            if (State::isSettled($promise)) {
-                try {
-                    self::queue()->run();
-                } catch (\Throwable $queueError) {
-                    return ['state' => PromiseInterface::REJECTED, 'reason' => $queueError];
-                }
-
-                $settled = $getResult();
-                if (null !== $settled) {
-                    return $settled;
-                }
-            }
-
-            return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
-        }
-
-        return $getResult() ?? ['state' => $promise->getState()];
+        return Await::inspect($promise);
     }
 
     /**
@@ -132,7 +105,7 @@ final class Utils
      * Returns an array of inspection state arrays keyed like the input
      * iterable.
      *
-     * @see inspect for the inspection state array format.
+     * @see Await::inspect for the inspection state array format.
      *
      * @template TKey of array-key
      * @template TValue
@@ -141,15 +114,21 @@ final class Utils
      * @param iterable<TKey, PromiseInterface<TValue, TReason>> $promises Traversable of promises to wait upon.
      *
      * @return array<TKey, array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}|array{state: PromiseInterface::PENDING}>
+     *
+     * @deprecated Utils::inspectAll() will be removed in
+     *             guzzlehttp/promises:4.0. Use Await::inspectAll() instead.
      */
     public static function inspectAll(iterable $promises): array
     {
-        $results = [];
-        foreach ($promises as $key => $promise) {
-            $results[$key] = self::inspect($promise);
-        }
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::inspectAll() instead.',
+            __METHOD__,
+            Await::class
+        );
 
-        return $results;
+        return Await::inspectAll($promises);
     }
 
     /**
@@ -168,15 +147,21 @@ final class Utils
      * @return array<TKey, TValue>
      *
      * @throws \Throwable on error
+     *
+     * @deprecated Utils::unwrap() will be removed in guzzlehttp/promises:4.0.
+     *             Use Await::unwrap() instead.
      */
     public static function unwrap(iterable $promises): array
     {
-        $results = [];
-        foreach ($promises as $key => $promise) {
-            $results[$key] = $promise->wait();
-        }
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::unwrap() instead.',
+            __METHOD__,
+            Await::class
+        );
 
-        return $results;
+        return Await::unwrap($promises);
     }
 
     /**
@@ -199,38 +184,21 @@ final class Utils
      * @param array{concurrency?: int|(callable(int): int)}            $config    Configuration options.
      *
      * @return PromiseInterface<array<TKey, TValue>, TReason|\Throwable>
+     *
+     * @deprecated Utils::all() will be removed in guzzlehttp/promises:4.0. Use
+     *             Aggregate::all() instead.
      */
     public static function all(iterable $promises, bool $recursive = false, array $config = []): PromiseInterface
     {
-        $results = [];
-        $promise = Each::of(
-            $promises,
-            function ($value, $idx) use (&$results): void {
-                $results[$idx] = $value;
-            },
-            function ($reason, $idx, PromiseInterface $aggregate): void {
-                if (State::isPending($aggregate)) {
-                    $aggregate->reject($reason);
-                }
-            },
-            $config
-        )->then(function () use (&$results) {
-            ksort($results);
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::all() instead.',
+            __METHOD__,
+            Aggregate::class
+        );
 
-            return $results;
-        });
-
-        if (true === $recursive) {
-            $promise = $promise->then(function ($results) use (&$promises, $config) {
-                if (self::shouldRecurse($promises, $results)) {
-                    return self::all($promises, true, $config);
-                }
-
-                return $results;
-            });
-        }
-
-        return $promise;
+        return Aggregate::all($promises, $recursive, $config);
     }
 
     /**
@@ -251,42 +219,21 @@ final class Utils
      * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
      *
      * @return PromiseInterface<list<TValue>, \Throwable>
+     *
+     * @deprecated Utils::some() will be removed in guzzlehttp/promises:4.0. Use
+     *             Aggregate::some() instead.
      */
     public static function some(int $count, iterable $promises): PromiseInterface
     {
-        $results = [];
-        $rejections = [];
-
-        $promise = Each::of(
-            $promises,
-            function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
-                if (State::isSettled($p)) {
-                    return;
-                }
-                $results[$idx] = $value;
-                if (count($results) >= $count) {
-                    $p->resolve(null);
-                }
-            },
-            function ($reason) use (&$rejections): void {
-                $rejections[] = $reason;
-            }
-        )->then(
-            function () use (&$results, &$rejections, $count) {
-                if (count($results) !== $count) {
-                    throw new AggregateException(
-                        'Not enough promises to fulfill count',
-                        $rejections
-                    );
-                }
-                ksort($results);
-
-                return array_values($results);
-            }
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::some() instead.',
+            __METHOD__,
+            Aggregate::class
         );
 
-        /** @var PromiseInterface<list<TValue>, \Throwable> $promise */
-        return $promise;
+        return Aggregate::some($count, $promises);
     }
 
     /**
@@ -299,12 +246,21 @@ final class Utils
      * @param iterable<TValue|PromiseInterface<TValue, TReason>> $promises Promises or values.
      *
      * @return PromiseInterface<TValue, \Throwable>
+     *
+     * @deprecated Utils::any() will be removed in guzzlehttp/promises:4.0. Use
+     *             Aggregate::any() instead.
      */
     public static function any(iterable $promises): PromiseInterface
     {
-        return self::some(1, $promises)->then(function (array $values) {
-            return $values[0];
-        });
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::any() instead.',
+            __METHOD__,
+            Aggregate::class
+        );
+
+        return Aggregate::any($promises);
     }
 
     /**
@@ -317,7 +273,7 @@ final class Utils
      * The config array accepts a concurrency option for lazy iterables. Other
      * config keys are ignored by this wrapper.
      *
-     * @see inspect for the inspection state array format.
+     * @see Await::inspect for the inspection state array format.
      *
      * @template TKey of array-key
      * @template TValue
@@ -328,63 +284,20 @@ final class Utils
      * @param array{concurrency?: int|(callable(int): int)}            $config    Configuration options.
      *
      * @return PromiseInterface<array<TKey, array{state: PromiseInterface::FULFILLED, value: TValue}|array{state: PromiseInterface::REJECTED, reason: TReason|\Throwable}>, \Throwable>
+     *
+     * @deprecated Utils::settle() will be removed in guzzlehttp/promises:4.0.
+     *             Use Aggregate::settle() instead.
      */
     public static function settle(iterable $promises, bool $recursive = false, array $config = []): PromiseInterface
     {
-        $results = [];
+        \trigger_deprecation(
+            'guzzlehttp/promises',
+            '3.2',
+            '%s() is deprecated and will be removed in 4.0. Use %s::settle() instead.',
+            __METHOD__,
+            Aggregate::class
+        );
 
-        $promise = Each::of(
-            $promises,
-            function ($value, $idx) use (&$results): void {
-                $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
-            },
-            function ($reason, $idx) use (&$results): void {
-                $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
-            },
-            $config
-        )->then(function () use (&$results) {
-            ksort($results);
-
-            return $results;
-        });
-
-        if (true === $recursive) {
-            $promise = $promise->then(function ($results) use (&$promises, $config) {
-                if (self::shouldRecurse($promises, $results)) {
-                    return self::settle($promises, true, $config);
-                }
-
-                return $results;
-            });
-        }
-
-        return $promise;
-    }
-
-    /**
-     * @template TKey of array-key
-     *
-     * @param iterable<TKey, mixed> $promises Promises or values.
-     * @param array<TKey, mixed>    $results  Results already collected for a pass.
-     */
-    private static function shouldRecurse(iterable $promises, array $results): bool
-    {
-        // A consumed generator cannot be traversed again, so a recursive
-        // pass has nothing further to observe.
-        if ($promises instanceof \Generator) {
-            return false;
-        }
-
-        foreach ($promises as $key => $promise) {
-            if (!array_key_exists($key, $results)) {
-                return true;
-            }
-
-            if ($promise instanceof PromiseInterface && State::isPending($promise)) {
-                return true;
-            }
-        }
-
-        return false;
+        return Aggregate::settle($promises, $recursive, $config);
     }
 }
