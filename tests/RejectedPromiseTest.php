@@ -17,12 +17,12 @@ class RejectedPromiseTest extends TestCase
     public function testThrowsReasonWhenWaitedUpon(): void
     {
         $p = new RejectedPromise('foo');
-        $this->assertTrue(P\Is::rejected($p));
+        $this->assertTrue(P\State::isRejected($p));
         try {
             $p->wait(true);
             $this->fail();
         } catch (\Exception $e) {
-            $this->assertTrue(P\Is::rejected($p));
+            $this->assertTrue(P\State::isRejected($p));
             $this->assertStringContainsString('foo', $e->getMessage());
         }
     }
@@ -31,7 +31,7 @@ class RejectedPromiseTest extends TestCase
     {
         $p = new RejectedPromise('foo');
         $p->cancel();
-        $this->assertTrue(P\Is::rejected($p));
+        $this->assertTrue(P\State::isRejected($p));
     }
 
     /**
@@ -60,7 +60,7 @@ class RejectedPromiseTest extends TestCase
     {
         $p = new RejectedPromise('foo');
         $p->reject('foo');
-        $this->assertTrue(P\Is::rejected($p));
+        $this->assertTrue(P\State::isRejected($p));
     }
 
     public function testThrowsSpecificException(): void
@@ -117,7 +117,7 @@ class RejectedPromiseTest extends TestCase
     {
         $p = new RejectedPromise('a');
         $p->wait(false);
-        $this->assertTrue(P\Is::rejected($p));
+        $this->assertTrue(P\State::isRejected($p));
     }
 
     public function testOtherwiseIsSugarForRejections(): void

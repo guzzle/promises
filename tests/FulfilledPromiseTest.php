@@ -17,14 +17,14 @@ class FulfilledPromiseTest extends TestCase
     public function testReturnsValueWhenWaitedUpon(): void
     {
         $p = new FulfilledPromise('foo');
-        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertTrue(P\State::isFulfilled($p));
         $this->assertSame('foo', $p->wait(true));
     }
 
     public function testCannotCancel(): void
     {
         $p = new FulfilledPromise('foo');
-        $this->assertTrue(P\Is::fulfilled($p));
+        $this->assertTrue(P\State::isFulfilled($p));
         $p->cancel();
         $this->assertSame('foo', $p->wait());
     }
