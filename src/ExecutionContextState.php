@@ -20,7 +20,7 @@ final class ExecutionContextState
     public array $finalizers = [];
 
     /** Whether the provider has been asked to finish this context. */
-    public bool $registered = false;
+    private bool $registered = false;
 
     private bool $finishing = false;
 
