@@ -19,7 +19,7 @@ composer require guzzlehttp/promises
 
 | Version | Status       | PHP Version  |
 |---------|--------------|--------------|
-| 3.1     | Latest       | >=7.4,<8.7   |
+| 3.2     | Latest       | >=7.4,<8.7   |
 | 2.6     | Maintenance  | >=7.2.5,<8.7 |
 | 1.5     | End of Life  | >=5.5,<8.3   |
 
