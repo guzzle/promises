@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## 3.1.0 - Upcoming
+
+### Added
+
+- Added `State` promise state checks as a replacement for `Is`
+
+### Deprecated
+
+- Deprecated `Is` because PHP 8.6 deprecates `is` as a class name
+
+
 ## 3.0.2 - 2026-08-24
 
 ### Added
