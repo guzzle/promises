@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## 3.2.0 - Upcoming
+
+### Added
+
+- Added `Aggregate` and `Await` as focused replacements for the aggregation and waiting methods on `Utils`
+
+### Deprecated
+
+- Deprecated `Utils::all()`, `Utils::some()`, `Utils::any()`, `Utils::settle()`, `Utils::inspect()`, `Utils::inspectAll()`, and `Utils::unwrap()` in favor of `Aggregate` and `Await`
+
+
 ## 3.1.0 - 2026-10-18
 
 ### Added

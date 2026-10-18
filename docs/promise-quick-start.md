@@ -260,7 +260,7 @@ When you do not unwrap the promise, no value is returned.
 
 ## Inspecting a Promise
 
-`Utils::inspect($promise)` waits for a promise to settle and returns an array
+`Await::inspect($promise)` waits for a promise to settle and returns an array
 describing its final state. For rejected promises, the `reason` entry is the
 actual rejection reason delivered to rejection callbacks.
 

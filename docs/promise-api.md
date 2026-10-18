@@ -81,29 +81,47 @@ Utils::queue()->run();
 
 ## Utils
 
-`GuzzleHttp\Promise\Utils` provides helpers for inspecting, aggregating, and
-queuing promise work.
+`GuzzleHttp\Promise\Utils` provides helpers for the global task queue.
 
 - `Utils::queue(?TaskQueueInterface $assign = null) : TaskQueueInterface` returns the global task queue, or assigns a replacement queue when `$assign` is provided.
 - `Utils::task(callable $task) : PromiseInterface` adds a task to the global queue and returns a promise that is fulfilled or rejected with the task result.
-- `Utils::inspect(PromiseInterface $promise) : array` waits for one promise to settle and returns an inspection array with `state` and either `value` or `reason`.
-- `Utils::inspectAll(iterable $promises) : array` inspects each promise and returns inspection arrays keyed like the input iterable.
-- `Utils::unwrap(iterable $promises) : array` waits on all promises and returns fulfilled values, throwing if any promise rejects.
-- `Utils::all(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with all values, or rejected when any input rejects.
-- `Utils::settle(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with inspection arrays after all inputs settle.
-- `Utils::some(int $count, iterable $promises) : PromiseInterface` fulfills with the values of the first `$count` promises to fulfill, in the order they appear in the input, or rejects with `AggregateException` if too few fulfill.
-- `Utils::any(iterable $promises) : PromiseInterface` fulfills with the first fulfilled value, or rejects with `AggregateException` if none fulfill.
 
-`Utils::all()` and `Utils::settle()` accept `['concurrency' => 5]` or
+The `Utils::all()`, `Utils::some()`, `Utils::any()`, `Utils::settle()`,
+`Utils::inspect()`, `Utils::inspectAll()`, and `Utils::unwrap()` methods are
+deprecated and will be removed in Guzzle Promises 4.0. Use the matching
+`Aggregate` and `Await` methods instead.
+
+## Aggregate
+
+`GuzzleHttp\Promise\Aggregate` provides helpers for aggregating promises into a
+single promise.
+
+- `Aggregate::all(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with all values, or rejected when any input rejects.
+- `Aggregate::settle(iterable $promises, bool $recursive = false, array $config = []) : PromiseInterface` returns a promise fulfilled with inspection arrays after all inputs settle.
+- `Aggregate::some(int $count, iterable $promises) : PromiseInterface` fulfills with the values of the first `$count` promises to fulfill, in the order they appear in the input, or rejects with `AggregateException` if too few fulfill.
+- `Aggregate::any(iterable $promises) : PromiseInterface` fulfills with the first fulfilled value, or rejects with `AggregateException` if none fulfill.
+
+`Aggregate::all()` and `Aggregate::settle()` accept `['concurrency' => 5]` or
 `['concurrency' => callable]` for lazy iterables. This limits how many items are
 pulled from the iterable at one time; it does not throttle promises that have
 already been created or started.
 
 ```php
-use GuzzleHttp\Promise\Utils;
+use GuzzleHttp\Promise\Aggregate;
 
-$promise = Utils::all($promises, false, ['concurrency' => 5]);
+$promise = Aggregate::all($promises, false, ['concurrency' => 5]);
 ```
+
+Use `Each` instead when you want per-item callbacks without keeping the results.
+
+## Await
+
+`GuzzleHttp\Promise\Await` provides helpers for synchronously waiting on
+promises.
+
+- `Await::inspect(PromiseInterface $promise) : array` waits for one promise to settle and returns an inspection array with `state` and either `value` or `reason`.
+- `Await::inspectAll(iterable $promises) : array` inspects each promise and returns inspection arrays keyed like the input iterable.
+- `Await::unwrap(iterable $promises) : array` waits on all promises and returns fulfilled values, throwing if any promise rejects.
 
 ## Create
 
@@ -166,7 +184,7 @@ the promise being waited on.
 ## Exceptions
 
 - `RejectionException` is thrown by `wait()` when a rejected promise has a non-throwable reason. The original reason is available through `getReason()`.
-- `AggregateException` extends `RejectionException` and is used by `Utils::some()` and `Utils::any()` when too few promises fulfill.
+- `AggregateException` extends `RejectionException` and is used by `Aggregate::some()` and `Aggregate::any()` when too few promises fulfill.
 - `CancellationException` extends `RejectionException` and is used as the rejection reason for cancelled promises.
 
 ## Related
