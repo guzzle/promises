@@ -322,7 +322,20 @@ class ExecutionContextOwnershipTest extends TestCase
         $this->assertSame(['unmanaged'], $ran);
     }
 
-    public function testForeignThenableRefusalDoesNotRollBackSettlement(): void
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function thenableRefusalRecoveryProvider(): iterable
+    {
+        yield 'resolve' => ['resolve'];
+        yield 'wait' => ['wait'];
+        yield 'cancel' => ['cancel'];
+    }
+
+    /**
+     * @dataProvider thenableRefusalRecoveryProvider
+     */
+    public function testForeignThenableRefusalRestoresThePromise(string $recovery): void
     {
         $foreign = $this->provider->in($this->other, static fn (): Promise => new Promise());
         $wrapper = new class($foreign) extends Thennable {
@@ -339,11 +352,15 @@ class ExecutionContextOwnershipTest extends TestCase
                 return $this->inner->then($res, $rej);
             }
         };
-        $promise = $this->provider->in($this->owner, static function (): Promise {
-            $promise = new Promise();
-            $promise->then(static function (): void {});
+        $cancelled = false;
+        [$promise, $child] = $this->provider->in($this->owner, static function () use (&$cancelled): array {
+            $promise = new Promise(static function () use (&$promise): void {
+                $promise->resolve('recovered');
+            }, static function () use (&$cancelled): void {
+                $cancelled = true;
+            });
 
-            return $promise;
+            return [$promise, $promise->then(static fn (string $value): string => $value.'!')];
         });
 
         try {
@@ -352,10 +369,56 @@ class ExecutionContextOwnershipTest extends TestCase
             });
             $this->fail('Settling with a promise that refused its callbacks succeeded.');
         } catch (CrossContextException $e) {
-            $this->assertTrue(P\Is::fulfilled($promise));
+            $this->assertTrue(P\Is::pending($promise));
+            $this->assertTrue(P\Is::pending($child));
         }
 
         $this->assertTrue(P\Is::pending($foreign));
+
+        $this->provider->in($this->owner, function () use ($promise, $child, $recovery, &$cancelled): void {
+            if ($recovery === 'cancel') {
+                $promise->cancel();
+                P\Utils::queue()->run();
+
+                $this->assertTrue($cancelled);
+                $this->assertTrue(P\Is::rejected($child));
+
+                return;
+            }
+
+            if ($recovery === 'resolve') {
+                $promise->resolve('recovered');
+            }
+
+            $this->assertSame('recovered!', $child->wait());
+        });
+    }
+
+    public function testAThenableThatCallsBackBeforeThrowingLeavesThePromiseSettled(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                $onFulfilled('value');
+
+                throw new \RuntimeException('Failed after calling back.');
+            }
+        };
+
+        $this->provider->in($this->owner, function () use ($thenable): void {
+            $promise = new Promise();
+            $child = $promise->then(static fn (string $value): string => $value.'!');
+
+            try {
+                $promise->resolve($thenable);
+                $this->fail('The thenable did not throw.');
+            } catch (\RuntimeException $e) {
+                $this->assertSame('Failed after calling back.', $e->getMessage());
+            }
+
+            $this->assertSame(PromiseInterface::FULFILLED, $promise->getState());
+            $this->assertSame('value!', $child->wait());
+        });
     }
 
     public function testWaitingOnAPromiseThatAnotherContextIsWaitingOnIsRejected(): void

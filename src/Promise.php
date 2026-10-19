@@ -307,6 +307,9 @@ class Promise implements PromiseInterface
         }
 
         // Clear out the state of the promise but stash the handlers.
+        $waitList = $this->waitList;
+        $waitFn = $this->waitFn;
+        $cancelFn = $this->cancelFn;
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
@@ -329,14 +332,35 @@ class Promise implements PromiseInterface
             $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
-            $value->then(
-                static function ($value) use ($handlers): void {
-                    self::dispatch(1, $value, $handlers, false);
-                },
-                static function ($reason) use ($handlers): void {
-                    self::dispatch(2, $reason, $handlers, false);
+            $calledBack = false;
+
+            try {
+                $value->then(
+                    static function ($value) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
+                        self::dispatch(1, $value, $handlers, false);
+                    },
+                    static function ($reason) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
+                        self::dispatch(2, $reason, $handlers, false);
+                    }
+                );
+            } catch (\Throwable $e) {
+                if ($calledBack || ExecutionContext::provider() === null) {
+                    throw $e;
                 }
-            );
+
+                // A foreign promise can refuse callbacks owned by another
+                // context. Restore this promise only if none were dispatched.
+                $this->state = self::PENDING;
+                $this->result = null;
+                $this->handlers = $handlers;
+                $this->waitList = $waitList;
+                $this->waitFn = $waitFn;
+                $this->cancelFn = $cancelFn;
+
+                throw $e;
+            }
         }
     }
 
