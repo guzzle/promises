@@ -9,6 +9,7 @@ use GuzzleHttp\Promise\CrossContextException;
 use GuzzleHttp\Promise\ExecutionContext;
 use GuzzleHttp\Promise\FiberExecutionContextProvider;
 use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\RejectionException;
 use PHPUnit\Framework\TestCase;
 
 class FiberExecutionContextProviderTest extends TestCase
@@ -109,7 +110,9 @@ class FiberExecutionContextProviderTest extends TestCase
     public function testSuspendedWaitDoesNotKeepAnAbandonedFiberAlive(): void
     {
         ExecutionContext::setProvider(new FiberExecutionContextProvider());
-        $promise = new Promise(static function (): void {
+        $calls = 0;
+        $promise = new Promise(static function () use (&$calls): void {
+            ++$calls;
             \Fiber::suspend();
         });
         $fiber = new \Fiber(static function () use ($promise): void {
@@ -122,5 +125,14 @@ class FiberExecutionContextProviderTest extends TestCase
         gc_collect_cycles();
 
         $this->assertNull($reference->get());
+
+        try {
+            $promise->wait();
+            $this->fail('Waiting on an abandoned wait function succeeded.');
+        } catch (RejectionException $e) {
+            $this->assertStringContainsString('no internal wait function', $e->getMessage());
+        }
+
+        $this->assertSame(1, $calls);
     }
 }
