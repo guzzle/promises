@@ -155,7 +155,9 @@ an event loop's own fiber is a different context.
 While one context runs the wait function of a promise, waiting on that promise
 from another context, directly or through a promise that depends on it, throws a
 `CrossContextException` and leaves both promises unchanged. This applies to
-promises that no context owns as well.
+promises that no context owns as well. Abandoning a fiber during `wait()` does
+not make the wait restartable: the wait function has already been used, so a
+later `wait()` on the still-pending promise is rejected.
 
 `Coroutine`, `EachPromise`, `Each`, and the `Utils` helpers create Guzzle
 promises internally, so they follow the same rules. A `Coroutine` checks
