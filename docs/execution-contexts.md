@@ -120,8 +120,11 @@ settles.
 
 Rejected operations throw `GuzzleHttp\Promise\CrossContextException` without
 changing the promise. Guzzle cannot see inside promises from other libraries.
-If a foreign `then()` throws while adopting it, the exception is rethrown and
-the outer promise remains settled, as it does without a provider.
+With a provider configured, if a foreign `then()` throws before invoking either
+callback, the outer promise is restored to its pending state and the exception
+is rethrown. If it calls back before throwing, the outer promise remains settled.
+Without a provider, the outer promise remains settled in either case, preserving
+the existing behavior.
 
 The promise that `then()` returns is owned by the context that called `then()`,
 and its callbacks run in that context. When another context settles the promise,
