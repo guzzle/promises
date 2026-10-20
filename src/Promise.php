@@ -39,6 +39,23 @@ class Promise implements PromiseInterface
     private ?array $handlers = [];
 
     /**
+     * The execution context that owns this promise.
+     *
+     * @var \WeakReference<object>|null
+     */
+    private ?\WeakReference $owner = null;
+
+    /** Whether the wait function is running. */
+    private bool $waiting = false;
+
+    /**
+     * The execution context running the wait function, if any.
+     *
+     * @var \WeakReference<object>|null
+     */
+    private ?\WeakReference $waitingContext = null;
+
+    /**
      * @param (callable(bool): void)|null $waitFn   Fn that when invoked resolves the promise.
      * @param (callable(): void)|null     $cancelFn Fn that when invoked cancels the promise.
      */
@@ -48,6 +65,12 @@ class Promise implements PromiseInterface
     ) {
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
+
+        $context = ExecutionContext::current();
+
+        if ($context !== null) {
+            $this->owner = \WeakReference::create($context);
+        }
     }
 
     /**
@@ -65,8 +88,17 @@ class Promise implements PromiseInterface
         ?callable $onFulfilled = null,
         ?callable $onRejected = null
     ): PromiseInterface {
+        $this->assertUsableInCurrentContext('then');
+
         if ($this->state === self::PENDING) {
             $p = new Promise(null, [$this, 'cancel']);
+
+            if ($p->owner !== null) {
+                // The handler runs in the context that owns $p, so make sure
+                // finishing that context drains what is queued for it.
+                ExecutionContextState::forContext($p->owner->get());
+            }
+
             $this->handlers[] = [$p, $onFulfilled, $onRejected];
             $p->waitList = $this->waitList;
             $p->waitList[] = $this;
@@ -106,6 +138,7 @@ class Promise implements PromiseInterface
 
     public function wait(bool $unwrap = true)
     {
+        $this->assertUsableInCurrentContext('wait');
         $this->waitIfPending();
 
         if ($this->result instanceof PromiseInterface) {
@@ -133,6 +166,7 @@ class Promise implements PromiseInterface
             return;
         }
 
+        $this->assertUsableInCurrentContext('cancel');
         $this->waitFn = $this->waitList = null;
 
         if ($this->cancelFn) {
@@ -154,12 +188,106 @@ class Promise implements PromiseInterface
 
     public function resolve($value = null): void
     {
+        $this->assertSettleableInCurrentContext('resolve', $value);
         $this->settle(self::FULFILLED, $value);
     }
 
     public function reject($reason): void
     {
+        $this->assertSettleableInCurrentContext('reject', $reason);
         $this->settle(self::REJECTED, $reason);
+    }
+
+    /**
+     * Rejects settlement from another context and adoption of a pending
+     * promise owned by another context.
+     *
+     * @param mixed $value
+     */
+    private function assertSettleableInCurrentContext(string $operation, $value): void
+    {
+        if ($this->state !== self::PENDING) {
+            return;
+        }
+
+        $this->assertUsableInCurrentContext($operation);
+
+        if ($value instanceof Coroutine) {
+            $value = $value->_getResult();
+        }
+
+        if ($value instanceof Promise) {
+            $value->assertUsableInCurrentContext('adopt');
+        }
+    }
+
+    /**
+     * @internal
+     *
+     * @param PromiseInterface<mixed, mixed> $promise
+     */
+    public static function _assertUsableInCurrentContext(PromiseInterface $promise, string $operation): void
+    {
+        if ($promise instanceof self) {
+            $promise->assertUsableInCurrentContext($operation);
+        }
+    }
+
+    /**
+     * Rejects use of this promise from a context that does not own it while
+     * the promise, or a promise it has adopted, is still pending.
+     */
+    private function assertUsableInCurrentContext(string $operation): void
+    {
+        if ($this->owner === null) {
+            return;
+        }
+
+        $owner = $this->owner->get();
+
+        if ($owner !== null && $owner === ExecutionContext::current()) {
+            return;
+        }
+
+        if (!$this->isUnsettled()) {
+            return;
+        }
+
+        $action = $operation === 'adopt' ? 'adopt' : "call {$operation}() on";
+
+        throw new CrossContextException($owner === null
+            ? "Cannot {$action} a pending promise whose execution context has ended. Settle or cancel promises before their context ends."
+            : "Cannot {$action} a pending promise owned by another execution context. Create and settle promises in one context, and share only settled results.");
+    }
+
+    /**
+     * Determines if this promise or any promise it has adopted is pending.
+     */
+    private function isUnsettled(): bool
+    {
+        $promise = $this;
+        $seen = [];
+
+        while (true) {
+            if ($promise->state === self::PENDING) {
+                return true;
+            }
+
+            $result = $promise->result;
+
+            if (!$result instanceof Promise) {
+                return $result instanceof PromiseInterface && $result->getState() === self::PENDING;
+            }
+
+            $id = spl_object_id($result);
+
+            if (isset($seen[$id])) {
+                return false;
+            }
+
+            $seen[$id] = true;
+            $promise = $result;
+        }
     }
 
     private function settle(string $state, $value): void
@@ -179,6 +307,9 @@ class Promise implements PromiseInterface
         }
 
         // Clear out the state of the promise but stash the handlers.
+        $waitList = $this->waitList;
+        $waitFn = $this->waitFn;
+        $cancelFn = $this->cancelFn;
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
@@ -195,28 +326,136 @@ class Promise implements PromiseInterface
         if (!is_object($value) || !method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
-            Utils::queue()->add(static function () use ($id, $value, $handlers): void {
-                foreach ($handlers as $handler) {
-                    self::callHandler($id, $value, $handler);
-                }
-            });
+            self::dispatch($id, $value, $handlers, true);
         } elseif ($value instanceof Promise && State::isPending($value)) {
             // We can just merge our handlers onto the next promise.
             $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
-            $value->then(
-                static function ($value) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(1, $value, $handler);
+            $calledBack = false;
+
+            try {
+                $value->then(
+                    static function ($value) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
+                        self::dispatch(1, $value, $handlers, false);
+                    },
+                    static function ($reason) use ($handlers, &$calledBack): void {
+                        $calledBack = true;
+                        self::dispatch(2, $reason, $handlers, false);
                     }
-                },
-                static function ($reason) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(2, $reason, $handler);
-                    }
+                );
+            } catch (\Throwable $e) {
+                if ($calledBack || ExecutionContext::provider() === null) {
+                    throw $e;
                 }
-            );
+
+                // A foreign promise can refuse callbacks owned by another
+                // context. Restore this promise only if none were dispatched.
+                $this->state = self::PENDING;
+                $this->result = null;
+                $this->handlers = $handlers;
+                $this->waitList = $waitList;
+                $this->waitFn = $waitFn;
+                $this->cancelFn = $cancelFn;
+
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Runs handlers in the context that owns the promise each one settles.
+     *
+     * With a provider configured, handlers whose promise another live context
+     * owns are queued for that context, which registered them, and handlers
+     * whose owning context has ended are dropped. A finished context drops
+     * incoming handlers until it uses promises again. Other handlers run here,
+     * queued when $queue is true.
+     *
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     * @param mixed                                                                              $value
+     */
+    private static function dispatch(int $index, $value, array $handlers, bool $queue): void
+    {
+        [$local, $foreign] = ExecutionContext::provider() !== null
+            ? self::groupByOwner($handlers)
+            : [$handlers, []];
+
+        foreach ($foreign as [$contextQueue, $owned]) {
+            $contextQueue->add(static function () use ($index, $value, $owned): void {
+                self::callHandlers($index, $value, $owned);
+            });
+        }
+
+        if ($local === []) {
+            return;
+        }
+
+        if (!$queue) {
+            self::callHandlers($index, $value, $local);
+
+            return;
+        }
+
+        Utils::queue()->add(static function () use ($index, $value, $local): void {
+            self::callHandlers($index, $value, $local);
+        });
+    }
+
+    /**
+     * Splits handlers into those that run in the current context and those
+     * grouped by the task queue of the other live context that owns them,
+     * dropping handlers of ended contexts or contexts that have been finished
+     * and have not used promises since.
+     *
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     *
+     * @return array{0: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>, 1: array<int, array{0: TaskQueue, 1: list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>}>}
+     */
+    private static function groupByOwner(array $handlers): array
+    {
+        $current = ExecutionContext::current();
+        $local = [];
+        $foreign = [];
+
+        foreach ($handlers as $handler) {
+            $owner = $handler[0] instanceof self ? $handler[0]->owner : null;
+            $context = $owner === null ? $current : $owner->get();
+
+            if ($owner !== null && $context === null) {
+                // The owning context has ended.
+                continue;
+            }
+
+            if ($context === $current) {
+                $local[] = $handler;
+
+                continue;
+            }
+
+            $contextQueue = ExecutionContextState::queueFor($context);
+
+            if ($contextQueue === null) {
+                // The owning context has been finished and drains nothing.
+                continue;
+            }
+
+            $foreign[spl_object_id($contextQueue)][0] = $contextQueue;
+            $foreign[spl_object_id($contextQueue)][1][] = $handler;
+        }
+
+        return [$local, $foreign];
+    }
+
+    /**
+     * @param list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}> $handlers
+     * @param mixed                                                                              $value
+     */
+    private static function callHandlers(int $index, $value, array $handlers): void
+    {
+        foreach ($handlers as $handler) {
+            self::callHandler($index, $value, $handler);
         }
     }
 
@@ -265,6 +504,10 @@ class Promise implements PromiseInterface
     {
         if ($this->state !== self::PENDING) {
             return;
+        } elseif ($this->waiting && ($this->waitingContext === null ? null : $this->waitingContext->get()) !== ExecutionContext::current()) {
+            // The wait function belongs to the waiting context, which settles
+            // the promise when it returns.
+            throw new CrossContextException('Cannot call wait() on a promise that another execution context is waiting on. Wait in one context and share the settled result.');
         } elseif ($this->waitFn) {
             $this->invokeWaitFn();
         } elseif ($this->waitList) {
@@ -290,6 +533,11 @@ class Promise implements PromiseInterface
         try {
             $wfn = $this->waitFn;
             $this->waitFn = null;
+            $this->waiting = true;
+            $context = ExecutionContext::current();
+            $this->waitingContext = $context === null ? null : \WeakReference::create($context);
+            // Do not retain the context while its wait function is suspended.
+            unset($context);
             $wfn(true);
         } catch (\Throwable $reason) {
             if ($this->state === self::PENDING) {
@@ -301,6 +549,9 @@ class Promise implements PromiseInterface
                 // the application.
                 throw $reason;
             }
+        } finally {
+            $this->waiting = false;
+            $this->waitingContext = null;
         }
     }
 
@@ -309,15 +560,22 @@ class Promise implements PromiseInterface
         $waitList = $this->waitList;
         $this->waitList = null;
 
-        foreach ($waitList as $result) {
-            do {
-                $result->waitIfPending();
-                $result = $result->result;
-            } while ($result instanceof Promise);
+        try {
+            foreach ($waitList as $result) {
+                do {
+                    $result->waitIfPending();
+                    $result = $result->result;
+                } while ($result instanceof Promise);
 
-            if ($result instanceof PromiseInterface) {
-                $result->wait(false);
+                if ($result instanceof PromiseInterface) {
+                    $result->wait(false);
+                }
             }
+        } catch (CrossContextException $e) {
+            // Nothing on the list was changed, so a later wait can use it.
+            $this->waitList = $waitList;
+
+            throw $e;
         }
     }
 }

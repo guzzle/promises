@@ -71,6 +71,10 @@ $loop = React\EventLoop\Factory::create();
 $loop->addPeriodicTimer(0.01, [$queue, 'run']);
 ```
 
+If the event loop runs several fibers or coroutines that use promises, configure
+an execution context provider so that each context keeps its own task queue.
+See [Execution Contexts](execution-contexts.md).
+
 ## Related
 
 - [Quick Start](promise-quick-start.md)

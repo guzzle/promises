@@ -71,6 +71,7 @@ $response = $promise->wait();
 - [Promise Quick Start](docs/promise-quick-start.md)
 - [Promise API](docs/promise-api.md)
 - [Promise Interoperability](docs/promise-interoperability.md)
+- [Execution Contexts](docs/execution-contexts.md)
 - [Implementation Notes](docs/implementation-notes.md)
 - [Upgrade Guide](UPGRADING.md)
 - [Changelog](CHANGELOG.md)
