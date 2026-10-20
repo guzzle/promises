@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## Unreleased
+## 3.2.0 - Upcoming
 
 ### Added
 

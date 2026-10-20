@@ -78,7 +78,7 @@ class ExecutionContextOwnershipTest extends TestCase
             $this->assertStringContainsString('owned by another execution context', $e->getMessage());
         }
 
-        $this->assertTrue(P\Is::pending($promise));
+        $this->assertTrue(P\State::isPending($promise));
         $this->assertFalse($waited);
         $this->assertFalse($cancelled);
         $this->assertCount(1, PropertyHelper::get($promise, 'handlers'));
@@ -122,7 +122,7 @@ class ExecutionContextOwnershipTest extends TestCase
             $this->assertStringContainsString('Cannot adopt', $e->getMessage());
         }
 
-        $this->assertTrue(P\Is::pending($promise));
+        $this->assertTrue(P\State::isPending($promise));
     }
 
     public function testPromisesAdoptingPendingPromisesRemainProtected(): void
@@ -179,7 +179,7 @@ class ExecutionContextOwnershipTest extends TestCase
         gc_collect_cycles();
 
         $this->assertNull($reference->get());
-        $this->assertTrue(P\Is::pending($promise));
+        $this->assertTrue(P\State::isPending($promise));
     }
 
     public function testPromisesCreatedOutsideManagedContextsAreUnrestricted(): void
@@ -210,14 +210,14 @@ class ExecutionContextOwnershipTest extends TestCase
         });
 
         $this->assertSame([$this->other], $ranIn);
-        $this->assertTrue(P\Is::pending($owned));
+        $this->assertTrue(P\State::isPending($owned));
 
         $this->provider->in($this->owner, static function (): void {
             P\Utils::queue()->run();
         });
 
         $this->assertSame([$this->other, $this->owner], $ranIn);
-        $this->assertTrue(P\Is::fulfilled($owned));
+        $this->assertTrue(P\State::isFulfilled($owned));
     }
 
     public function testAggregatesOfPromisesSettledElsewhereCompleteInTheirContext(): void
@@ -369,11 +369,11 @@ class ExecutionContextOwnershipTest extends TestCase
             });
             $this->fail('Settling with a promise that refused its callbacks succeeded.');
         } catch (CrossContextException $e) {
-            $this->assertTrue(P\Is::pending($promise));
-            $this->assertTrue(P\Is::pending($child));
+            $this->assertTrue(P\State::isPending($promise));
+            $this->assertTrue(P\State::isPending($child));
         }
 
-        $this->assertTrue(P\Is::pending($foreign));
+        $this->assertTrue(P\State::isPending($foreign));
 
         $this->provider->in($this->owner, function () use ($promise, $child, $recovery, &$cancelled): void {
             if ($recovery === 'cancel') {
@@ -381,7 +381,7 @@ class ExecutionContextOwnershipTest extends TestCase
                 P\Utils::queue()->run();
 
                 $this->assertTrue($cancelled);
-                $this->assertTrue(P\Is::rejected($child));
+                $this->assertTrue(P\State::isRejected($child));
 
                 return;
             }
@@ -508,7 +508,7 @@ class ExecutionContextOwnershipTest extends TestCase
             $this->assertStringContainsString('Cannot adopt', $e->getMessage());
         }
 
-        $this->assertTrue(P\Is::pending($promise));
+        $this->assertTrue(P\State::isPending($promise));
     }
 
     public function testCoroutineCancellationFromAnotherContextDoesNotReachItsCurrentPromise(): void

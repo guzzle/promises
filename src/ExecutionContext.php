@@ -11,7 +11,7 @@ namespace GuzzleHttp\Promise;
  * Without a provider, Guzzle behaves as if the whole process were a single
  * context.
  *
- * @see https://github.com/guzzle/promises/blob/3.0/docs/execution-contexts.md
+ * @see https://github.com/guzzle/promises/blob/3.2/docs/execution-contexts.md
  */
 final class ExecutionContext
 {
