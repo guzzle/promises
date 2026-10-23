@@ -114,6 +114,9 @@ interface PromiseInterface
      *
      * @throws \LogicException if the promise has no wait function or if the
      *                         promise does not settle after waiting.
+     *
+     * @psalm-taint-specialize
+     * @psalm-flow ($this) -> return
      */
     public function wait(bool $unwrap = true);
 }
