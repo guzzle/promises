@@ -116,6 +116,7 @@ interface PromiseInterface
      *                         promise does not settle after waiting.
      *
      * @psalm-taint-specialize
+     *
      * @psalm-flow ($this) -> return
      */
     public function wait(bool $unwrap = true);
