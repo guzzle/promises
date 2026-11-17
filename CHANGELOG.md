@@ -7,6 +7,7 @@
 
 - Fixed `Promise` losing its handlers when a thenable's `then()` throws
 - Fixed `Create::promiseFor()` throwing when a thenable's `then()` throws
+- Fixed quadratic handler forwarding through chains of pending promises
 
 
 ## 3.1.0 - 2026-10-18
