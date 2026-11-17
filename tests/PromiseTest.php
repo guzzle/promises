@@ -689,6 +689,86 @@ class PromiseTest extends TestCase
         $this->assertSame(['B', 'D:a', 'A:foo', 'C:foo'], $res);
     }
 
+    public function testRejectsHandlersWhenForwardedThenableThrows(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                throw new \RuntimeException('foo');
+            }
+        };
+
+        $p = new Promise();
+        $p->then(function () use ($thenable): object {
+            return $thenable;
+        })
+            ->then(null, function (\Throwable $e) use (&$reason): void {
+                $reason = $e;
+            });
+        $p->resolve('a');
+        P\Utils::queue()->run();
+
+        $this->assertInstanceOf(\RuntimeException::class, $reason);
+        $this->assertSame('foo', $reason->getMessage());
+    }
+
+    public function testRejectsHandlersWhenForwardedThenableThrowsAfterKeepingCallbacks(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                P\Utils::queue()->add(function () use ($onFulfilled, $onRejected): void {
+                    $onFulfilled('bar');
+                    $onRejected('baz');
+                });
+
+                throw new \RuntimeException('foo');
+            }
+        };
+
+        $res = [];
+        $p = new Promise();
+        $p->then(
+            function (string $v) use (&$res): void {
+                $res[] = $v;
+            },
+            function (\Throwable $e) use (&$res): void {
+                $res[] = $e;
+            }
+        );
+        $p->resolve($thenable);
+        $this->assertSame([], $res);
+        P\Utils::queue()->run();
+
+        $this->assertCount(1, $res);
+        $this->assertInstanceOf(\RuntimeException::class, $res[0]);
+        $this->assertSame('foo', $res[0]->getMessage());
+    }
+
+    public function testIgnoresExceptionThrownByForwardedThenableAfterItSettles(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                $onFulfilled('foo');
+
+                throw new \RuntimeException('bar');
+            }
+        };
+
+        $p = new Promise();
+        $p->then(function () use ($thenable): object {
+            return $thenable;
+        })
+            ->then(function (string $v) use (&$value): void {
+                $value = $v;
+            });
+        $p->resolve('a');
+        P\Utils::queue()->run();
+
+        $this->assertSame('foo', $value);
+    }
+
     public function testCannotResolveWithSelf(): void
     {
         $this->expectException(\LogicException::class);

@@ -36,6 +36,61 @@ class CreateTest extends TestCase
         $this->assertSame('foo', $wrapped->wait());
     }
 
+    public function testReturnsRejectedPromiseForThenableThatThrows(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                throw new \RuntimeException('foo');
+            }
+        };
+
+        $p = P\Create::promiseFor($thenable);
+        $this->assertTrue(P\State::isRejected($p));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('foo');
+
+        $p->wait();
+    }
+
+    public function testReturnsRejectedPromiseForThenableThatThrowsAfterKeepingCallback(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                P\Utils::queue()->add(function () use ($onFulfilled): void {
+                    $onFulfilled('bar');
+                });
+
+                throw new \RuntimeException('foo');
+            }
+        };
+
+        $p = P\Create::promiseFor($thenable);
+        P\Utils::queue()->run();
+        $this->assertTrue(P\State::isRejected($p));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('foo');
+
+        $p->wait();
+    }
+
+    public function testIgnoresExceptionThrownByThenableAfterItSettles(): void
+    {
+        $thenable = new class {
+            public function then(?callable $onFulfilled = null, ?callable $onRejected = null): void
+            {
+                $onFulfilled('foo');
+
+                throw new \RuntimeException('bar');
+            }
+        };
+
+        $this->assertSame('foo', P\Create::promiseFor($thenable)->wait());
+    }
+
     public function testReturnsRejection(): void
     {
         $p = P\Create::rejectionFor('fail');
