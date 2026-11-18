@@ -36,6 +36,9 @@ class Promise implements PromiseInterface
     private ?array $waitList = null;
 
     /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>|null */
+    private ?array $handlersBefore = [];
+
+    /** @var list<array{0: PromiseInterface<mixed, mixed>, 1: callable|null, 2: callable|null}>|null */
     private ?array $handlers = [];
 
     /**
@@ -182,12 +185,34 @@ class Promise implements PromiseInterface
         $this->state = $state;
         $this->result = $value;
         $handlers = $this->handlers;
-        $this->handlers = null;
+        $before = $this->handlersBefore;
+        $this->handlers = $this->handlersBefore = null;
         $this->waitList = $this->waitFn = null;
         $this->cancelFn = null;
 
         if (!$handlers) {
             return;
+        }
+
+        if ($value instanceof Promise && State::isPending($value)) {
+            // We can just hand our handlers to the next promise. Merging would
+            // copy both lists every time, so only the shorter one is moved.
+            if ($value->handlers === []) {
+                $value->handlers = $handlers;
+                $value->handlersBefore = $before;
+            } elseif (count($value->handlers) + count($value->handlersBefore) < count($handlers) + count($before)) {
+                array_push($before, ...array_reverse($value->handlers), ...$value->handlersBefore);
+                $value->handlers = $handlers;
+                $value->handlersBefore = $before;
+            } else {
+                array_push($value->handlers, ...array_reverse($before), ...$handlers);
+            }
+
+            return;
+        }
+
+        if ($before) {
+            $handlers = array_merge(array_reverse($before), $handlers);
         }
 
         // If the value was not a settled promise or a thenable, then resolve
@@ -200,23 +225,30 @@ class Promise implements PromiseInterface
                     self::callHandler($id, $value, $handler);
                 }
             });
-        } elseif ($value instanceof Promise && State::isPending($value)) {
-            // We can just merge our handlers onto the next promise.
-            $value->handlers = array_merge($value->handlers, $handlers);
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
-            $value->then(
-                static function ($value) use ($handlers): void {
-                    foreach ($handlers as $handler) {
-                        self::callHandler(1, $value, $handler);
+            try {
+                $value->then(
+                    static function ($value) use (&$handlers): void {
+                        foreach ($handlers as $handler) {
+                            self::callHandler(1, $value, $handler);
+                        }
+                    },
+                    static function ($reason) use (&$handlers): void {
+                        foreach ($handlers as $handler) {
+                            self::callHandler(2, $reason, $handler);
+                        }
                     }
-                },
-                static function ($reason) use ($handlers): void {
+                );
+            } catch (\Throwable $e) {
+                Utils::queue()->add(static function () use ($e, $handlers): void {
                     foreach ($handlers as $handler) {
-                        self::callHandler(2, $reason, $handler);
+                        self::callHandler(2, $e, $handler);
                     }
-                }
-            );
+                });
+                // The thenable may still hold the callbacks.
+                $handlers = [];
+            }
         }
     }
 
