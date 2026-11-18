@@ -5,7 +5,7 @@ operations. It implements promise chaining, synchronous waiting, cancellation,
 and helpers for working with groups of promises.
 
 Most application developers use this package through
-[`guzzlehttp/guzzle`](https://github.com/guzzle/guzzle/blob/8.0/README.md) by
+[`guzzlehttp/guzzle`](https://github.com/guzzle/guzzle/blob/9.0/README.md) by
 calling methods such as `requestAsync()`. Install this package directly when you
 need promise composition without the full HTTP client.
 
@@ -19,6 +19,7 @@ composer require guzzlehttp/promises
 
 | Version | Status       | PHP Version  |
 |---------|--------------|--------------|
+| 4.0     | Experimental | >=8.0,<8.7   |
 | 3.2     | Latest       | >=7.4,<8.7   |
 | 2.6     | Maintenance  | >=7.2.5,<8.7 |
 | 1.5     | End of Life  | >=5.5,<8.3   |

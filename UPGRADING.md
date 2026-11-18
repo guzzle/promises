@@ -1,6 +1,19 @@
 Guzzle Promises Upgrade Guide
 =============================
 
+3.x to 4.0
+----------
+
+Guzzle Promises 4.0 is a major release that raises the minimum PHP version.
+
+#### PHP Version and Dependencies
+
+Guzzle Promises 4.0 requires PHP `^8.0`. Guzzle Promises 3.x supported PHP
+`^7.4 || ^8.0`.
+
+If your application still supports PHP 7.4, continue using Guzzle Promises 3.x
+until your minimum PHP version is raised.
+
 2.x to 3.0
 ----------
 
