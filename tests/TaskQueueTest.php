@@ -32,4 +32,34 @@ class TaskQueueTest extends TestCase
         $tq->run();
         $this->assertSame(['a', 'b', 'c'], $called);
     }
+
+    public function testKeepsRemainingTasksWhenTaskThrows(): void
+    {
+        $tq = new TaskQueue(false);
+        $called = [];
+        $tq->add(function (): void { throw new \RuntimeException('foo'); });
+        $tq->add(function () use (&$called): void { $called[] = 'a'; });
+        try {
+            $tq->run();
+            $this->fail();
+        } catch (\RuntimeException $e) {
+            $this->assertSame('foo', $e->getMessage());
+        }
+        $this->assertFalse($tq->isEmpty());
+        $tq->run();
+        $this->assertSame(['a'], $called);
+    }
+
+    public function testCopiesTasksWhenCloned(): void
+    {
+        $tq = new TaskQueue(false);
+        $called = [];
+        $tq->add(function () use (&$called): void { $called[] = 'a'; });
+        $clone = clone $tq;
+        $clone->add(function () use (&$called): void { $called[] = 'b'; });
+        $tq->run();
+        $this->assertSame(['a'], $called);
+        $clone->run();
+        $this->assertSame(['a', 'a', 'b'], $called);
+    }
 }

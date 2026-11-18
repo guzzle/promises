@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 3.2.0 - Upcoming
+
+### Changed
+
+- Changed `TaskQueue` to remove tasks in constant time
+
+
 ## 3.1.1 - Upcoming
 
 ### Fixed
