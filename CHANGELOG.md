@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 4.0.0 - Upcoming
+
+### Removed
+
+- Dropped support for PHP 7
+
+
 ## 3.2.0 - Upcoming
 
 ### Changed
