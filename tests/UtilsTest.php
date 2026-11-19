@@ -660,6 +660,20 @@ class UtilsTest extends TestCase
         $this->assertSame('inner', $result['reason']);
     }
 
+    public function testInspectReturnsOutcomeOfChainedPromiseWhoseWaitFunctionThrowsAfterSettling(): void
+    {
+        $p = new Promise(function () use (&$p): void {
+            $p->resolve('foo');
+
+            throw new \RuntimeException('bar');
+        });
+
+        $this->assertSame([
+            'state' => 'fulfilled',
+            'value' => 'foo',
+        ], P\Utils::inspect($p->then()));
+    }
+
     public function testReturnsTrampoline(): void
     {
         $this->assertInstanceOf(TaskQueue::class, P\Utils::queue());
