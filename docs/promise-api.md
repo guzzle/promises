@@ -124,11 +124,6 @@ implementation and by callers that need to normalize values.
 - `State::isFulfilled(PromiseInterface $promise) : bool`
 - `State::isRejected(PromiseInterface $promise) : bool`
 
-`GuzzleHttp\Promise\Is` is deprecated because PHP 8.6 deprecates `is` as a class
-name, and will be removed in Guzzle Promises 4.0. Replace `Is::pending()`,
-`Is::settled()`, `Is::fulfilled()`, and `Is::rejected()` with the matching
-`State` methods.
-
 ## Each and EachPromise
 
 `Each::of()` consumes an iterable of promises or values and invokes callbacks as

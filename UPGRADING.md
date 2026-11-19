@@ -4,7 +4,8 @@ Guzzle Promises Upgrade Guide
 3.x to 4.0
 ----------
 
-Guzzle Promises 4.0 is a major release that raises the minimum PHP version.
+Guzzle Promises 4.0 is a major release that raises the minimum PHP version and
+removes the deprecated `Is` class.
 
 #### PHP Version and Dependencies
 
@@ -13,6 +14,17 @@ Guzzle Promises 4.0 requires PHP `^8.0`. Guzzle Promises 3.x supported PHP
 
 If your application still supports PHP 7.4, continue using Guzzle Promises 3.x
 until your minimum PHP version is raised.
+
+Guzzle Promises 4.0 has no runtime package dependencies beyond PHP. It removes
+the runtime dependency on `symfony/deprecation-contracts` that 3.1 reintroduced;
+require that package directly if your application uses it.
+
+#### Removed Is Class
+
+The deprecated `GuzzleHttp\Promise\Is` class was removed. Replace
+`Is::pending()`, `Is::settled()`, `Is::fulfilled()`, and `Is::rejected()` with
+`State::isPending()`, `State::isSettled()`, `State::isFulfilled()`, and
+`State::isRejected()`.
 
 2.x to 3.0
 ----------

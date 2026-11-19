@@ -6,6 +6,7 @@
 ### Removed
 
 - Dropped support for PHP 7
+- Removed `Is` in favor of `State`
 
 
 ## 3.2.0 - Upcoming
