@@ -316,13 +316,13 @@ class Promise implements PromiseInterface
 
         try {
             $thenable->then(
-                function ($value) use ($thenable): void {
+                function (mixed $value) use ($thenable): void {
                     if ($this->adopted === $thenable) {
                         $this->adopted = null;
                         $this->settle(self::FULFILLED, $value);
                     }
                 },
-                function ($reason) use ($thenable): void {
+                function (mixed $reason) use ($thenable): void {
                     if ($this->adopted === $thenable) {
                         $this->adopted = null;
                         $this->settleWith(self::REJECTED, $reason);
