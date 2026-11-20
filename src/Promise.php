@@ -211,7 +211,7 @@ class Promise implements PromiseInterface
         $this->settle(self::REJECTED, $reason);
     }
 
-    private function settle(string $state, $value): void
+    private function settle(string $state, mixed $value): void
     {
         if ($this->adopted !== null) {
             return;
@@ -251,7 +251,7 @@ class Promise implements PromiseInterface
      * procedure: the value of a fulfillment is never a thenable, and a
      * rejection reason stays verbatim (Promises/A+ 2.3.2.3).
      */
-    private function settleWith(string $state, $value): void
+    private function settleWith(string $state, mixed $value): void
     {
         // Clear out the state of the promise but stash the handlers.
         $this->state = $state;
@@ -362,7 +362,7 @@ class Promise implements PromiseInterface
      * @param mixed $value   Value to pass to the callback.
      * @param array $handler Array of handler data (promise and callbacks).
      */
-    private static function callHandler(int $index, $value, array $handler): void
+    private static function callHandler(int $index, mixed $value, array $handler): void
     {
         /** @var Promise<mixed, mixed> $promise */
         $promise = $handler[0];
