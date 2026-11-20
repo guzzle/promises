@@ -204,7 +204,7 @@ class EachPromise implements PromisorInterface
         $idx = $this->nextPendingIndex++;
 
         $this->pending[$idx] = $promise->then(
-            function ($value) use ($idx, $key): void {
+            function (mixed $value) use ($idx, $key): void {
                 if ($this->onFulfilled) {
                     ($this->onFulfilled)(
                         $value,
@@ -214,7 +214,7 @@ class EachPromise implements PromisorInterface
                 }
                 $this->step($idx);
             },
-            function ($reason) use ($idx, $key): void {
+            function (mixed $reason) use ($idx, $key): void {
                 if ($this->onRejected) {
                     ($this->onRejected)(
                         $reason,

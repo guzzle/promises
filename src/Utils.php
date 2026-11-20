@@ -90,10 +90,10 @@ final class Utils
         };
 
         $inspection = $promise->then(
-            static function ($value) use (&$result): void {
+            static function (mixed $value) use (&$result): void {
                 $result = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
             },
-            static function ($reason) use (&$result): void {
+            static function (mixed $reason) use (&$result): void {
                 $result = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
             }
         );
@@ -198,10 +198,10 @@ final class Utils
         $results = [];
         $promise = Each::of(
             $promises,
-            function ($value, $idx) use (&$results): void {
+            function (mixed $value, mixed $idx) use (&$results): void {
                 $results[$idx] = $value;
             },
-            function ($reason, $idx, PromiseInterface $aggregate): void {
+            function (mixed $reason, mixed $idx, PromiseInterface $aggregate): void {
                 if (State::isPending($aggregate)) {
                     $aggregate->reject($reason);
                 }
@@ -214,7 +214,7 @@ final class Utils
         });
 
         if (true === $recursive) {
-            $promise = $promise->then(function ($results) use (&$promises, $config) {
+            $promise = $promise->then(function (mixed $results) use (&$promises, $config) {
                 if (self::shouldRecurse($promises, $results)) {
                     return self::all($promises, true, $config);
                 }
@@ -252,7 +252,7 @@ final class Utils
 
         $promise = Each::of(
             $promises,
-            function ($value, $idx, PromiseInterface $p) use (&$results, $count): void {
+            function (mixed $value, mixed $idx, PromiseInterface $p) use (&$results, $count): void {
                 if (State::isSettled($p)) {
                     return;
                 }
@@ -261,7 +261,7 @@ final class Utils
                     $p->resolve(null);
                 }
             },
-            function ($reason) use (&$rejections): void {
+            function (mixed $reason) use (&$rejections): void {
                 $rejections[] = $reason;
             }
         )->then(
@@ -328,10 +328,10 @@ final class Utils
 
         $promise = Each::of(
             $promises,
-            function ($value, $idx) use (&$results): void {
+            function (mixed $value, mixed $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
             },
-            function ($reason, $idx) use (&$results): void {
+            function (mixed $reason, mixed $idx) use (&$results): void {
                 $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
             },
             $config
@@ -342,7 +342,7 @@ final class Utils
         });
 
         if (true === $recursive) {
-            $promise = $promise->then(function ($results) use (&$promises, $config) {
+            $promise = $promise->then(function (mixed $results) use (&$promises, $config) {
                 if (self::shouldRecurse($promises, $results)) {
                     return self::settle($promises, true, $config);
                 }

@@ -110,7 +110,7 @@ final class Each
             $iterable,
             $concurrency,
             $onFulfilled,
-            function ($reason, $idx, PromiseInterface $aggregate): void {
+            function (mixed $reason, mixed $idx, PromiseInterface $aggregate): void {
                 $aggregate->reject($reason);
             }
         );
