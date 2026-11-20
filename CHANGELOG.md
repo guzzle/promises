@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 3.1.1 - Upcoming
+## 3.1.1 - 2026-10-19
 
 ### Fixed
 
