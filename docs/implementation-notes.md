@@ -8,8 +8,9 @@ usually only needs the [Promise Quick Start](promise-quick-start.md) and
 
 ## Iterative Resolution and Chaining
 
-Promises are resolved iteratively by moving pending handlers between promises.
-This keeps stack size constant even for very long `then()` chains.
+Promises are resolved iteratively by queueing the handlers of a promise when it
+settles instead of calling them directly. This keeps stack size constant even
+for very long `then()` chains.
 
 ```php
 <?php
@@ -33,14 +34,13 @@ var_dump($p->wait()); // int(1000)
 
 ```
 
-When a promise is fulfilled or rejected with a non-promise value, the promise
-takes ownership of each child promise's handlers and delivers values down the
-chain without recursion.
+When a promise is fulfilled or rejected with a non-promise value, it queues its
+handlers, which deliver the value or reason down the chain without recursion.
 
-When a promise is resolved with another promise, the original promise transfers
-all of its pending handlers to the new promise. When the new promise is
-eventually resolved, all pending handlers receive the forwarded
-value.
+When a promise is resolved with another promise, the original promise stays
+pending and registers itself among the handlers of the new promise. When the new
+promise is eventually settled, it settles the original promise the same way, and
+the original promise then delivers the value or reason to its own handlers.
 
 ## A Promise Is the Deferred
 
@@ -49,12 +49,12 @@ a computation and a promise object to represent the delivery of the result of
 the computation. That separation prevents consumers from modifying the value
 that will eventually be delivered.
 
-Iterative resolution requires one promise to move handlers from another promise.
-To do that without making handlers publicly mutable, `Promise` is also the
-deferred value. Promises of the same class can modify each other's private
-state, including handler ownership. This means a consumer that receives a
-`Promise` can also resolve or reject it, but it keeps chaining efficient and
-stack safe.
+Iterative resolution requires one promise to register itself with, and be
+settled by, another promise. To do that without making handlers publicly
+mutable, `Promise` is also the deferred value. Promises of the same class can
+modify each other's private state, including handlers. This means a consumer
+that receives a `Promise` can also resolve or reject it, but it keeps chaining
+efficient and stack safe.
 
 ```php
 $promise = new Promise();

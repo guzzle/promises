@@ -42,8 +42,8 @@ A promise has the following methods:
 - `wait(bool $unwrap = true) : mixed` synchronously waits on the promise. When `$unwrap` is `true`, fulfilled values are returned and rejected reasons are thrown. When `$unwrap` is `false`, the promise is settled without returning or throwing its result.
 - `cancel() : void` attempts to cancel the promise and dependent promises.
 - `getState() : string` returns `pending`, `fulfilled`, or `rejected`.
-- `resolve($value = null) : void` fulfills the promise with `$value`, or with `null` if no value is given.
-- `reject($reason) : void` rejects the promise with `$reason`.
+- `resolve($value = null) : void` fulfills the promise with `$value`, or with `null` if no value is given. A promise or other thenable is adopted instead: the promise stays pending until it settles.
+- `reject($reason) : void` rejects the promise with `$reason`, which must not be a promise or other thenable.
 
 ## Settled Promises
 
@@ -111,7 +111,7 @@ $promise = Utils::all($promises, false, ['concurrency' => 5]);
 implementation and by callers that need to normalize values.
 
 - `Create::promiseFor($value) : PromiseInterface` returns `$value` when it is already a Guzzle promise, wraps foreign thenables in a Guzzle promise, or returns a fulfilled promise for plain values.
-- `Create::rejectionFor($reason) : PromiseInterface` returns `$reason` when it is already a promise, or returns a rejected promise for plain reasons.
+- `Create::rejectionFor($reason) : PromiseInterface` returns a rejected promise for `$reason`, which must not be a promise or other thenable.
 - `Create::exceptionFor($reason) : Throwable` returns throwable reasons as-is, or wraps non-throwable reasons in `RejectionException`.
 - `Create::iterFor(iterable $value) : Iterator` returns an iterator for arrays, iterators, iterator aggregates, and traversables.
 

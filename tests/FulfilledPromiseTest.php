@@ -146,4 +146,14 @@ class FulfilledPromiseTest extends TestCase
         $t1->resolve('why!');
         $this->assertSame('why!', $t1->wait());
     }
+
+    public function testDoesNotCallHandlerOfChildAdoptingAnotherPromise(): void
+    {
+        $called = false;
+        $fp = new FulfilledPromise('a');
+        $t1 = $fp->then(function () use (&$called): void { $called = true; });
+        $t1->resolve(new Promise());
+        P\Utils::queue()->run();
+        $this->assertFalse($called);
+    }
 }

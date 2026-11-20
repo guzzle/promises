@@ -30,18 +30,8 @@ final class Create
 
         // Return a Guzzle promise that shadows the given promise.
         if (is_object($value) && method_exists($value, 'then')) {
-            $wfn = method_exists($value, 'wait') ? [$value, 'wait'] : null;
-            $cfn = method_exists($value, 'cancel') ? [$value, 'cancel'] : null;
-            $promise = new Promise($wfn, $cfn);
-            try {
-                $value->then([$promise, 'resolve'], [$promise, 'reject']);
-            } catch (\Throwable $e) {
-                if (State::isPending($promise)) {
-                    // The thenable may still hold the callbacks.
-                    $promise = new Promise();
-                    $promise->reject($e);
-                }
-            }
+            $promise = new Promise();
+            $promise->resolve($value);
 
             return $promise;
         }
@@ -50,21 +40,22 @@ final class Create
     }
 
     /**
-     * Returns `$reason` when it is already a promise, or returns a rejected
-     * promise for plain reasons.
+     * Returns a rejected promise for `$reason`, which must not be a promise or
+     * other thenable.
      *
      * @template TReason
-     * @template TValue = never
-     * @template TPromise of PromiseInterface<mixed, mixed> = PromiseInterface<mixed, mixed>
      *
-     * @param TReason|TPromise $reason Promise or reason.
+     * @param TReason $reason
      *
-     * @return ($reason is PromiseInterface ? TPromise : RejectedPromise<TValue, TReason>)
+     * @return RejectedPromise<never, TReason>
+     *
+     * @throws \InvalidArgumentException if the reason is a promise or other
+     *                                   thenable.
      */
     public static function rejectionFor($reason): PromiseInterface
     {
-        if ($reason instanceof PromiseInterface) {
-            return $reason;
+        if (is_object($reason) && method_exists($reason, 'then')) {
+            throw new \InvalidArgumentException('You cannot reject a promise with another promise.');
         }
 
         return new RejectedPromise($reason);

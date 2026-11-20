@@ -3,6 +3,14 @@
 
 ## 4.0.0 - Upcoming
 
+### Changed
+
+- Changed promises resolved with a promise to stay pending and adopt its state
+- Changed `reject()` and `Create::rejectionFor()` to throw when given a promise
+- Changed handlers of an adopting promise to run after the adopted promise's handlers
+- Changed cancelling an adopting promise to cancel the adopted promise
+- Changed adoption of foreign thenables to follow the Promises/A+ resolution procedure
+
 ### Removed
 
 - Dropped support for PHP 7

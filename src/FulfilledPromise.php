@@ -37,6 +37,18 @@ class FulfilledPromise implements PromiseInterface
     }
 
     /**
+     * Returns the fulfillment value.
+     *
+     * @return TValue
+     *
+     * @internal
+     */
+    public function value()
+    {
+        return $this->value;
+    }
+
+    /**
      * @template TFulfilledValue = never
      * @template TFulfilledReason = never
      * @template TRejectedValue = never
@@ -60,7 +72,7 @@ class FulfilledPromise implements PromiseInterface
         $p = new Promise([$queue, 'run']);
         $value = $this->value;
         $queue->add(static function () use ($p, $value, $onFulfilled): void {
-            if (State::isPending($p)) {
+            if (!$p->isResolved()) {
                 try {
                     $p->resolve($onFulfilled($value));
                 } catch (\Throwable $e) {

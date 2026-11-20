@@ -34,11 +34,11 @@ $deferred->resolve('done');
 Utils::queue()->run();
 ```
 
-Forwarding a foreign promise does not make Guzzle able to synchronously wait on
-or cancel the foreign operation. The chained Guzzle promise settles only after
-the foreign implementation invokes the callbacks registered through `then()`.
-If the foreign promise has no compatible `wait()` or `cancel()` behavior, Guzzle
-cannot invent that behavior.
+The chained Guzzle promise stays pending until the foreign implementation
+invokes the callbacks registered through `then()`. Waiting on or cancelling the
+chained promise calls the foreign promise's `wait()` or `cancel()` method when
+it has one. If the foreign promise has no compatible `wait()` or `cancel()`
+behavior, Guzzle cannot invent that behavior.
 
 Use `Create::promiseFor($foreignPromise)` to shadow a foreign thenable as a
 Guzzle promise. If the foreign object exposes `wait()` or `cancel()` methods,

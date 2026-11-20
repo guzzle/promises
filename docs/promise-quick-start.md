@@ -44,9 +44,10 @@ only once and in the order in which they were added when the queue is drained.
 
 Promises are fulfilled using the `resolve($value = null)` method. Calling
 `resolve()` without an argument fulfills the promise with `null`. Resolving a
-promise with any value other than a `GuzzleHttp\Promise\RejectedPromise` queues
-the `$onFulfilled` callbacks. Resolving with a rejected promise rejects the
-promise and queues the `$onRejected` callbacks.
+promise with a plain value queues the `$onFulfilled` callbacks. Resolving with
+another promise makes the promise adopt that promise's eventual state: it stays
+pending until the other promise settles, and then queues the `$onFulfilled` or
+`$onRejected` callbacks accordingly.
 
 ```php
 use GuzzleHttp\Promise\Promise;
@@ -309,7 +310,10 @@ $promise->cancel();
 ```
 
 Cancellation rejects the promise with a `CancellationException` unless the
-cancel function settles the promise first.
+cancel function resolves or rejects the promise first. Cancelling a promise that
+is adopting the state of another promise cancels that promise and then settles
+the same way that promise does, or is rejected with a `CancellationException`
+when that promise is still pending.
 
 ## Related
 

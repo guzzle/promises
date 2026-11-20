@@ -37,6 +37,18 @@ class RejectedPromise implements PromiseInterface
     }
 
     /**
+     * Returns the rejection reason.
+     *
+     * @return TReason
+     *
+     * @internal
+     */
+    public function reason()
+    {
+        return $this->reason;
+    }
+
+    /**
      * @template TFulfilledValue = never
      * @template TFulfilledReason = never
      * @template TRejectedValue = never
@@ -60,7 +72,7 @@ class RejectedPromise implements PromiseInterface
         $reason = $this->reason;
         $p = new Promise([$queue, 'run']);
         $queue->add(static function () use ($p, $reason, $onRejected): void {
-            if (State::isPending($p)) {
+            if (!$p->isResolved()) {
                 try {
                     // Return a resolved promise if onRejected does not throw.
                     $p->resolve($onRejected($reason));
