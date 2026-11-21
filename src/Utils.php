@@ -58,7 +58,9 @@ final class Utils
                     $promise->resolve($task());
                 }
             } catch (\Throwable $e) {
-                $promise->reject($e);
+                if (State::isPending($promise)) {
+                    $promise->reject($e);
+                }
             }
         });
 

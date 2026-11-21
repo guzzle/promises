@@ -1114,6 +1114,17 @@ class UtilsTest extends TestCase
         $this->assertInstanceOf(RejectionException::class, $reason->getPrevious());
     }
 
+    public function testIgnoresResultOfTaskThatCancelsItsPromise(): void
+    {
+        $p = P\Utils::task(function () use (&$p): string {
+            $p->cancel();
+
+            return 'a';
+        });
+        P\Utils::queue()->run();
+        $this->assertTrue(P\State::isRejected($p));
+    }
+
     public function testCanManuallySettleTaskQueueGeneratedPromises(): void
     {
         $p1 = P\Utils::task(function (): string { return 'a'; });

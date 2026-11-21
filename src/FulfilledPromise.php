@@ -72,10 +72,12 @@ class FulfilledPromise implements PromiseInterface
         $p = new Promise([$queue, 'run']);
         $value = $this->value;
         $queue->add(static function () use ($p, $value, $onFulfilled): void {
-            if (!$p->isResolved()) {
-                try {
+            try {
+                if (!$p->isResolved()) {
                     $p->resolve($onFulfilled($value));
-                } catch (\Throwable $e) {
+                }
+            } catch (\Throwable $e) {
+                if (State::isPending($p)) {
                     $p->reject($e);
                 }
             }
