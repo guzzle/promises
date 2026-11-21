@@ -350,6 +350,34 @@ class PromiseTest extends TestCase
         $this->assertFalse($called3);
     }
 
+    public function testIgnoresResultOfHandlerThatCancelsItsPromise(): void
+    {
+        $this->expectException(CancellationException::class);
+
+        $p1 = new Promise();
+        $p2 = $p1->then(function () use (&$p2): string {
+            $p2->cancel();
+
+            return 'foo';
+        });
+        $p1->resolve('bar');
+        P\Utils::queue()->run();
+        $p2->wait();
+    }
+
+    public function testIgnoresExceptionOfHandlerThatFulfillsItsPromise(): void
+    {
+        $p1 = new Promise();
+        $p2 = $p1->then(function () use (&$p2): void {
+            $p2->resolve('foo');
+
+            throw new \Exception('bar');
+        });
+        $p1->resolve('baz');
+        P\Utils::queue()->run();
+        $this->assertSame('foo', $p2->wait());
+    }
+
     public function testRejectsPromiseWhenCancelFails(): void
     {
         $called = false;

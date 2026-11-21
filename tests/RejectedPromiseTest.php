@@ -139,6 +139,18 @@ class RejectedPromiseTest extends TestCase
         }
     }
 
+    public function testIgnoresResultOfOnRejectedThatCancelsItsPromise(): void
+    {
+        $p = new RejectedPromise('a');
+        $p2 = $p->then(null, function () use (&$p2): string {
+            $p2->cancel();
+
+            return 'b';
+        });
+        P\Utils::queue()->run();
+        $this->assertTrue(P\State::isRejected($p2));
+    }
+
     public function testWaitingIsNoOp(): void
     {
         $p = new RejectedPromise('a');
