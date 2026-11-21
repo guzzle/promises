@@ -97,6 +97,18 @@ class FulfilledPromiseTest extends TestCase
         }
     }
 
+    public function testIgnoresResultOfOnFulfilledThatCancelsItsPromise(): void
+    {
+        $p = new FulfilledPromise('a');
+        $p2 = $p->then(function () use (&$p2): string {
+            $p2->cancel();
+
+            return 'b';
+        });
+        P\Utils::queue()->run();
+        $this->assertTrue(P\State::isRejected($p2));
+    }
+
     public function testOtherwiseIsSugarForRejections(): void
     {
         $c = null;

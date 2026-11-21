@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 2.6.2 - Upcoming
+
+### Fixed
+
+- Fixed `LogicException` when a callback settles its own promise
+
+
 ## 2.6.1 - 2026-11-19
 
 ### Fixed
