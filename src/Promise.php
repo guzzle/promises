@@ -245,7 +245,10 @@ class Promise implements PromiseInterface
                 $promise->reject($value);
             }
         } catch (\Throwable $reason) {
-            $promise->reject($reason);
+            // The handler may have settled the promise itself.
+            if (State::isPending($promise)) {
+                $promise->reject($reason);
+            }
         }
     }
 
