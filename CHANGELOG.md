@@ -17,7 +17,7 @@
 - Removed `Is` in favor of `State`
 
 
-## 3.2.0 - Upcoming
+## 3.2.0 - 2026-11-21
 
 ### Changed
 
@@ -25,7 +25,7 @@
 - Changed `TaskQueue` to remove tasks in constant time
 
 
-## 3.1.2 - Upcoming
+## 3.1.2 - 2026-11-21
 
 ### Fixed
 
