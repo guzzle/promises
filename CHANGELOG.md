@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 3.2.0 - Upcoming
+## 3.2.0 - 2026-11-21
 
 ### Changed
 
