@@ -72,6 +72,10 @@ final class Coroutine implements PromiseInterface
             while (isset($this->currentPromise)) {
                 $this->currentPromise->wait();
             }
+        }, function (): void {
+            if (isset($this->currentPromise)) {
+                $this->currentPromise->cancel();
+            }
         });
         try {
             $this->nextCoroutine($this->generator->current());

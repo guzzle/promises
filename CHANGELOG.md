@@ -5,6 +5,7 @@
 
 ### Changed
 
+- Changed `Coroutine` to forward cancellation from chained promises
 - Changed `TaskQueue` to remove tasks in constant time
 
 

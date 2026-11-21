@@ -95,6 +95,22 @@ class CoroutineTest extends TestCase
         $coroutine->cancel();
     }
 
+    public function testCancelsCurrentPromiseWhenChainedPromiseIsCancelled(): void
+    {
+        $called = false;
+        $promise = new Promise(null, function () use (&$called): void {
+            $called = true;
+        });
+        $coroutine = Coroutine::of(function () use ($promise): \Generator {
+            yield $promise;
+        });
+
+        $coroutine->then(function (): void {})->cancel();
+
+        $this->assertTrue($called);
+        $this->assertSame(PromiseInterface::REJECTED, $promise->getState());
+    }
+
     public function testCurrentPromiseIsResetToNullAfterFulfilledCoroutine(): void
     {
         $coroutine = new Coroutine(function (): \Generator {
